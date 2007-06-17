@@ -7,7 +7,9 @@
 #include <structmember.h>
 #include <datetime.h>
 #include <time.h>
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include <sql.h>
 #include <sqlucode.h>
 

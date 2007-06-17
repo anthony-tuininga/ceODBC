@@ -11,27 +11,27 @@ mailing list at http://lists.sourceforge.net/lists/listinfo/ceODBC-users
 
 
 BINARY INSTALL:
-Place the file ceODBC.pyd anywhere on your Python path.
+Place the file ceODBC.pyd or ceODBC.so anywhere on your Python path.
 
 
 SOURCE INSTALL:
 Use the provided setup.py to build and install the module which makes use of
-the distutils module. Note that I have used mingw32 (http://www.mingw.org) and
-the module will not build with MSVC without modification. The commands
-required to build and install the module are as follows:
+the distutils module. Note that on Windows I have used mingw32
+(http://www.mingw.org) and the module will not build with MSVC without
+modification. The commands required to build and install the module are as
+follows:
 
-	python setup.py build --compiler=mingw32
-	python setup.py build --compiler=mingw32 install
+	python setup.py build
+	python setup.py install
 
 
 USAGE EXAMPLE:
 
 import ceODBC
 
-connection = cx_Oracle.connect("DSN")
+connection = ceODBC.connect("DSN")
 
 cursor = connection.cursor()
-cursor.arraysize = 50
 cursor.execute("""
         select Col1, Col2, Col3
         from SomeTable

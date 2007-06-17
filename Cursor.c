@@ -250,7 +250,8 @@ static void Cursor_Free(
 static int Cursor_PrepareResultSet(
     udt_Cursor *self)                   // cursor to perform define on
 {
-    SQLUSMALLINT numColumns, position;
+    SQLSMALLINT numColumns;
+    SQLUSMALLINT position;
     udt_Variable *var;
     SQLRETURN rc;
 
@@ -501,7 +502,7 @@ static PyObject *Cursor_ItemDescription(
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(self->handle, position, name, sizeof(name),
+    rc = SQLDescribeCol(self->handle, position, (SQLCHAR*) name, sizeof(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
     if (CheckForError(self, rc,
             "Cursor_ItemDescription(): get column info") < 0)
@@ -521,7 +522,8 @@ static PyObject *Cursor_ItemDescription(
     Py_INCREF(varType->pythonType);
     Py_INCREF(Py_None);
     Py_INCREF(Py_None);
-    PyTuple_SET_ITEM(tuple, 0, PyString_FromStringAndSize(name, nameLength));
+    PyTuple_SET_ITEM(tuple, 0,
+            PyString_FromStringAndSize( (char*) name, nameLength));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
     PyTuple_SET_ITEM(tuple, 2, Py_None);
     PyTuple_SET_ITEM(tuple, 3, Py_None);
@@ -677,7 +679,7 @@ static int Cursor_InternalPrepare(
 
     // prepare statement
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepare(self->handle, PyString_AS_STRING(statement),
+    rc = SQLPrepare(self->handle, (SQLCHAR*) PyString_AS_STRING(statement),
             PyString_GET_SIZE(statement));
     Py_END_ALLOW_THREADS
     if (CheckForError(self, rc, "Cursor_InternalPrepare()") < 0)

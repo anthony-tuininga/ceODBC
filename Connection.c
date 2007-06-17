@@ -177,8 +177,9 @@ static int Connection_Init(
         return -1;
 
     // connecting to driver
-    rc = SQLDriverConnect(self->handle, NULL, dsn, dsnLength, actualDsn,
-            sizeof(actualDsn), &actualDsnLength, SQL_DRIVER_NOPROMPT);
+    rc = SQLDriverConnect(self->handle, NULL, (SQLCHAR*) dsn, dsnLength,
+            (SQLCHAR*) actualDsn, sizeof(actualDsn), &actualDsnLength,
+            SQL_DRIVER_NOPROMPT);
     if (CheckForError(self, rc,
             "Connection_Init(): connecting to driver") < 0)
         return -1;
