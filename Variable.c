@@ -176,15 +176,15 @@ static udt_VariableType *Variable_TypeByValue(
 
 //-----------------------------------------------------------------------------
 // Variable_TypeBySqlDataType()
-//   Return a variable type given an Oracle data type or NULL if the Oracle
-// data type does not have a corresponding variable type.
+//   Return a variable type given a SQL data type or NULL if the SQL data type
+// does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
 static udt_VariableType *Variable_TypeBySqlDataType (
-    SQLSMALLINT oracleDataType)         // SQL data type
+    SQLSMALLINT sqlDataType)            // SQL data type
 {
     char buffer[100];
 
-    switch(oracleDataType) {
+    switch(sqlDataType) {
         case SQL_BIT:
             return &vt_Bit;
         case SQL_INTEGER:
@@ -195,13 +195,15 @@ static udt_VariableType *Variable_TypeBySqlDataType (
             return &vt_Double;
         case SQL_TYPE_TIMESTAMP:
             return &vt_Timestamp;
+        case SQL_CHAR:
+        case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
             return &vt_Varchar;
     }
 
-    sprintf(buffer, "Variable_TypeByOracleDataType: unhandled data type %d",
-            oracleDataType);
+    sprintf(buffer, "Variable_TypeBySqlDataType: unhandled data type %d",
+            sqlDataType);
     PyErr_SetString(g_NotSupportedErrorException, buffer);
     return NULL;
 }
@@ -252,8 +254,9 @@ static udt_Variable *Variable_NewForResultSet(
     char name[1];
 
     // retrieve information about the column
-    rc = SQLDescribeCol(cursor->handle, position, name, sizeof(name),
-            &length, &dataType, &size, &decimalDigits, &nullable);
+    rc = SQLDescribeCol(cursor->handle, position, (SQLCHAR*) name,
+            sizeof(name), &length, &dataType, &size, &decimalDigits,
+            &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
         return NULL;
