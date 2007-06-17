@@ -160,6 +160,8 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_Bit;
     if (PyInt_Check(value))
         return &vt_Integer;
+    if (PyLong_Check(value))
+        return &vt_BigInteger;
     if (PyFloat_Check(value))
         return &vt_Double;
     if (PyDateTime_Check(value))
@@ -185,6 +187,8 @@ static udt_VariableType *Variable_TypeBySqlDataType (
     char buffer[100];
 
     switch(sqlDataType) {
+        case SQL_BIGINT:
+            return &vt_BigInteger;
         case SQL_BIT:
             return &vt_Bit;
         case SQL_INTEGER:

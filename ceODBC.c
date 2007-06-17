@@ -162,6 +162,8 @@ void initceODBC(void)
         return;
     if (PyType_Ready(&g_ErrorType) < 0)
         return;
+    if (PyType_Ready(&g_BigIntegerVarType) < 0)
+        return;
     if (PyType_Ready(&g_BitVarType) < 0)
         return;
     if (PyType_Ready(&g_DoubleVarType) < 0)
@@ -217,6 +219,7 @@ void initceODBC(void)
     ADD_TYPE_OBJECT("connect", &g_ConnectionType)
 
     // create the basic data types for setting input sizes
+    ADD_TYPE_OBJECT("BIGINT", &g_BigIntegerVarType)
     ADD_TYPE_OBJECT("BIT", &g_BitVarType)
     ADD_TYPE_OBJECT("DOUBLE", &g_DoubleVarType)
     ADD_TYPE_OBJECT("INTEGER", &g_IntegerVarType)
