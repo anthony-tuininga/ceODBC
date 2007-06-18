@@ -743,6 +743,7 @@ static PyObject *Cursor_Execute(
 {
     PyObject *statement, *executeArgs;
 
+    // verify we have the right arguments
     executeArgs = NULL;
     if (!PyArg_ParseTuple(args, "O|O", &statement, &executeArgs))
         return NULL;
@@ -755,7 +756,7 @@ static PyObject *Cursor_Execute(
         return NULL;
     }
 
-    // make sure the cursor is open
+    // perform the work of executing the statement
     if (Cursor_IsOpen(self) < 0)
         return NULL;
     if (Cursor_InternalPrepare(self, statement) < 0)
@@ -764,6 +765,12 @@ static PyObject *Cursor_Execute(
         return NULL;
     if (Cursor_InternalExecute(self) < 0)
         return NULL;
+
+    // for queries, return the cursor for convenience
+    if (self->resultSetVars) {
+        Py_INCREF(self);
+        return (PyObject*) self;
+    }
 
     Py_INCREF(Py_None);
     return Py_None;
