@@ -168,7 +168,9 @@ static int BigIntegerVar_SetValue(
         if (PyErr_Occurred())
             return -1;
     } else {
-        PyErr_SetString(PyExc_TypeError, "expecting numeric data");
+        PyErr_Format(PyExc_TypeError,
+                "expecting integer data, got value of type %s instead",
+                value->ob_type->tp_name);
         return -1;
     }
 
@@ -197,12 +199,18 @@ static int DoubleVar_SetValue(
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    if (PyFloat_Check(value)) {
+    if (PyFloat_Check(value))
         var->data[pos] = PyFloat_AS_DOUBLE(value);
-        return 0;
+    else if (PyInt_Check(value))
+        var->data[pos] = PyInt_AS_LONG(value);
+    else {
+        PyErr_Format(PyExc_TypeError,
+                "expecting floating point data, got value of type %s instead",
+                value->ob_type->tp_name);
+        return -1;
     }
-    PyErr_SetString(PyExc_TypeError, "expecting floating point data");
-    return -1;
+
+    return 0;
 }
 
 
@@ -231,7 +239,9 @@ static int IntegerVar_SetValue(
         var->data[pos] = PyInt_AS_LONG(value);
         return 0;
     }
-    PyErr_SetString(PyExc_TypeError, "expecting numeric data");
+    PyErr_Format(PyExc_TypeError,
+            "expecting integer data, got value of type %s instead",
+            value->ob_type->tp_name);
     return -1;
 }
 
