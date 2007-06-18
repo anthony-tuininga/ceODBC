@@ -15,6 +15,7 @@ typedef struct {
     int arraySize;
     int bindArraySize;
     int fetchArraySize;
+    int setInputSizes;
     SQLINTEGER rowCount;
     int actualRows;
     int rowNum;
@@ -39,6 +40,7 @@ static PyObject *Cursor_FetchOne(udt_Cursor*, PyObject*);
 static PyObject *Cursor_FetchMany(udt_Cursor*, PyObject*, PyObject*);
 static PyObject *Cursor_FetchAll(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Prepare(udt_Cursor*, PyObject*);
+static PyObject *Cursor_SetInputSizes(udt_Cursor*, PyObject*);
 static PyObject *Cursor_GetDescription(udt_Cursor*, void*);
 static PyObject *Cursor_New(PyTypeObject*, PyObject*, PyObject*);
 static int Cursor_Init(udt_Cursor*, PyObject*, PyObject*);
@@ -56,6 +58,7 @@ static PyMethodDef g_CursorMethods[] = {
     { "fetchmany", (PyCFunction) Cursor_FetchMany,
               METH_VARARGS | METH_KEYWORDS },
     { "prepare", (PyCFunction) Cursor_Prepare, METH_VARARGS },
+    { "setinputsizes", (PyCFunction) Cursor_SetInputSizes, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
     { NULL, NULL }
 };
@@ -447,6 +450,9 @@ static int Cursor_BindParameters(
         }
     }
 
+    // reset input sizes
+    self->setInputSizes = 0;
+
     return 0;
 }
 
@@ -696,8 +702,10 @@ static int Cursor_InternalPrepare(
         return -1;
 
     // clear parameters
-    Py_XDECREF(self->parameterVars);
-    self->parameterVars = NULL;
+    if (!self->setInputSizes) {
+        Py_XDECREF(self->parameterVars);
+        self->parameterVars = NULL;
+    }
 
     return 0;
 }
@@ -992,6 +1000,52 @@ static PyObject *Cursor_FetchAll(
     if (Cursor_VerifyFetch(self) < 0)
         return NULL;
     return Cursor_MultiFetch(self, 0);
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_SetInputSizes()
+//   Set the sizes of the bind variables.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_SetInputSizes(
+    udt_Cursor *self,                   // cursor to fetch from
+    PyObject *args)                     // arguments
+{
+    PyObject *parameterVars, *value, *inputValue;
+    int numArgs, i;
+
+    // make sure the cursor is open
+    if (Cursor_IsOpen(self) < 0)
+        return NULL;
+
+    // initialization of parameter variables
+    numArgs = PyTuple_Size(args);
+    parameterVars = PyList_New(numArgs);
+
+    // process each input
+    for (i = 0; i < numArgs; i++) {
+        inputValue = PyTuple_GET_ITEM(args, i);
+        if (inputValue == Py_None) {
+            Py_INCREF(Py_None);
+            value = Py_None;
+        } else {
+            value = (PyObject*) Variable_NewByType(self, inputValue,
+                    self->bindArraySize);
+            if (!value) {
+                Py_DECREF(parameterVars);
+                return NULL;
+            }
+        }
+        PyList_SET_ITEM(parameterVars, i, value);
+    }
+
+    // overwrite existing parameter vars, if any
+    Py_XDECREF(self->parameterVars);
+    self->parameterVars = parameterVars;
+    self->setInputSizes = 1;
+
+    Py_INCREF(self->parameterVars);
+    return self->parameterVars;
 }
 
 

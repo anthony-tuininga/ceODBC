@@ -136,7 +136,11 @@ static void Variable_Free(
 static int Variable_Check(
     PyObject *object)                   // Python object to check
 {
-    return (object->ob_type == &g_IntegerVarType ||
+    return (object->ob_type == &g_BigIntegerVarType ||
+            object->ob_type == &g_BitVarType ||
+            object->ob_type == &g_DoubleVarType ||
+            object->ob_type == &g_IntegerVarType ||
+            object->ob_type == &g_TimestampVarType ||
             object->ob_type == &g_VarcharVarType);
 }
 
@@ -172,6 +176,47 @@ static udt_VariableType *Variable_TypeByValue(
     sprintf(buffer, "Variable_TypeByValue(): unhandled data type %.*s", 150,
             value->ob_type->tp_name);
     PyErr_SetString(g_NotSupportedErrorException, buffer);
+    return NULL;
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_TypeByPythonType()
+//   Return a variable type given a Python type object or NULL if the Python
+// type does not have a corresponding variable type.
+//-----------------------------------------------------------------------------
+static udt_VariableType *Variable_TypeByPythonType(
+    PyObject* type)                     // Python type
+{
+    if (type == (PyObject*) &g_VarcharVarType)
+        return &vt_Varchar;
+    if (type == (PyObject*) &PyString_Type)
+        return &vt_Varchar;
+    if (type == (PyObject*) &g_BitVarType)
+        return &vt_Bit;
+    if (type == (PyObject*) &PyBool_Type)
+        return &vt_Bit;
+    if (type == (PyObject*) &g_BigIntegerVarType)
+        return &vt_BigInteger;
+    if (type == (PyObject*) &PyLong_Type)
+        return &vt_BigInteger;
+    if (type == (PyObject*) &g_IntegerVarType)
+        return &vt_Integer;
+    if (type == (PyObject*) &PyInt_Type)
+        return &vt_Integer;
+    if (type == (PyObject*) &g_DoubleVarType)
+        return &vt_Double;
+    if (type == (PyObject*) &PyFloat_Type)
+        return &vt_Double;
+    if (type == (PyObject*) &g_TimestampVarType)
+        return &vt_Double;
+    if (type == (PyObject*) PyDateTimeAPI->DateType)
+        return &vt_Timestamp;
+    if (type == (PyObject*) PyDateTimeAPI->DateTimeType)
+        return &vt_Timestamp;
+
+    PyErr_SetString(g_NotSupportedErrorException,
+            "Variable_TypeByPythonType(): unhandled data type");
     return NULL;
 }
 
@@ -238,6 +283,38 @@ static udt_Variable *Variable_NewByValue(
         return NULL;
 
     return var;
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_NewByType()
+//   Allocate a new variable by looking at the Python data type.
+//-----------------------------------------------------------------------------
+static udt_Variable *Variable_NewByType(
+    udt_Cursor *cursor,                 // cursor to associate variable with
+    PyObject *value,                    // Python data type to associate
+    unsigned numElements)               // number of elements to allocate
+{
+    udt_VariableType *varType;
+    int size;
+
+    // passing an integer is assumed to be a string
+    if (PyInt_Check(value)) {
+        size = PyInt_AS_LONG(value);
+        return Variable_New(cursor, numElements, &vt_Varchar, size);
+    }
+
+    // handle directly bound variables
+    if (Variable_Check(value)) {
+        Py_INCREF(value);
+        return (udt_Variable*) value;
+    }
+
+    // everything else ought to be a Python type
+    varType = Variable_TypeByPythonType(value);
+    if (!varType)
+        return NULL;
+    return Variable_New(cursor, numElements, varType, 1);
 }
 
 
