@@ -34,6 +34,7 @@ static PyObject *Cursor_GetIter(udt_Cursor*);
 static PyObject *Cursor_GetNext(udt_Cursor*);
 static PyObject *Cursor_Close(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Execute(udt_Cursor*, PyObject*);
+static PyObject *Cursor_ExecuteMany(udt_Cursor*, PyObject*);
 static PyObject *Cursor_FetchOne(udt_Cursor*, PyObject*);
 static PyObject *Cursor_FetchMany(udt_Cursor*, PyObject*, PyObject*);
 static PyObject *Cursor_FetchAll(udt_Cursor*, PyObject*);
@@ -49,6 +50,7 @@ static PyObject *Cursor_Repr(udt_Cursor*);
 //-----------------------------------------------------------------------------
 static PyMethodDef g_CursorMethods[] = {
     { "execute", (PyCFunction) Cursor_Execute, METH_VARARGS },
+    { "executemany", (PyCFunction) Cursor_ExecuteMany, METH_VARARGS },
     { "fetchall", (PyCFunction) Cursor_FetchAll, METH_NOARGS },
     { "fetchone", (PyCFunction) Cursor_FetchOne, METH_NOARGS },
     { "fetchmany", (PyCFunction) Cursor_FetchMany,
@@ -752,6 +754,64 @@ static PyObject *Cursor_Execute(
         return NULL;
     if (executeArgs && Cursor_BindParameters(self, executeArgs, 1, 0) < 0)
         return NULL;
+    if (Cursor_InternalExecute(self) < 0)
+        return NULL;
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_ExecuteMany()
+//   Execute the statement many times. The number of times is equivalent to the
+// number of elements in the array of dictionaries.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_ExecuteMany(
+    udt_Cursor *self,                   // cursor to execute
+    PyObject *args)                     // arguments
+{
+    PyObject *arguments, *listOfArguments, *statement;
+    int i, numRows;
+    SQLRETURN rc;
+
+    // expect statement text (optional) plus list of sequences
+    if (!PyArg_ParseTuple(args, "OO!", &statement, &PyList_Type,
+            &listOfArguments))
+        return NULL;
+    if (statement != Py_None && !PyString_Check(statement)) {
+        PyErr_SetString(PyExc_TypeError, "expecting None or a string");
+        return NULL;
+    }
+
+    // make sure the cursor is open
+    if (Cursor_IsOpen(self) < 0)
+        return NULL;
+
+    // prepare the statement
+    if (Cursor_InternalPrepare(self, statement) < 0)
+        return NULL;
+
+    // perform binds
+    numRows = PyList_GET_SIZE(listOfArguments);
+    for (i = 0; i < numRows; i++) {
+        arguments = PyList_GET_ITEM(listOfArguments, i);
+        if (!PySequence_Check(arguments)) {
+            PyErr_SetString(g_InterfaceErrorException,
+                    "expecting a list of sequences");
+            return NULL;
+        }
+        if (Cursor_BindParameters(self, arguments, numRows, i) < 0)
+            return NULL;
+    }
+
+    // set the number of parameters bound
+    rc = SQLSetStmtAttr(self->handle, SQL_ATTR_PARAMSET_SIZE,
+            (SQLPOINTER) numRows, SQL_IS_UINTEGER);
+    if (CheckForError(self, rc, "Cursor_ExecuteMany(): set paramset size") < 0)
+        return NULL;
+
+    // execute the statement
     if (Cursor_InternalExecute(self) < 0)
         return NULL;
 
