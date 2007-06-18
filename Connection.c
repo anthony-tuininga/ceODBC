@@ -176,6 +176,13 @@ static int Connection_Init(
             "Connection_Init(): allocate DBC handle") < 0)
         return -1;
 
+    // turn off autocommit
+    rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+            (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
+    if (CheckForError(self, rc,
+            "Connection_Init(): turning off autocommit") < 0)
+        return -1;
+
     // connecting to driver
     rc = SQLDriverConnect(self->handle, NULL, (SQLCHAR*) dsn, dsnLength,
             (SQLCHAR*) actualDsn, sizeof(actualDsn), &actualDsnLength,

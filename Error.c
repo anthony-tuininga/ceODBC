@@ -138,6 +138,8 @@ static int Error_CheckForError(
         strcpy(error->errorText, "cannot get number of diagnostic records");
 
     // determine error text
+    } else if (numRecords == 0) {
+        strcpy(error->errorText, "no diagnostic message text available");
     } else {
         rc = SQLGetDiagField(obj->handleType, obj->handle, 1,
                 SQL_DIAG_MESSAGE_TEXT, error->errorText,
