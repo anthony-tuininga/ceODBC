@@ -189,6 +189,10 @@ void initceODBC(void)
         return;
     if (PyType_Ready(&g_IntegerVarType) < 0)
         return;
+    if (PyType_Ready(&g_LongBinaryVarType) < 0)
+        return;
+    if (PyType_Ready(&g_LongVarcharVarType) < 0)
+        return;
     if (PyType_Ready(&g_TimestampVarType) < 0)
         return;
     if (PyType_Ready(&g_VarcharVarType) < 0)
@@ -251,6 +255,8 @@ void initceODBC(void)
     ADD_TYPE_OBJECT("BitVar", &g_BitVarType)
     ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
     ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
+    ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
+    ADD_TYPE_OBJECT("LongVarcharVar", &g_LongVarcharVarType)
     ADD_TYPE_OBJECT("TimestampVar", &g_TimestampVarType)
     ADD_TYPE_OBJECT("VarcharVar", &g_VarcharVarType)
 
@@ -263,11 +269,13 @@ void initceODBC(void)
 
     // register the variable types with the API types
     REGISTER_TYPE(g_BinaryApiType, &g_BinaryVarType)
+    REGISTER_TYPE(g_BinaryApiType, &g_LongBinaryVarType)
     REGISTER_TYPE(g_DateTimeApiType, &g_TimestampVarType)
     REGISTER_TYPE(g_NumberApiType, &g_BigIntegerVarType)
     REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
     REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)
     REGISTER_TYPE(g_StringApiType, &g_VarcharVarType)
+    REGISTER_TYPE(g_StringApiType, &g_LongVarcharVarType)
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)

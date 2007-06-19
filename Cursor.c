@@ -3,6 +3,8 @@
 //   Definition of the Python type for cursors.
 //-----------------------------------------------------------------------------
 
+#define DEFAULT_LONG_SIZE               (128 * 1024)
+
 //-----------------------------------------------------------------------------
 // structure for the Python type "Cursor"
 //-----------------------------------------------------------------------------
@@ -16,6 +18,8 @@ typedef struct {
     int bindArraySize;
     int fetchArraySize;
     int setInputSizes;
+    int setOutputSize;
+    int setOutputSizeColumn;
     SQLINTEGER rowCount;
     int actualRows;
     int rowNum;
@@ -41,6 +45,7 @@ static PyObject *Cursor_FetchMany(udt_Cursor*, PyObject*, PyObject*);
 static PyObject *Cursor_FetchAll(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Prepare(udt_Cursor*, PyObject*);
 static PyObject *Cursor_SetInputSizes(udt_Cursor*, PyObject*);
+static PyObject *Cursor_SetOutputSize(udt_Cursor*, PyObject*);
 static PyObject *Cursor_GetDescription(udt_Cursor*, void*);
 static PyObject *Cursor_New(PyTypeObject*, PyObject*, PyObject*);
 static int Cursor_Init(udt_Cursor*, PyObject*, PyObject*);
@@ -59,6 +64,7 @@ static PyMethodDef g_CursorMethods[] = {
               METH_VARARGS | METH_KEYWORDS },
     { "prepare", (PyCFunction) Cursor_Prepare, METH_VARARGS },
     { "setinputsizes", (PyCFunction) Cursor_SetInputSizes, METH_VARARGS },
+    { "setoutputsize", (PyCFunction) Cursor_SetOutputSize, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
     { NULL, NULL }
 };
@@ -193,6 +199,9 @@ static int Cursor_Init(
     self->connection = connection;
     self->arraySize = 1;
     self->bindArraySize = 1;
+    self->setInputSizes = 0;
+    self->setOutputSize = DEFAULT_LONG_SIZE;
+    self->setOutputSizeColumn = 0;
 
     // allocate handle
     rc = SQLAllocHandle(self->handleType, self->connection->handle,
@@ -450,9 +459,6 @@ static int Cursor_BindParameters(
         }
     }
 
-    // reset input sizes
-    self->setInputSizes = 0;
-
     return 0;
 }
 
@@ -496,6 +502,11 @@ static int Cursor_InternalExecute(
         if (CheckForError(self, rc, "Cursor_SetRowCount()") < 0)
             return -1;
     }
+
+    // reset input and output sizes
+    self->setInputSizes = 0;
+    self->setOutputSize = DEFAULT_LONG_SIZE;
+    self->setOutputSizeColumn = 0;
 
     return 0;
 }
@@ -1053,6 +1064,24 @@ static PyObject *Cursor_SetInputSizes(
 
     Py_INCREF(self->parameterVars);
     return self->parameterVars;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_SetOutputSize()
+//   Set the size of all of the long columns or just one of them.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_SetOutputSize(
+    udt_Cursor *self,                   // cursor to fetch from
+    PyObject *args)                     // arguments
+{
+    self->setOutputSizeColumn = 0;
+    if (!PyArg_ParseTuple(args, "i|i", &self->setOutputSize,
+            &self->setOutputSizeColumn))
+        return NULL;
+
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 

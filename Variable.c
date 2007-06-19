@@ -143,6 +143,8 @@ static int Variable_Check(
             object->ob_type == &g_BitVarType ||
             object->ob_type == &g_DoubleVarType ||
             object->ob_type == &g_IntegerVarType ||
+            object->ob_type == &g_LongBinaryVarType ||
+            object->ob_type == &g_LongVarcharVarType ||
             object->ob_type == &g_TimestampVarType ||
             object->ob_type == &g_VarcharVarType);
 }
@@ -199,12 +201,16 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Varchar;
     if (type == (PyObject*) g_StringApiType)
         return &vt_Varchar;
+    if (type == (PyObject*) &g_LongVarcharVarType)
+        return &vt_LongVarchar;
     if (type == (PyObject*) &g_BinaryVarType)
         return &vt_Binary;
     if (type == (PyObject*) &PyBuffer_Type)
         return &vt_Binary;
     if (type == (PyObject*) g_BinaryApiType)
         return &vt_Binary;
+    if (type == (PyObject*) &g_LongBinaryVarType)
+        return &vt_LongBinary;
     if (type == (PyObject*) &g_BitVarType)
         return &vt_Bit;
     if (type == (PyObject*) &PyBool_Type)
@@ -253,6 +259,8 @@ static udt_VariableType *Variable_TypeBySqlDataType (
             return &vt_BigInteger;
         case SQL_BIT:
             return &vt_Bit;
+        case SQL_SMALLINT:
+        case SQL_TINYINT:
         case SQL_INTEGER:
             return &vt_Integer;
         case SQL_REAL:
@@ -265,10 +273,16 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
+        case SQL_GUID:
             return &vt_Varchar;
+        case SQL_LONGVARCHAR:
+        case SQL_WLONGVARCHAR:
+            return &vt_LongVarchar;
         case SQL_BINARY:
         case SQL_VARBINARY:
             return &vt_Binary;
+        case SQL_LONGVARBINARY:
+            return &vt_LongBinary;
     }
 
     sprintf(buffer, "Variable_TypeBySqlDataType: unhandled data type %d",
@@ -367,8 +381,15 @@ static udt_Variable *Variable_NewForResultSet(
     if (!varType)
         return NULL;
 
+    // for long columns, set the size appropriately
+    if (varType == &vt_LongVarchar || varType == &vt_LongBinary) {
+        if (cursor->setOutputSizeColumn == 0 ||
+                cursor->setOutputSizeColumn == position)
+            size = cursor->setOutputSize;
+    }
+
     // create a variable of the correct type
-    var = Variable_New(cursor, cursor->fetchArraySize, varType, (size + 1) * 2);
+    var = Variable_New(cursor, cursor->fetchArraySize, varType, size);
     if (!var)
         return NULL;
 
@@ -469,8 +490,9 @@ static PyObject *Variable_GetValue(
     // check for truncation
     if (self->lengthOrIndicator[arrayPos] > self->bufferSize)
         return PyErr_Format(g_DatabaseErrorException,
-                "column %d at array pos %d truncated", self->position,
-                arrayPos);
+                "column %d (%d) truncated (need %lu, have %lu)",
+                self->position, arrayPos, self->lengthOrIndicator[arrayPos],
+                self->bufferSize);
 
     return (*self->type->getValueProc)(self, arrayPos);
 }
