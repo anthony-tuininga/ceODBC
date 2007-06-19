@@ -12,6 +12,7 @@
 #endif
 #include <sql.h>
 #include <sqlucode.h>
+#include <time.h>
 
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
@@ -108,26 +109,20 @@ static int SetException(
 
 
 //-----------------------------------------------------------------------------
-// Time()
-//   Returns a time value suitable for binding.
-//-----------------------------------------------------------------------------
-static PyObject* Time(PyObject* self, PyObject* args)
-{
-    PyErr_SetString(g_NotSupportedErrorException,
-            "time only variables not supported");
-    return NULL;
-}
-
-
-//-----------------------------------------------------------------------------
 // TimeFromTicks()
 //   Returns a time value suitable for binding.
 //-----------------------------------------------------------------------------
 static PyObject* TimeFromTicks(PyObject* self, PyObject* args)
 {
-    PyErr_SetString(g_NotSupportedErrorException,
-            "time only variables not supported");
-    return NULL;
+    double inputTicks;
+    struct tm *time;
+    time_t ticks;
+
+    if (!PyArg_ParseTuple(args, "d", &inputTicks))
+        return NULL;
+    ticks = (long) inputTicks;
+    time = localtime(&ticks);
+    return PyTime_FromTime(time->tm_hour, time->tm_min, time->tm_sec, 0);
 }
 
 
@@ -155,7 +150,6 @@ static PyObject* TimestampFromTicks(PyObject* self, PyObject* args)
 //   Declaration of methods supported by this module
 //-----------------------------------------------------------------------------
 static PyMethodDef g_ModuleMethods[] = {
-    { "Time", Time, METH_VARARGS },
     { "DateFromTicks", DateFromTicks, METH_VARARGS },
     { "TimeFromTicks", TimeFromTicks, METH_VARARGS },
     { "TimestampFromTicks", TimestampFromTicks, METH_VARARGS },
