@@ -52,6 +52,7 @@ static PyObject *Variable_Repr(udt_Variable *);
 static int Variable_Resize(udt_Variable*, SQLUINTEGER);
 
 
+#include "BinaryVar.c"
 #include "BitVar.c"
 #include "NumberVar.c"
 #include "StringVar.c"
@@ -86,6 +87,7 @@ static udt_Variable *Variable_New(
     if (type->getBufferSizeProc)
         self->bufferSize = (*type->getBufferSizeProc)(self, size);
     else self->bufferSize = type->bufferSize;
+    self->decimalDigits = 0;
     self->type = type;
     self->lengthOrIndicator = NULL;
     self->data = NULL;
@@ -137,6 +139,7 @@ static int Variable_Check(
     PyObject *object)                   // Python object to check
 {
     return (object->ob_type == &g_BigIntegerVarType ||
+            object->ob_type == &g_BinaryVarType ||
             object->ob_type == &g_BitVarType ||
             object->ob_type == &g_DoubleVarType ||
             object->ob_type == &g_IntegerVarType ||
@@ -160,6 +163,8 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_Varchar;
     if (PyString_Check(value))
         return &vt_Varchar;
+    if (PyBuffer_Check(value))
+        return &vt_Binary;
     if (PyBool_Check(value))
         return &vt_Bit;
     if (PyInt_Check(value))
@@ -192,6 +197,14 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Varchar;
     if (type == (PyObject*) &PyString_Type)
         return &vt_Varchar;
+    if (type == (PyObject*) g_StringApiType)
+        return &vt_Varchar;
+    if (type == (PyObject*) &g_BinaryVarType)
+        return &vt_Binary;
+    if (type == (PyObject*) &PyBuffer_Type)
+        return &vt_Binary;
+    if (type == (PyObject*) g_BinaryApiType)
+        return &vt_Binary;
     if (type == (PyObject*) &g_BitVarType)
         return &vt_Bit;
     if (type == (PyObject*) &PyBool_Type)
@@ -210,9 +223,13 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Double;
     if (type == (PyObject*) &g_TimestampVarType)
         return &vt_Double;
+    if (type == (PyObject*) g_NumberApiType)
+        return &vt_Double;
     if (type == (PyObject*) PyDateTimeAPI->DateType)
         return &vt_Timestamp;
     if (type == (PyObject*) PyDateTimeAPI->DateTimeType)
+        return &vt_Timestamp;
+    if (type == (PyObject*) g_DateTimeApiType)
         return &vt_Timestamp;
 
     PyErr_SetString(g_NotSupportedErrorException,
@@ -249,6 +266,9 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
             return &vt_Varchar;
+        case SQL_BINARY:
+        case SQL_VARBINARY:
+            return &vt_Binary;
     }
 
     sprintf(buffer, "Variable_TypeBySqlDataType: unhandled data type %d",
@@ -378,8 +398,9 @@ static int Variable_BindParameter(
 
     self->position = position;
     rc = SQLBindParameter(cursor->handle, position, SQL_PARAM_INPUT,
-            self->type->cDataType, self->type->sqlDataType, self->bufferSize,
-            0, self->data, self->bufferSize, self->lengthOrIndicator);
+            self->type->cDataType, self->type->sqlDataType, self->size,
+            self->decimalDigits, self->data, self->bufferSize,
+            self->lengthOrIndicator);
     if (CheckForError(cursor, rc, "Variable_BindParameter()") < 0)
         return -1;
 

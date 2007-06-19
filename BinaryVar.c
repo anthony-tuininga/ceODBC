@@ -1,32 +1,33 @@
 //-----------------------------------------------------------------------------
-// TimestampVar.c
-//   Defines the routines for handling timestamps.
+// BinaryVar.c
+//   Defines the routines specific to all binary types.
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-// Declaration of variable structure.
+// Declaration of variable type structures
 //-----------------------------------------------------------------------------
 typedef struct {
     Variable_HEAD
-    TIMESTAMP_STRUCT *data;
-} udt_TimestampVar;
+    SQLCHAR *data;
+} udt_BinaryVar;
 
 
 //-----------------------------------------------------------------------------
-// Declaration of variable functions.
+// Declaration of variable functions
 //-----------------------------------------------------------------------------
-static PyObject *TimestampVar_GetValue(udt_TimestampVar*, unsigned);
-static int TimestampVar_SetValue(udt_TimestampVar*, unsigned, PyObject*);
+static int BinaryVar_SetValue(udt_BinaryVar*, unsigned, PyObject*);
+static PyObject *BinaryVar_GetValue(udt_BinaryVar*, unsigned);
+static SQLUINTEGER BinaryVar_GetBufferSize(udt_BinaryVar*, SQLUINTEGER);
 
 
 //-----------------------------------------------------------------------------
-// Python type declaration
+// Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_TimestampVarType = {
+static PyTypeObject g_BinaryVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.TimestampVar",              // tp_name
-    sizeof(udt_TimestampVar),           // tp_basicsize
+    "ceODBC.BinaryVar",                 // tp_name
+    sizeof(udt_BinaryVar),              // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -49,69 +50,72 @@ static PyTypeObject g_TimestampVarType = {
 
 
 //-----------------------------------------------------------------------------
-// variable type declarations
+// Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Timestamp = {
-    (SetValueProc) TimestampVar_SetValue,
-    (GetValueProc) TimestampVar_GetValue,
-    (GetBufferSizeProc) NULL,
-    &g_TimestampVarType,                // Python type
-    SQL_TYPE_TIMESTAMP,                 // SQL type
-    SQL_C_TYPE_TIMESTAMP,               // C data type
-    sizeof(TIMESTAMP_STRUCT)            // buffer size
+static udt_VariableType vt_Binary = {
+    (SetValueProc) BinaryVar_SetValue,
+    (GetValueProc) BinaryVar_GetValue,
+    (GetBufferSizeProc) BinaryVar_GetBufferSize,
+    &g_BinaryVarType,                   // Python type
+    SQL_VARBINARY,                      // SQL type
+    SQL_C_BINARY                        // C data type
 };
 
 
 //-----------------------------------------------------------------------------
-// TimestampVar_SetValue()
+// BinaryVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int TimestampVar_SetValue(
-    udt_TimestampVar *var,              // variable to set value for
+static int BinaryVar_SetValue(
+    udt_BinaryVar *var,                 // variable to set value for
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    TIMESTAMP_STRUCT *sqlValue;
+    const void *buffer;
+    Py_ssize_t size;
 
-    sqlValue = &var->data[pos];
-    if (PyDateTime_Check(value)) {
-        sqlValue->year = PyDateTime_GET_YEAR(value);
-        sqlValue->month = PyDateTime_GET_MONTH(value);
-        sqlValue->day = PyDateTime_GET_DAY(value);
-        sqlValue->hour = PyDateTime_DATE_GET_HOUR(value);
-        sqlValue->minute = PyDateTime_DATE_GET_MINUTE(value);
-        sqlValue->second = PyDateTime_DATE_GET_SECOND(value);
-        sqlValue->fraction = PyDateTime_DATE_GET_MICROSECOND(value) * 1000;
-    } else if (PyDate_Check(value)) {
-        sqlValue->year = PyDateTime_GET_YEAR(value);
-        sqlValue->month = PyDateTime_GET_MONTH(value);
-        sqlValue->day = PyDateTime_GET_DAY(value);
-        sqlValue->hour = 0;
-        sqlValue->minute = 0;
-        sqlValue->second = 0;
-        sqlValue->fraction = 0;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expecting date or datetime data");
+    if (PyObject_AsReadBuffer(value, &buffer, &size) < 0)
         return -1;
+    if (size > var->size) {
+        if (Variable_Resize( (udt_Variable*) var, size) < 0)
+            return -1;
     }
+    var->lengthOrIndicator[pos] = (SQLINTEGER) size;
+    if (size)
+        memcpy(var->data + var->bufferSize * pos, buffer, size);
 
     return 0;
 }
 
 
 //-----------------------------------------------------------------------------
-// TimestampVar_GetValue()
+// BinaryVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *TimestampVar_GetValue(
-    udt_TimestampVar *var,              // variable to determine value for
+static PyObject *BinaryVar_GetValue(
+    udt_BinaryVar *var,                 // variable to determine value for
     unsigned pos)                       // array position
 {
-    TIMESTAMP_STRUCT *sqlValue;
+    PyObject *str, *buffer;
 
-    sqlValue = &var->data[pos];
-    return PyDateTime_FromDateAndTime(sqlValue->year, sqlValue->month,
-            sqlValue->day, sqlValue->hour, sqlValue->minute, sqlValue->second,
-            sqlValue->fraction / 1000);
+    str = PyString_FromStringAndSize(var->data + pos * var->bufferSize,
+            var->lengthOrIndicator[pos]);
+    if (!str)
+        return NULL;
+    buffer = PyBuffer_FromObject(str, 0, Py_END_OF_BUFFER);
+    Py_DECREF(str);
+    return buffer;
+}
+
+
+//-----------------------------------------------------------------------------
+// BinaryVar_GetBufferSize()
+//   Returns the size to use for binary buffers.
+//-----------------------------------------------------------------------------
+static SQLUINTEGER BinaryVar_GetBufferSize(
+    udt_BinaryVar *var,                 // variable to determine value for
+    SQLUINTEGER size)                   // size to allocate
+{
+    return size;
 }
 

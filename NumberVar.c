@@ -41,7 +41,7 @@ static int IntegerVar_SetValue(udt_IntegerVar*, unsigned, PyObject*);
 static PyTypeObject g_BigIntegerVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.BIGINT",                    // tp_name
+    "ceODBC.BigIntegerVar",             // tp_name
     sizeof(udt_BigIntegerVar),          // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
@@ -67,7 +67,7 @@ static PyTypeObject g_BigIntegerVarType = {
 static PyTypeObject g_DoubleVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.DOUBLE",                    // tp_name
+    "ceODBC.DoubleVar",                 // tp_name
     sizeof(udt_DoubleVar),              // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
@@ -93,7 +93,7 @@ static PyTypeObject g_DoubleVarType = {
 static PyTypeObject g_IntegerVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.INTEGER",                   // tp_name
+    "ceODBC.IntegerVar",                // tp_name
     sizeof(udt_IntegerVar),             // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
