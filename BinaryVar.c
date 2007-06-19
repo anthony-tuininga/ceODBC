@@ -49,6 +49,32 @@ static PyTypeObject g_BinaryVarType = {
 };
 
 
+static PyTypeObject g_LongBinaryVarType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                                  // ob_size
+    "ceODBC.LongBinaryVar",             // tp_name
+    sizeof(udt_BinaryVar),              // tp_basicsize
+    0,                                  // tp_itemsize
+    (destructor) Variable_Free,         // tp_dealloc
+    0,                                  // tp_print
+    0,                                  // tp_getattr
+    0,                                  // tp_setattr
+    0,                                  // tp_compare
+    (reprfunc) Variable_Repr,           // tp_repr
+    0,                                  // tp_as_number
+    0,                                  // tp_as_sequence
+    0,                                  // tp_as_mapping
+    0,                                  // tp_hash
+    0,                                  // tp_call
+    0,                                  // tp_str
+    0,                                  // tp_getattro
+    0,                                  // tp_setattro
+    0,                                  // tp_as_buffer
+    Py_TPFLAGS_DEFAULT,                 // tp_flags
+    0                                   // tp_doc
+};
+
+
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
@@ -58,6 +84,16 @@ static udt_VariableType vt_Binary = {
     (GetBufferSizeProc) BinaryVar_GetBufferSize,
     &g_BinaryVarType,                   // Python type
     SQL_VARBINARY,                      // SQL type
+    SQL_C_BINARY                        // C data type
+};
+
+
+static udt_VariableType vt_LongBinary = {
+    (SetValueProc) BinaryVar_SetValue,
+    (GetValueProc) BinaryVar_GetValue,
+    (GetBufferSizeProc) BinaryVar_GetBufferSize,
+    &g_LongBinaryVarType,               // Python type
+    SQL_LONGVARBINARY,                  // SQL type
     SQL_C_BINARY                        // C data type
 };
 
