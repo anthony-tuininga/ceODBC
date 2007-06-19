@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 typedef struct {
     Variable_HEAD
-    char *data;
+    SQLCHAR *data;
 } udt_VarcharVar;
 
 
@@ -26,7 +26,7 @@ static SQLUINTEGER VarcharVar_GetBufferSize(udt_VarcharVar*, SQLUINTEGER);
 static PyTypeObject g_VarcharVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.VARCHAR",                   // tp_name
+    "ceODBC.VarcharVar",                // tp_name
     sizeof(udt_VarcharVar),             // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
