@@ -185,6 +185,8 @@ void initceODBC(void)
         return;
     if (PyType_Ready(&g_BitVarType) < 0)
         return;
+    if (PyType_Ready(&g_DateVarType) < 0)
+        return;
     if (PyType_Ready(&g_DoubleVarType) < 0)
         return;
     if (PyType_Ready(&g_IntegerVarType) < 0)
@@ -253,6 +255,7 @@ void initceODBC(void)
     // add the variable types
     ADD_TYPE_OBJECT("BigIntegerVar", &g_BigIntegerVarType)
     ADD_TYPE_OBJECT("BitVar", &g_BitVarType)
+    ADD_TYPE_OBJECT("DateVar", &g_DateVarType)
     ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
     ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
     ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
@@ -271,6 +274,7 @@ void initceODBC(void)
     REGISTER_TYPE(g_BinaryApiType, &g_BinaryVarType)
     REGISTER_TYPE(g_BinaryApiType, &g_LongBinaryVarType)
     REGISTER_TYPE(g_DateTimeApiType, &g_TimestampVarType)
+    REGISTER_TYPE(g_DateTimeApiType, &g_DateVarType)
     REGISTER_TYPE(g_NumberApiType, &g_BigIntegerVarType)
     REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
     REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)

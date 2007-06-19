@@ -56,7 +56,7 @@ static int Variable_Resize(udt_Variable*, SQLUINTEGER);
 #include "BitVar.c"
 #include "NumberVar.c"
 #include "StringVar.c"
-#include "TimestampVar.c"
+#include "DateTimeVar.c"
 
 
 //-----------------------------------------------------------------------------
@@ -141,6 +141,7 @@ static int Variable_Check(
     return (object->ob_type == &g_BigIntegerVarType ||
             object->ob_type == &g_BinaryVarType ||
             object->ob_type == &g_BitVarType ||
+            object->ob_type == &g_DateVarType ||
             object->ob_type == &g_DoubleVarType ||
             object->ob_type == &g_IntegerVarType ||
             object->ob_type == &g_LongBinaryVarType ||
@@ -158,9 +159,6 @@ static int Variable_Check(
 static udt_VariableType *Variable_TypeByValue(
     PyObject* value)                    // Python type
 {
-    char buffer[200];
-
-    // handle scalars
     if (value == Py_None)
         return &vt_Varchar;
     if (PyString_Check(value))
@@ -180,9 +178,9 @@ static udt_VariableType *Variable_TypeByValue(
     if (PyDate_Check(value))
         return &vt_Timestamp;
 
-    sprintf(buffer, "Variable_TypeByValue(): unhandled data type %.*s", 150,
+    PyErr_Format(g_NotSupportedErrorException,
+            "Variable_TypeByValue(): unhandled data type %s",
             value->ob_type->tp_name);
-    PyErr_SetString(g_NotSupportedErrorException, buffer);
     return NULL;
 }
 
@@ -227,11 +225,13 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Double;
     if (type == (PyObject*) &PyFloat_Type)
         return &vt_Double;
-    if (type == (PyObject*) &g_TimestampVarType)
-        return &vt_Double;
     if (type == (PyObject*) g_NumberApiType)
         return &vt_Double;
+    if (type == (PyObject*) &g_DateVarType)
+        return &vt_Date;
     if (type == (PyObject*) PyDateTimeAPI->DateType)
+        return &vt_Date;
+    if (type == (PyObject*) &g_TimestampVarType)
         return &vt_Timestamp;
     if (type == (PyObject*) PyDateTimeAPI->DateTimeType)
         return &vt_Timestamp;
@@ -267,6 +267,8 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_FLOAT:
         case SQL_DOUBLE:
             return &vt_Double;
+        case SQL_TYPE_DATE:
+            return &vt_Date;
         case SQL_TYPE_TIMESTAMP:
             return &vt_Timestamp;
         case SQL_CHAR:
