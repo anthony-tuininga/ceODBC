@@ -92,7 +92,9 @@ static udt_VariableType vt_Date = {
     &g_DateVarType,                     // Python type
     SQL_TYPE_DATE,                      // SQL type
     SQL_C_TYPE_DATE,                    // C data type
-    sizeof(DATE_STRUCT)                 // buffer size
+    sizeof(DATE_STRUCT),                // buffer size
+    23,                                 // default size
+    3                                   // default scale
 };
 
 
@@ -103,7 +105,9 @@ static udt_VariableType vt_Timestamp = {
     &g_TimestampVarType,                // Python type
     SQL_TYPE_TIMESTAMP,                 // SQL type
     SQL_C_TYPE_TIMESTAMP,               // C data type
-    sizeof(TIMESTAMP_STRUCT)            // buffer size
+    sizeof(TIMESTAMP_STRUCT),           // buffer size
+    23,                                 // default size
+    3                                   // default scale
 };
 
 
@@ -158,8 +162,6 @@ static int TimestampVar_SetValue(
 {
     TIMESTAMP_STRUCT *sqlValue;
 
-    var->size = 23;
-    var->decimalDigits = 3;
     sqlValue = &var->data[pos];
     sqlValue->fraction = 0;
     if (PyDateTime_Check(value)) {

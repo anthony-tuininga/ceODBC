@@ -58,7 +58,9 @@ static udt_VariableType vt_Bit = {
     &g_BitVarType,                      // Python type
     SQL_BIT,                            // SQL type
     SQL_C_BIT,                          // C data type
-    sizeof(unsigned char)               // buffer size
+    sizeof(unsigned char),              // buffer size
+    1,                                  // default size
+    0                                   // default scale
 };
 
 

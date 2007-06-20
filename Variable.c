@@ -15,7 +15,7 @@ struct _udt_VariableType;
     struct _udt_VariableType *type; \
     SQLUINTEGER size; \
     SQLUINTEGER bufferSize; \
-    SQLSMALLINT decimalDigits;
+    SQLSMALLINT scale;
 typedef struct {
     Variable_HEAD
     void *data;
@@ -41,6 +41,8 @@ typedef struct _udt_VariableType {
     SQLSMALLINT sqlDataType;
     SQLSMALLINT cDataType;
     SQLUINTEGER bufferSize;
+    SQLUINTEGER defaultSize;
+    SQLSMALLINT defaultScale;
 } udt_VariableType;
 
 
@@ -67,7 +69,8 @@ static udt_Variable *Variable_New(
     udt_Cursor *cursor,                 // cursor to associate variable with
     unsigned numElements,               // number of elements to allocate
     udt_VariableType *type,             // variable type
-    SQLUINTEGER size)                   // used only for variable length types
+    SQLUINTEGER size,                   // size of variable
+    SQLSMALLINT scale)                  // scale of variable
 {
     unsigned PY_LONG_LONG dataLength;
     udt_Variable *self;
@@ -87,7 +90,7 @@ static udt_Variable *Variable_New(
     if (type->getBufferSizeProc)
         self->bufferSize = (*type->getBufferSizeProc)(self, size);
     else self->bufferSize = type->bufferSize;
-    self->decimalDigits = 0;
+    self->scale = scale;
     self->type = type;
     self->lengthOrIndicator = NULL;
     self->data = NULL;
@@ -142,6 +145,7 @@ static int Variable_Check(
             object->ob_type == &g_BinaryVarType ||
             object->ob_type == &g_BitVarType ||
             object->ob_type == &g_DateVarType ||
+            object->ob_type == &g_DecimalVarType ||
             object->ob_type == &g_DoubleVarType ||
             object->ob_type == &g_IntegerVarType ||
             object->ob_type == &g_LongBinaryVarType ||
@@ -173,6 +177,8 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_BigInteger;
     if (PyFloat_Check(value))
         return &vt_Double;
+    if (value->ob_type == (PyTypeObject*) g_DecimalType)
+        return &vt_Decimal;
     if (PyDateTime_Check(value))
         return &vt_Timestamp;
     if (PyDate_Check(value))
@@ -227,6 +233,10 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Double;
     if (type == (PyObject*) g_NumberApiType)
         return &vt_Double;
+    if (type == (PyObject*) &g_DecimalVarType)
+        return &vt_Decimal;
+    if (type == g_DecimalType)
+        return &vt_Decimal;
     if (type == (PyObject*) &g_DateVarType)
         return &vt_Date;
     if (type == (PyObject*) PyDateTimeAPI->DateType)
@@ -267,6 +277,9 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_FLOAT:
         case SQL_DOUBLE:
             return &vt_Double;
+        case SQL_DECIMAL:
+        case SQL_NUMERIC:
+            return &vt_Decimal;
         case SQL_TYPE_DATE:
             return &vt_Date;
         case SQL_TYPE_TIMESTAMP:
@@ -304,8 +317,8 @@ static udt_Variable *Variable_NewByValue(
     unsigned numElements)               // number of elements to allocate
 {
     udt_VariableType *varType;
-    SQLUINTEGER size = 0;
     udt_Variable *var;
+    SQLUINTEGER size;
 
     varType = Variable_TypeByValue(value);
     if (!varType)
@@ -314,7 +327,9 @@ static udt_Variable *Variable_NewByValue(
         size = 1;
     else if (PyString_Check(value))
         size = PyString_GET_SIZE(value);
-    var = Variable_New(cursor, numElements, varType, size);
+    else size = varType->defaultSize;
+    var = Variable_New(cursor, numElements, varType, size,
+            varType->defaultScale);
     if (!var)
         return NULL;
 
@@ -337,7 +352,7 @@ static udt_Variable *Variable_NewByType(
     // passing an integer is assumed to be a string
     if (PyInt_Check(value)) {
         size = PyInt_AS_LONG(value);
-        return Variable_New(cursor, numElements, &vt_Varchar, size);
+        return Variable_New(cursor, numElements, &vt_Varchar, size, 0);
     }
 
     // handle directly bound variables
@@ -350,7 +365,8 @@ static udt_Variable *Variable_NewByType(
     varType = Variable_TypeByPythonType(value);
     if (!varType)
         return NULL;
-    return Variable_New(cursor, numElements, varType, 1);
+    return Variable_New(cursor, numElements, varType, varType->defaultSize,
+            varType->defaultScale);
 }
 
 
@@ -363,7 +379,7 @@ static udt_Variable *Variable_NewForResultSet(
     udt_Cursor *cursor,                 // cursor in use
     SQLUSMALLINT position)              // position in define list
 {
-    SQLSMALLINT dataType, length, decimalDigits, nullable;
+    SQLSMALLINT dataType, length, scale, nullable;
     udt_VariableType *varType;
     udt_Variable *var;
     SQLUINTEGER size;
@@ -372,7 +388,7 @@ static udt_Variable *Variable_NewForResultSet(
 
     // retrieve information about the column
     rc = SQLDescribeCol(cursor->handle, position, (SQLCHAR*) name,
-            sizeof(name), &length, &dataType, &size, &decimalDigits,
+            sizeof(name), &length, &dataType, &size, &scale,
             &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
@@ -385,13 +401,14 @@ static udt_Variable *Variable_NewForResultSet(
 
     // for long columns, set the size appropriately
     if (varType == &vt_LongVarchar || varType == &vt_LongBinary) {
-        if (cursor->setOutputSizeColumn == 0 ||
-                cursor->setOutputSizeColumn == position)
-            size = cursor->setOutputSize;
+        if (cursor->setOutputSize == 0 ||
+                cursor->setOutputSizeColumn != position)
+            size = varType->defaultSize;
+        else size = cursor->setOutputSize;
     }
 
     // create a variable of the correct type
-    var = Variable_New(cursor, cursor->fetchArraySize, varType, size);
+    var = Variable_New(cursor, cursor->fetchArraySize, varType, size, scale);
     if (!var)
         return NULL;
 
@@ -422,7 +439,7 @@ static int Variable_BindParameter(
     self->position = position;
     rc = SQLBindParameter(cursor->handle, position, SQL_PARAM_INPUT,
             self->type->cDataType, self->type->sqlDataType, self->size,
-            self->decimalDigits, self->data, self->bufferSize,
+            self->scale, self->data, self->bufferSize,
             self->lengthOrIndicator);
     if (CheckForError(cursor, rc, "Variable_BindParameter()") < 0)
         return -1;

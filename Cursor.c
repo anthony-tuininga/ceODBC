@@ -3,8 +3,6 @@
 //   Definition of the Python type for cursors.
 //-----------------------------------------------------------------------------
 
-#define DEFAULT_LONG_SIZE               (128 * 1024)
-
 //-----------------------------------------------------------------------------
 // structure for the Python type "Cursor"
 //-----------------------------------------------------------------------------
@@ -200,7 +198,7 @@ static int Cursor_Init(
     self->arraySize = 1;
     self->bindArraySize = 1;
     self->setInputSizes = 0;
-    self->setOutputSize = DEFAULT_LONG_SIZE;
+    self->setOutputSize = 0;
     self->setOutputSizeColumn = 0;
 
     // allocate handle
@@ -345,7 +343,7 @@ static int Cursor_BindParameterHelper(
         // passes a value of 1 for the number of elements
         } else if (numElements > origVar->numElements) {
             *newVar = Variable_New(self, numElements, origVar->type,
-                    origVar->size);
+                    origVar->size, origVar->scale);
             if (!*newVar)
                 return -1;
             if (Variable_SetValue(*newVar, arrayPos, value) < 0)
@@ -505,7 +503,7 @@ static int Cursor_InternalExecute(
 
     // reset input and output sizes
     self->setInputSizes = 0;
-    self->setOutputSize = DEFAULT_LONG_SIZE;
+    self->setOutputSize = 0;
     self->setOutputSizeColumn = 0;
 
     return 0;

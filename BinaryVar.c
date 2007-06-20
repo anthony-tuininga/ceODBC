@@ -84,7 +84,10 @@ static udt_VariableType vt_Binary = {
     (GetBufferSizeProc) BinaryVar_GetBufferSize,
     &g_BinaryVarType,                   // Python type
     SQL_VARBINARY,                      // SQL type
-    SQL_C_BINARY                        // C data type
+    SQL_C_BINARY,                       // C data type
+    0,                                  // buffer size
+    255,                                // default size
+    0                                   // default scale
 };
 
 
@@ -94,7 +97,10 @@ static udt_VariableType vt_LongBinary = {
     (GetBufferSizeProc) BinaryVar_GetBufferSize,
     &g_LongBinaryVarType,               // Python type
     SQL_LONGVARBINARY,                  // SQL type
-    SQL_C_BINARY                        // C data type
+    SQL_C_BINARY,                       // C data type
+    0,                                  // buffer size
+    128 * 1024,                         // default size
+    0                                   // default scale
 };
 
 
