@@ -245,7 +245,7 @@ static PyObject *Cursor_Repr(
 static void Cursor_Free(
     udt_Cursor *self)                   // cursor object
 {
-    if (self->handle)
+    if (self->handle && self->connection->isConnected)
         SQLFreeHandle(self->handleType, self->handle);
     Py_XDECREF(self->connection);
     Py_XDECREF(self->resultSetVars);
