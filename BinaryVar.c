@@ -134,7 +134,7 @@ static PyObject *BinaryVar_GetValue(
 {
     PyObject *str, *buffer;
 
-    str = PyString_FromStringAndSize(var->data + pos * var->bufferSize,
+    str = PyString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
             var->lengthOrIndicator[pos]);
     if (!str)
         return NULL;
