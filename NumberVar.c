@@ -14,6 +14,12 @@ typedef struct {
 
 typedef struct {
     Variable_HEAD
+    SQLCHAR *data;
+} udt_DecimalVar;
+
+
+typedef struct {
+    Variable_HEAD
     double *data;
 } udt_DoubleVar;
 
@@ -29,6 +35,9 @@ typedef struct {
 //-----------------------------------------------------------------------------
 static PyObject *BigIntegerVar_GetValue(udt_BigIntegerVar*, unsigned);
 static int BigIntegerVar_SetValue(udt_BigIntegerVar*, unsigned, PyObject*);
+static PyObject *DecimalVar_GetValue(udt_DecimalVar*, unsigned);
+static int DecimalVar_SetValue(udt_DecimalVar*, unsigned, PyObject*);
+static SQLUINTEGER DecimalVar_GetBufferSize(udt_DecimalVar*, SQLUINTEGER);
 static PyObject *DoubleVar_GetValue(udt_DoubleVar*, unsigned);
 static int DoubleVar_SetValue(udt_DoubleVar*, unsigned, PyObject*);
 static PyObject *IntegerVar_GetValue(udt_IntegerVar*, unsigned);
@@ -43,6 +52,32 @@ static PyTypeObject g_BigIntegerVarType = {
     0,                                  // ob_size
     "ceODBC.BigIntegerVar",             // tp_name
     sizeof(udt_BigIntegerVar),          // tp_basicsize
+    0,                                  // tp_itemsize
+    (destructor) Variable_Free,         // tp_dealloc
+    0,                                  // tp_print
+    0,                                  // tp_getattr
+    0,                                  // tp_setattr
+    0,                                  // tp_compare
+    (reprfunc) Variable_Repr,           // tp_repr
+    0,                                  // tp_as_number
+    0,                                  // tp_as_sequence
+    0,                                  // tp_as_mapping
+    0,                                  // tp_hash
+    0,                                  // tp_call
+    0,                                  // tp_str
+    0,                                  // tp_getattro
+    0,                                  // tp_setattro
+    0,                                  // tp_as_buffer
+    Py_TPFLAGS_DEFAULT,                 // tp_flags
+    0                                   // tp_doc
+};
+
+
+static PyTypeObject g_DecimalVarType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                                  // ob_size
+    "ceODBC.DecimalVar",                // tp_name
+    sizeof(udt_DecimalVar),             // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -126,7 +161,22 @@ static udt_VariableType vt_BigInteger = {
     &g_BigIntegerVarType,               // Python type
     SQL_BIGINT,                         // SQL type
     SQL_C_SBIGINT,                      // C data type
-    sizeof(SQLBIGINT)                   // buffer size
+    sizeof(SQLBIGINT),                  // buffer size
+    19,                                 // default size
+    0                                   // default scale
+};
+
+
+static udt_VariableType vt_Decimal = {
+    (SetValueProc) DecimalVar_SetValue,
+    (GetValueProc) DecimalVar_GetValue,
+    (GetBufferSizeProc) DecimalVar_GetBufferSize,
+    &g_DecimalVarType,                  // Python type
+    SQL_CHAR,                           // SQL type
+    SQL_C_CHAR,                         // C data type
+    0,                                  // buffer size
+    18,                                 // default size
+    0                                   // default scale
 };
 
 
@@ -137,7 +187,9 @@ static udt_VariableType vt_Double = {
     &g_DoubleVarType,                   // Python type
     SQL_DOUBLE,                         // SQL type
     SQL_C_DOUBLE,                       // C data type
-    sizeof(SQLDOUBLE)                   // buffer size
+    sizeof(SQLDOUBLE),                  // buffer size
+    53,                                 // default size
+    0                                   // default scale
 };
 
 
@@ -148,7 +200,9 @@ static udt_VariableType vt_Integer = {
     &g_IntegerVarType,                  // Python type
     SQL_INTEGER,                        // SQL type
     SQL_C_LONG,                         // C data type
-    sizeof(SQLINTEGER)                  // buffer size
+    sizeof(SQLINTEGER),                 // buffer size
+    10,                                 // default size
+    0                                   // default scale
 };
 
 
@@ -219,10 +273,124 @@ static int DoubleVar_SetValue(
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
 static PyObject *DoubleVar_GetValue(
-    udt_DoubleVar *var,                // variable to determine value for
+    udt_DoubleVar *var,                 // variable to determine value for
     unsigned pos)                       // array position
 {
     return PyFloat_FromDouble(var->data[pos]);
+}
+
+
+//-----------------------------------------------------------------------------
+// DecimalVar_GetStringRepOfDecimal()
+//   Return the string representation of a decimal value given the tuple value.
+//-----------------------------------------------------------------------------
+static int DecimalVar_GetStringRepOfDecimal(
+    udt_DecimalVar *var,                // variable to set value for
+    unsigned pos,                       // array position to set
+    PyObject *tupleValue)               // tuple value to parse
+{
+    long numDigits, scale, i, sign, size, digit;
+    char *valuePtr, *value;
+    PyObject *digits;
+
+    // acquire basic information from the value tuple
+    sign = PyInt_AS_LONG(PyTuple_GET_ITEM(tupleValue, 0));
+    digits = PyTuple_GET_ITEM(tupleValue, 1);
+    scale = PyInt_AS_LONG(PyTuple_GET_ITEM(tupleValue, 2));
+    numDigits = PyTuple_GET_SIZE(digits);
+
+    // resize the variable if needed
+    size = numDigits + abs(scale);
+    if (size > var->size) {
+        if (Variable_Resize((udt_Variable*) var, size) < 0)
+            return -1;
+    }
+
+    // populate the string and format
+    value = valuePtr = var->data + pos * var->bufferSize;
+    if (sign)
+        *valuePtr++ = '-';
+    for (i = 0; i < numDigits + scale; i++) {
+        if (i < numDigits)
+            digit = PyInt_AS_LONG(PyTuple_GetItem(digits, i));
+        else digit = 0;
+        *valuePtr++ = '0' + (char) digit;
+    }
+    if (scale < 0) {
+        *valuePtr++ = '.';
+        for (i = scale; i < 0; i++) {
+            if (numDigits + i < 0)
+                digit = 0;
+            else digit = PyInt_AS_LONG(PyTuple_GetItem(digits, numDigits + i));
+            *valuePtr++ = '0' + (char) digit;
+        }
+    }
+    *valuePtr = '\0';
+    var->lengthOrIndicator[pos] = strlen(value);
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// DecimalVar_SetValue()
+//   Set the value of the variable.
+//-----------------------------------------------------------------------------
+static int DecimalVar_SetValue(
+    udt_DecimalVar *var,                // variable to set value for
+    unsigned pos,                       // array position to set
+    PyObject *value)                    // value to set
+{
+    PyObject *tupleValue;
+
+    if (value->ob_type != (PyTypeObject*) g_DecimalType) {
+        PyErr_SetString(PyExc_TypeError, "expecting decimal object");
+        return -1;
+    }
+
+    tupleValue = PyObject_CallMethod(value, "as_tuple", NULL);
+    if (!tupleValue)
+        return -1;
+    if (DecimalVar_GetStringRepOfDecimal(var, pos, tupleValue) < 0) {
+        Py_DECREF(tupleValue);
+        return -1;
+    }
+    Py_DECREF(tupleValue);
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// DecimalVar_GetValue()
+//   Returns the value stored at the given array position.
+//-----------------------------------------------------------------------------
+static PyObject *DecimalVar_GetValue(
+    udt_DecimalVar *var,                // variable to determine value for
+    unsigned pos)                       // array position
+{
+    PyObject *str, *result;
+
+    str = PyString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
+            var->lengthOrIndicator[pos]);
+    if (!str)
+        return NULL;
+    result = PyObject_CallFunctionObjArgs(g_DecimalType, str, NULL);
+    Py_DECREF(str);
+    return result;
+}
+
+
+//-----------------------------------------------------------------------------
+// DecimalVar_GetBufferSize()
+//   Returns the size to use for buffers. Since we are using strings to go back
+// and forth between the database and Python we need to include room for the
+// NULL terminator, the + or - sign and the decimal point.
+//-----------------------------------------------------------------------------
+static SQLUINTEGER DecimalVar_GetBufferSize(
+    udt_DecimalVar *var,                // variable to determine value for
+    SQLUINTEGER size)                   // size to allocate
+{
+    return size + 3;
 }
 
 

@@ -51,6 +51,11 @@ static PyObject *g_NotSupportedErrorException = NULL;
 
 
 //-----------------------------------------------------------------------------
+// globally referenced classes
+//-----------------------------------------------------------------------------
+static PyObject *g_DecimalType = NULL;
+
+//-----------------------------------------------------------------------------
 // GetModuleAndName()
 //   Return the module and name for the type.
 //-----------------------------------------------------------------------------
@@ -164,8 +169,18 @@ void initceODBC(void)
 {
     PyObject *module;
 
+    // import the datetime module
     PyDateTime_IMPORT;
     if (PyErr_Occurred())
+        return;
+
+    // import the decimal module
+    module = PyImport_ImportModule("decimal");
+    if (!module)
+        return;
+    g_DecimalType = PyObject_GetAttrString(module, "Decimal");
+    Py_DECREF(module);
+    if (!g_DecimalType)
         return;
 
     // prepare the types for use by the module
@@ -186,6 +201,8 @@ void initceODBC(void)
     if (PyType_Ready(&g_BitVarType) < 0)
         return;
     if (PyType_Ready(&g_DateVarType) < 0)
+        return;
+    if (PyType_Ready(&g_DecimalVarType) < 0)
         return;
     if (PyType_Ready(&g_DoubleVarType) < 0)
         return;
@@ -276,6 +293,7 @@ void initceODBC(void)
     REGISTER_TYPE(g_DateTimeApiType, &g_TimestampVarType)
     REGISTER_TYPE(g_DateTimeApiType, &g_DateVarType)
     REGISTER_TYPE(g_NumberApiType, &g_BigIntegerVarType)
+    REGISTER_TYPE(g_NumberApiType, &g_DecimalVarType)
     REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
     REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)
     REGISTER_TYPE(g_StringApiType, &g_VarcharVarType)

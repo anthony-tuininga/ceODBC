@@ -84,7 +84,10 @@ static udt_VariableType vt_Varchar = {
     (GetBufferSizeProc) VarcharVar_GetBufferSize,
     &g_VarcharVarType,                  // Python type
     SQL_VARCHAR,                        // SQL type
-    SQL_C_CHAR                          // C data type
+    SQL_C_CHAR,                         // C data type
+    0,                                  // buffer size
+    255,                                // default size
+    0                                   // default scale
 };
 
 
@@ -94,7 +97,10 @@ static udt_VariableType vt_LongVarchar = {
     (GetBufferSizeProc) VarcharVar_GetBufferSize,
     &g_LongVarcharVarType,              // Python type
     SQL_LONGVARCHAR,                    // SQL type
-    SQL_C_CHAR                          // C data type
+    SQL_C_CHAR,                         // C data type
+    0,                                  // buffer size
+    128 * 1024,                         // default size
+    0                                   // default scale
 };
 
 
