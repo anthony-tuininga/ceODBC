@@ -142,8 +142,8 @@ static PyObject *VarcharVar_GetValue(
     udt_VarcharVar *var,                // variable to determine value for
     unsigned pos)                       // array position
 {
-    return PyString_FromStringAndSize(var->data + pos * var->bufferSize,
-            var->lengthOrIndicator[pos]);
+    return PyString_FromStringAndSize((char*) var->data +
+            pos * var->bufferSize, var->lengthOrIndicator[pos]);
 }
 
 
