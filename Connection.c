@@ -25,6 +25,8 @@ static PyObject *Connection_Close(udt_Connection*, PyObject*);
 static PyObject *Connection_Commit(udt_Connection*, PyObject*);
 static PyObject *Connection_Rollback(udt_Connection*, PyObject*);
 static PyObject *Connection_NewCursor(udt_Connection*, PyObject*);
+static PyObject *Connection_ContextManagerEnter(udt_Connection*, PyObject*);
+static PyObject *Connection_ContextManagerExit(udt_Connection*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -35,6 +37,8 @@ static PyMethodDef g_ConnectionMethods[] = {
     { "commit", (PyCFunction) Connection_Commit, METH_NOARGS },
     { "rollback", (PyCFunction) Connection_Rollback, METH_NOARGS },
     { "close", (PyCFunction) Connection_Close, METH_NOARGS },
+    { "__enter__", (PyCFunction) Connection_ContextManagerEnter, METH_NOARGS },
+    { "__exit__", (PyCFunction) Connection_ContextManagerExit, METH_VARARGS },
     { NULL }
 };
 
@@ -355,5 +359,46 @@ static PyObject *Connection_NewCursor(
     result = PyObject_Call( (PyObject*) &g_CursorType, createArgs, NULL);
     Py_DECREF(createArgs);
     return result;
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_ContextManagerEnter()
+//   Called when the connection is used as a context manager and simply returns
+// itself as a convenience to the caller.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_ContextManagerEnter(
+    udt_Connection *self,               // connection
+    PyObject* args)                     // arguments
+{
+    Py_INCREF(self);
+    return (PyObject*) self;
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_ContextManagerExit()
+//   Called when the connection is used as a context manager and if any
+// exception a rollback takes place; otherwise, a commit takes place.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_ContextManagerExit(
+    udt_Connection *self,               // connection
+    PyObject* args)                     // arguments
+{
+    PyObject *excType, *excValue, *excTraceback, *result;
+    char *methodName;
+
+    if (!PyArg_ParseTuple(args, "OOO", &excType, &excValue, &excTraceback))
+        return NULL;
+    if (excType == Py_None && excValue == Py_None && excTraceback == Py_None)
+        methodName = "commit";
+    else methodName = "rollback";
+    result = PyObject_CallMethod((PyObject*) self, methodName, "");
+    if (!result)
+        return NULL;
+    Py_DECREF(result);
+
+    Py_INCREF(Py_False);
+    return Py_False;
 }
 
