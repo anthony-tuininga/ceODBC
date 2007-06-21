@@ -21,6 +21,7 @@ typedef struct {
     SQLINTEGER rowCount;
     int actualRows;
     int rowNum;
+    int logSql;
 } udt_Cursor;
 
 
@@ -74,6 +75,7 @@ static PyMethodDef g_CursorMethods[] = {
 static PyMemberDef g_CursorMembers[] = {
     { "arraysize", T_INT, offsetof(udt_Cursor, arraySize), 0 },
     { "bindarraysize", T_INT, offsetof(udt_Cursor, bindArraySize), 0 },
+    { "logsql", T_INT, offsetof(udt_Cursor, logSql), 0 },
     { "rowcount", T_INT, offsetof(udt_Cursor, rowCount), READONLY },
     { "statement", T_OBJECT, offsetof(udt_Cursor, statement), READONLY },
     { "connection", T_OBJECT_EX, offsetof(udt_Cursor, connection), READONLY },
@@ -200,6 +202,7 @@ static int Cursor_Init(
     self->setInputSizes = 0;
     self->setOutputSize = 0;
     self->setOutputSizeColumn = 0;
+    self->logSql = connection->logSql;
 
     // allocate handle
     rc = SQLAllocHandle(self->handleType, self->connection->handle,
@@ -393,6 +396,26 @@ static int Cursor_BindParameterHelper(
 
 
 //-----------------------------------------------------------------------------
+// Cursor_LogBindParameter()
+//   Log the bind parameter.
+//-----------------------------------------------------------------------------
+static void Cursor_LogBindParameter(
+    udt_Variable *var,                  // variable bound
+    PyObject *value)                    // value being bound
+{
+    PyObject *valueRepr;
+    char *valueReprStr;
+
+    valueRepr = PyObject_Repr(value);
+    if (!valueRepr)
+        valueReprStr = "unable to repr";
+    else valueReprStr = PyString_AS_STRING(valueRepr);
+    LogMessageV(LOG_LEVEL_DEBUG, "    %d => %s", var->position, valueReprStr);
+    Py_XDECREF(valueRepr);
+}
+
+
+//-----------------------------------------------------------------------------
 // Cursor_BindParameters()
 //   Bind all parameters, creating new ones as needed.
 //-----------------------------------------------------------------------------
@@ -420,6 +443,8 @@ static int Cursor_BindParameters(
     }
 
     // bind parameters
+    if (self->logSql)
+        LogMessageV(LOG_LEVEL_DEBUG, "BIND VARIABLES (%u)", arrayPos);
     for (i = 0; i < numParams; i++) {
         value = PySequence_GetItem(parameters, i);
         if (!value)
@@ -454,6 +479,11 @@ static int Cursor_BindParameters(
         if (!newVar && origVar->position < 0) {
             if (Variable_BindParameter(origVar, self, i + 1) < 0)
                 return -1;
+        }
+        if (self->logSql) {
+            if (!newVar)
+                newVar = origVar;
+            Cursor_LogBindParameter(newVar, value);
         }
     }
 
@@ -684,6 +714,13 @@ static int Cursor_InternalPrepare(
         PyErr_SetString(g_ProgrammingErrorException,
                 "no statement specified and no prior statement prepared");
         return -1;
+    }
+
+    // log the statement, if applicable
+    if (self->logSql) {
+        if (statement == Py_None)
+            statement = self->statement;
+        LogMessageV(LOG_LEVEL_DEBUG, "SQL\n%s", PyString_AS_STRING(statement));
     }
 
     // nothing to do if the statement is identical to the one already stored

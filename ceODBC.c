@@ -14,6 +14,14 @@
 #include <sqlucode.h>
 #include <time.h>
 
+// set up CX_LOGGING if applicable
+#ifdef WITH_CX_LOGGING
+#include <cx_Logging.h>
+#else
+#define LogMessage(...)
+#define LogMessageV(...)
+#endif
+
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
     apiTypeObject = ApiType_New(module, name); \
@@ -169,6 +177,8 @@ void initceODBC(void)
 {
     PyObject *module;
 
+    LogMessage(LOG_LEVEL_DEBUG, "ceODBC initializing");
+
     // import the datetime module
     PyDateTime_IMPORT;
     if (PyErr_Occurred())
@@ -314,5 +324,7 @@ void initceODBC(void)
     if (PyModule_AddStringConstant(module, "buildtime",
             __DATE__ " " __TIME__) < 0)
         return;
+
+    LogMessage(LOG_LEVEL_DEBUG, "ceODBC initialization complete");
 }
 

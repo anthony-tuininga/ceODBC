@@ -11,6 +11,7 @@ typedef struct {
     udt_Environment *environment;
     int isConnected;
     PyObject *dsn;
+    int logSql;
 } udt_Connection;
 
 
@@ -48,6 +49,7 @@ static PyMethodDef g_ConnectionMethods[] = {
 //-----------------------------------------------------------------------------
 static PyMemberDef g_ConnectionMembers[] = {
     { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
+    { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
     { NULL }
 };
 
@@ -141,6 +143,7 @@ static PyObject* Connection_New(
     self->environment = NULL;
     self->dsn = NULL;
     self->isConnected = 0;
+    self->logSql = 1;
 
     return (PyObject*) self;
 }
