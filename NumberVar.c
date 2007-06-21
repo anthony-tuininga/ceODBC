@@ -307,7 +307,7 @@ static int DecimalVar_GetStringRepOfDecimal(
     }
 
     // populate the string and format
-    value = valuePtr = var->data + pos * var->bufferSize;
+    value = valuePtr = (char*) var->data + pos * var->bufferSize;
     if (sign)
         *valuePtr++ = '-';
     for (i = 0; i < numDigits + scale; i++) {
