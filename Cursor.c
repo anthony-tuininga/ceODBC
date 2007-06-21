@@ -259,6 +259,33 @@ static void Cursor_Free(
 
 
 //-----------------------------------------------------------------------------
+// Cursor_MassageArgs()
+//   Massage the arguments. If one argument is passed and that argument is a
+// list or tuple, use that value instead of the arguments given.
+//-----------------------------------------------------------------------------
+static int Cursor_MassageArgs(
+    PyObject **args,                    // incoming args
+    int *argsOffset)                    // offset into the arguments (IN/OUT)
+{
+    PyObject *temp;
+
+    if (PyTuple_GET_SIZE(*args) == *argsOffset + 1) {
+        temp = PyTuple_GET_ITEM(*args, *argsOffset);
+        if (PyTuple_Check(temp) || PyList_Check(temp)) {
+            *args = PySequence_Tuple(temp);
+            if (!*args)
+                return -1;
+            *argsOffset = 0;
+            return 0;
+        }
+    }
+
+    Py_INCREF(*args);
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 // Cursor_PrepareResultSet()
 //   Prepare the result set for use.
 //-----------------------------------------------------------------------------
@@ -422,6 +449,7 @@ static void Cursor_LogBindParameter(
 static int Cursor_BindParameters(
     udt_Cursor *self,			// cursor to perform binds on
     PyObject *parameters,		// parameters to bind
+    int parametersOffset,       // offset into parameters
     unsigned numElements,		// number of elements to create
     unsigned arrayPos)			// array position to set
 {
@@ -430,9 +458,7 @@ static int Cursor_BindParameters(
     PyObject *value;
 
     // set up the list of parameters
-    numParams = PySequence_Size(parameters);
-    if (numParams < 0)
-        return -1;
+    numParams = PyTuple_GET_SIZE(parameters) - parametersOffset;
     if (self->parameterVars) {
         origNumParams = PyList_GET_SIZE(self->parameterVars);
     } else {
@@ -446,10 +472,7 @@ static int Cursor_BindParameters(
     if (self->logSql)
         LogMessageV(LOG_LEVEL_DEBUG, "BIND VARIABLES (%u)", arrayPos);
     for (i = 0; i < numParams; i++) {
-        value = PySequence_GetItem(parameters, i);
-        if (!value)
-            return -1;
-        Py_DECREF(value);
+        value = PyTuple_GET_ITEM(parameters, i + parametersOffset);
         if (i < origNumParams) {
             origVar = (udt_Variable*) PyList_GET_ITEM(self->parameterVars, i);
             if ( (PyObject*) origVar == Py_None)
@@ -787,28 +810,38 @@ static PyObject *Cursor_Execute(
     udt_Cursor *self,                   // cursor to execute
     PyObject *args)                     // arguments
 {
-    PyObject *statement, *executeArgs;
+    int numArgs, argsOffset;
+    PyObject *statement;
 
     // verify we have the right arguments
-    executeArgs = NULL;
-    if (!PyArg_ParseTuple(args, "O|O", &statement, &executeArgs))
+    numArgs = PyTuple_GET_SIZE(args);
+    if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "expecting statement");
         return NULL;
+    }
+    statement = PyTuple_GET_ITEM(args, 0);
     if (statement != Py_None && !PyString_Check(statement)) {
         PyErr_SetString(PyExc_TypeError, "expecting None or a string");
         return NULL;
     }
-    if (executeArgs && !PySequence_Check(executeArgs)) {
-        PyErr_SetString(PyExc_TypeError, "expecting a sequence");
-        return NULL;
-    }
 
-    // perform the work of executing the statement
+    // prepare the statement for execution
     if (Cursor_IsOpen(self) < 0)
         return NULL;
     if (Cursor_InternalPrepare(self, statement) < 0)
         return NULL;
-    if (executeArgs && Cursor_BindParameters(self, executeArgs, 1, 0) < 0)
+
+    // bind the parameters
+    argsOffset = 1;
+    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
         return NULL;
+    if (Cursor_BindParameters(self, args, argsOffset, 1, 0) < 0) {
+        Py_DECREF(args);
+        return NULL;
+    }
+    Py_DECREF(args);
+
+    // actually execute the statement
     if (Cursor_InternalExecute(self) < 0)
         return NULL;
 
@@ -862,7 +895,7 @@ static PyObject *Cursor_ExecuteMany(
                     "expecting a list of sequences");
             return NULL;
         }
-        if (Cursor_BindParameters(self, arguments, numRows, i) < 0)
+        if (Cursor_BindParameters(self, arguments, 0, numRows, i) < 0)
             return NULL;
     }
 
@@ -1065,19 +1098,24 @@ static PyObject *Cursor_SetInputSizes(
     PyObject *args)                     // arguments
 {
     PyObject *parameterVars, *value, *inputValue;
-    int numArgs, i;
+    int numArgs, i, argsOffset;
 
     // make sure the cursor is open
     if (Cursor_IsOpen(self) < 0)
         return NULL;
 
+    // massage the arguments
+    argsOffset = 0;
+    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+        return NULL;
+
     // initialization of parameter variables
-    numArgs = PyTuple_Size(args);
+    numArgs = PyTuple_GET_SIZE(args) - argsOffset;
     parameterVars = PyList_New(numArgs);
 
     // process each input
     for (i = 0; i < numArgs; i++) {
-        inputValue = PyTuple_GET_ITEM(args, i);
+        inputValue = PyTuple_GET_ITEM(args, i + argsOffset);
         if (inputValue == Py_None) {
             Py_INCREF(Py_None);
             value = Py_None;
@@ -1086,6 +1124,7 @@ static PyObject *Cursor_SetInputSizes(
                     self->bindArraySize);
             if (!value) {
                 Py_DECREF(parameterVars);
+                Py_DECREF(args);
                 return NULL;
             }
         }
@@ -1097,6 +1136,7 @@ static PyObject *Cursor_SetInputSizes(
     self->parameterVars = parameterVars;
     self->setInputSizes = 1;
 
+    Py_DECREF(args);
     Py_INCREF(self->parameterVars);
     return self->parameterVars;
 }
