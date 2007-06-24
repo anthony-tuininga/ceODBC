@@ -1,0 +1,391 @@
+\documentclass{manual}
+\usepackage[T1]{fontenc}
+
+\title{ceODBC}
+
+\author{Anthony Tuininga}
+\authoraddress{
+        \strong{Colt Engineering}\\
+        Email: \email{anthony.tuininga@gmail.com}
+}
+
+\date{\today}                   % date of release
+\release{HEAD}                  % software release
+\setreleaseinfo{}		% empty for final release
+\setshortversion{HEAD}          % major.minor only for software
+
+\begin{document}
+
+\maketitle
+
+\ifhtml
+\chapter*{Front Matter\label{front}}
+\fi
+
+Copyright \copyright{} 2007 Colt Engineering.
+All rights reserved.
+
+See the end of this document for complete license and permissions
+information.
+
+\begin{abstract}
+
+\noindent
+ceODBC is a Python extension module that allows access to databases using the
+ODBC API and conforms to the Python database API 2.0 specifications with a few
+exceptions.
+See \url{http://www.python.org/topics/database/DatabaseAPI-2.0.html} for more
+information on the Python database API specification.
+
+\end{abstract}
+
+\tableofcontents
+
+\chapter{Module Interface\label{module}}
+
+\begin{funcdesc}{Binary}{\var{string}}
+  Construct an object holding a binary (long) string value.
+\end{funcdesc}
+
+\begin{funcdesc}{Connection}{\var{dsn}}
+\funcline{connect}{\var{dsn}}
+  Constructor for creating a connection to the database. Return a Connection
+  object (\ref{connobj}). The only argument expected is the DSN in the format
+  that ODBC expects.
+\end{funcdesc}
+
+\begin{funcdesc}{Cursor}{\var{connection}}
+  Constructor for creating a cursor.  Return a new Cursor object
+  (\ref{cursorobj}) using the connection.
+
+  \strong{NOTE:} This method is an extension to the DB API definition.
+\end{funcdesc}
+
+\begin{funcdesc}{Date}{\var{year}, \var{month}, \var{day}}
+  Construct an object holding a date value.
+\end{funcdesc}
+
+\begin{funcdesc}{DateFromTicks}{\var{ticks}}
+  Construct an object holding a date value from the given ticks value (number
+  of seconds since the epoch; see the documentation of the standard Python
+  time module for details).
+\end{funcdesc}
+
+\begin{funcdesc}{Time}{\var{hour}, \var{minute}, \var{second}}
+  Construct an object holding a time value.
+\end{funcdesc}
+
+\begin{funcdesc}{TimeFromTicks}{\var{ticks}}
+  Construct an object holding a time value from the given ticks value (number
+  of seconds since the epoch; see the documentation of the standard Python
+  time module for details).
+\end{funcdesc}
+
+\begin{funcdesc}{Timestamp}{\var{year}, \var{month}, \var{day},
+    \var{hour}, \var{minute}, \var{second}}
+  Construct an object holding a time stamp value.
+\end{funcdesc}
+
+\begin{funcdesc}{TimestampFromTicks}{\var{ticks}}
+  Construct an object holding a time stamp value from the given ticks value
+  (number of seconds since the epoch; see the documentation of the standard
+  Python time module for details).
+\end{funcdesc}
+
+\section{Constants}
+
+\begin{datadesc}{apilevel}
+  String constant stating the supported DB API level. Currently '2.0'.
+\end{datadesc}
+
+\begin{datadesc}{buildtime}
+  String constant stating the time when the binary was built.
+
+  \strong{NOTE:} This attribute is an extension to the DB API definition.
+\end{datadesc}
+
+\begin{datadesc}{BINARY}
+  This type object is used to describe columns in a database that are binary.
+\end{datadesc}
+
+\begin{datadesc}{DATETIME}
+  This type object is used to describe columns in a database that are dates.
+\end{datadesc}
+
+\begin{datadesc}{NUMBER}
+  This type object is used to describe columns in a database that are numbers.
+\end{datadesc}
+
+\begin{datadesc}{paramstyle}
+  String constant stating the type of parameter marker formatting expected by
+  the interface. Currently 'qmark' as in 'where name = ?'.
+\end{datadesc}
+
+\begin{datadesc}{ROWID}
+  This type object is used to describe the pseudo column "rowid".
+\end{datadesc}
+
+\begin{datadesc}{STRING}
+  This type object is used to describe columns in a database that are strings.
+\end{datadesc}
+
+\begin{datadesc}{threadsafety}
+  Integer constant stating the level of thread safety that the interface
+  supports. Currently 2, which means that threads may share the module and
+  connections, but not cursors. Sharing means that a thread may use a resource
+  without wrapping it using a mutex semaphore to implement resource locking.
+\end{datadesc}
+
+\begin{datadesc}{version}
+  String constant stating the version of the module. Currently '\version{}'.
+
+  \strong{NOTE:} This attribute is an extension to the DB API definition.
+\end{datadesc}
+
+\section{Exceptions}
+
+\begin{datadesc}{Warning}
+  Exception raised for important warnings and defined by the DB API but not
+  actually used by ceODBC.
+\end{datadesc}
+
+\begin{datadesc}{Error}
+  Exception that is the base class of all other exceptions defined by
+  ceODBC and is a subclass of the Python StandardError exception (defined in
+  the module exceptions).
+\end{datadesc}
+
+\begin{datadesc}{InterfaceError}
+  Exception raised for errors that are related to the database interface rather
+  than the database itself. It is a subclass of Error.
+\end{datadesc}
+
+\begin{datadesc}{DatabaseError}
+  Exception raised for errors that are related to the database. It is a
+  subclass of Error.
+\end{datadesc}
+
+\begin{datadesc}{DataError}
+  Exception raised for errors that are due to problems with the processed data.
+  It is a subclass of DatabaseError.
+\end{datadesc}
+
+\begin{datadesc}{OperationalError}
+  Exception raised for errors that are related to the operation of the database
+  but are not necessarily under the control of the progammer. It is a
+  subclass of DatabaseError.
+\end{datadesc}
+
+\begin{datadesc}{IntegrityError}
+  Exception raised when the relational integrity of the database is affected.
+  It is a subclass of DatabaseError.
+\end{datadesc}
+ 
+\begin{datadesc}{InternalError}
+  Exception raised when the database encounters an internal error.
+  It is a subclass of DatabaseError.
+\end{datadesc}
+ 
+\begin{datadesc}{ProgrammingError}
+  Exception raised for programming errors. It is a subclass of DatabaseError.
+\end{datadesc}
+ 
+\begin{datadesc}{NotSupportedError}
+  Exception raised when a method or database API was used which is not
+  supported by the database. It is a subclass of DatabaseError.
+\end{datadesc}
+ 
+\chapter{Connection Objects\label{connobj}}
+
+\strong{NOTE}: Any outstanding changes will be rolled back when the connection
+object is destroyed or closed.
+
+\begin{funcdesc}{close}{}
+  Close the connection now, rather than whenever __del__ is called. The
+  connection will be unusable from this point forward; an Error exception will
+  be raised if any operation is attempted with the connection. The same applies
+  to any cursor objects trying to use the connection.
+\end{funcdesc}
+
+\begin{funcdesc}{commit}{}
+  Commit any pending transactions to the database.
+\end{funcdesc}
+
+\begin{funcdesc}{cursor}{}
+  Return a new Cursor object (\ref{cursorobj}) using the connection.
+\end{funcdesc}
+
+\begin{datadesc}{dsn}
+  This read-only attribute returns the TNS entry of the database to which a
+  connection has been established.
+
+  \strong{NOTE:} This attribute is an extension to the DB API definition.
+\end{datadesc}
+
+\begin{funcdesc}{rollback}{}
+  Rollback any pending transactions.
+\end{funcdesc}
+
+\chapter{Cursor Objects\label{cursorobj}}
+
+\begin{datadesc}{arraysize}
+  This read-write attribute specifies the number of rows to fetch at a time
+  internally and is the default number of rows to fetch with the fetchmany()
+  call. It defaults to 1 meaning to fetch a single row at a time. Note that
+  this attribute can drastically affect the performance of a query since it
+  directly affects the number of network round trips that need to be performed.
+\end{datadesc}
+
+\begin{datadesc}{bindarraysize}
+  This read-write attribute specifies the number of rows to bind at a time and
+  is used when creating variables via setinputsizes() or var(). It defaults to
+  1 meaning to bind a single row at a time.
+
+  \strong{NOTE:} The DB API definition does not define this attribute.
+\end{datadesc}
+
+\begin{funcdesc}{close}{}
+  Close the cursor now, rather than whenever __del__ is called. The cursor will
+  be unusable from this point forward; an Error exception will be raised if any
+  operation is attempted with the cursor.
+\end{funcdesc}
+
+\begin{datadesc}{connection}
+  This read-only attribute returns a reference to the connection object on
+  which the cursor was created.
+
+  \strong{NOTE:} This attribute is an extension to the DB API definition but it
+  is mentioned in PEP 249 as an optional extension.
+\end{datadesc}
+
+\begin{datadesc}{description}
+  This read-only attribute is a sequence of 7-item sequences. Each of these
+  sequences contains information describing one result column: (name, type,
+  display_size, internal_size, precision, scale, null_ok). This attribute will
+  be None for operations that do not return rows or if the cursor has not had
+  an operation invoked via the execute() method yet.
+
+  The type will be one of the type objects defined at the module level.
+\end{datadesc}
+
+\begin{funcdesc}{execute}{\var{statement}, {\var{*args}}}
+  Execute a statement against the database. Paramters may also be passed as a
+  single list or tuple to conform to the DB API.
+
+  A reference to the statement will be retained by the cursor. If None or the
+  same string object is passed in again, the cursor will execute that
+  statement again without performing a prepare or rebinding and redefining.
+  This is most effective for algorithms where the same statement is used, but
+  different parameters are bound to it (many times).
+
+  For maximum efficiency when reusing an statement, it is best to use the
+  setinputsizes() method to specify the parameter types and sizes ahead of
+  time; in particular, None is assumed to be a string of length 1 so any
+  values that are later bound as numbers or dates will raise a TypeError
+  exception.
+
+  If the statement is a query, the cursor is returned as a convenience since
+  cursors implement the iterator protocol and there is thus no need to call
+  one of the appropriate fetch methods; otherwise None is returned.
+
+  \strong{NOTE:} The DB API definition does not define the return value of this
+  method.
+\end{funcdesc}
+
+\begin{funcdesc}{executemany}{\var{statement}, \var{parameters}}
+  Prepare a statement for execution against a database and then execute it
+  against all parameter sequences found in the sequence parameters. The
+  statement is managed in the same way as the execute() method manages it.
+\end{funcdesc}
+
+\begin{funcdesc}{fetchall}{}
+  Fetch all (remaining) rows of a query result, returning them as a list of
+  tuples. An empty list is returned if no more rows are available. Note that
+  the cursor's arraysize attribute can affect the performance of this
+  operation, as internally reads from the database are done in batches
+  corresponding to the arraysize.
+
+  An exception is raised if the previous call to execute() did not produce any
+  result set or no call was issued yet.
+\end{funcdesc}
+
+\begin{funcdesc}{fetchmany}{\optional{\var{numRows=cursor.arraysize}}}
+  Fetch the next set of rows of a query result, returning a list of tuples. An
+  empty list is returned if no more rows are available. Note that the cursor's
+  arraysize attribute can affect the performance of this operation.
+
+  The number of rows to fetch is specified by the parameter. If it is not
+  given, the cursor's arrysize attribute determines the number of rows to be
+  fetched. If the number of rows available to be fetched is fewer than the
+  amount requested, fewer rows will be returned.
+
+  An exception is raised if the previous call to execute() did not produce any
+  result set or no call was issued yet.
+\end{funcdesc}
+
+\begin{funcdesc}{fetchone}{}
+  Fetch the next row of a query result set, returning a single tuple or None
+  when no more data is available.
+
+  An exception is raised if the previous call to execute() did not produce any
+  result set or no call was issued yet.
+\end{funcdesc}
+
+\begin{funcdesc}{__iter__}{}
+  Returns the cursor itself to be used as an iterator.
+
+  \strong{NOTE:} This method is an extension to the DB API definition but it
+  is mentioned in PEP 249 as an optional extension.
+\end{funcdesc}
+
+\begin{funcdesc}{next}{}
+  Fetch the next row of a query result set, using the same semantics as
+  the method fetchone().
+
+  \strong{NOTE:} This method is an extension to the DB API definition but it
+  is mentioned in PEP 249 as an optional extension.
+\end{funcdesc}
+
+\begin{funcdesc}{prepare}{\var{statement}}
+  This can be used before a call to execute() to define the statement that will
+  be executed. When this is done, the prepare phase will not be performed when
+  the call to execute() is made with None or the same string object as the
+  statement.
+
+  \strong{NOTE:} The DB API definition does not define this method.
+\end{funcdesc}
+
+\begin{datadesc}{rowcount}
+  This read-only attribute specifies the number of rows that have currently
+  been fetched from the cursor (for select statements) or that have been
+  affected by the operation (for insert, update and delete statements).
+\end{datadesc}
+
+\begin{funcdesc}{setinputsizes}{\var{*args}}
+  This can be used before a call to execute() to predefine memory areas for the
+  operation's parameters. Each parameter should be a type object corresponding
+  to the input that will be used or it should be an integer specifying the
+  maximum length of a string parameter. The singleton None can be used as a
+  parameter to indicate that no space should be reserved for that position.
+  Note that in order to conform to the DB API, passing a single argument which
+  is a list or tuple will treat that list or tuple as the arguments sequence.
+\end{funcdesc}
+
+\begin{funcdesc}{setoutputsize}{\var{size}, \optional{\var{column}}}
+  This can be used before a call to execute() to predefine memory areas for the
+  long columns that will be fetched. The column is specified as an index into
+  the result sequence. Not specifying the column will set the default size for
+  all large columns in the cursor.
+\end{funcdesc}
+
+\begin{datadesc}{statement}
+  This read-only attribute provides the string object that was previously
+  prepared with prepare() or executed with execute().
+
+  \strong{NOTE:} The DB API definition does not define this attribute.
+\end{datadesc}
+
+\input{license}
+
+\end{document}
+
