@@ -256,6 +256,7 @@ static void Cursor_Free(
     Py_XDECREF(self->resultSetVars);
     Py_XDECREF(self->parameterVars);
     Py_XDECREF(self->statement);
+    Py_XDECREF(self->rowFactory);
     self->ob_type->tp_free((PyObject*) self);
 }
 
@@ -775,6 +776,8 @@ static int Cursor_InternalPrepare(
     // clear previous result set parameters
     Py_XDECREF(self->resultSetVars);
     self->resultSetVars = NULL;
+    Py_XDECREF(self->rowFactory);
+    self->rowFactory = NULL;
 
     // prepare statement
     Py_BEGIN_ALLOW_THREADS
