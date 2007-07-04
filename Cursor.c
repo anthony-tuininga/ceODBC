@@ -12,6 +12,7 @@ typedef struct {
     PyObject *statement;
     PyObject *resultSetVars;
     PyObject *parameterVars;
+    PyObject *rowFactory;
     int arraySize;
     int bindArraySize;
     int fetchArraySize;
@@ -79,6 +80,7 @@ static PyMemberDef g_CursorMembers[] = {
     { "rowcount", T_INT, offsetof(udt_Cursor, rowCount), READONLY },
     { "statement", T_OBJECT, offsetof(udt_Cursor, statement), READONLY },
     { "connection", T_OBJECT_EX, offsetof(udt_Cursor, connection), READONLY },
+    { "rowfactory", T_OBJECT, offsetof(udt_Cursor, rowFactory), 0 },
     { NULL }
 };
 
@@ -372,7 +374,7 @@ static int Cursor_BindParameterHelper(
         // this is only necessary for executemany() since execute() always
         // passes a value of 1 for the number of elements
         } else if (numElements > origVar->numElements) {
-            *newVar = Variable_New(self, numElements, origVar->type,
+            *newVar = Variable_InternalNew(numElements, origVar->type,
                     origVar->size, origVar->scale);
             if (!*newVar)
                 return -1;
@@ -689,13 +691,16 @@ static PyObject *Cursor_Close(
 
 
 //-----------------------------------------------------------------------------
-// Cursor_CreateTuple()
-//   Create a tuple consisting of each of the items in the select-list.
+// Cursor_CreateRow()
+//   Create an object for the row. The object created is a tuple unless a row
+// factory function has been defined in which case it is the result of the
+// row factory function called with the argument tuple that would otherwise be
+// returned.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CreateTuple(
+static PyObject *Cursor_CreateRow(
     udt_Cursor *self)                   // cursor object
 {
-    PyObject *tuple, *item;
+    PyObject *tuple, *item, *result;
     int numItems, pos;
     udt_Variable *var;
 
@@ -716,8 +721,17 @@ static PyObject *Cursor_CreateTuple(
         PyTuple_SET_ITEM(tuple, pos, item);
     }
 
+    // increment row counters
     self->rowNum++;
     self->rowCount++;
+
+    // if a row factory is defined, call it
+    if (self->rowFactory && self->rowFactory != Py_None) {
+        result = PyObject_CallObject(self->rowFactory, tuple);
+        Py_DECREF(tuple);
+        return result;
+    }
+
     return tuple;
 }
 
@@ -989,8 +1003,8 @@ static PyObject *Cursor_MultiFetch(
     udt_Cursor *self,                   // cursor to fetch from
     int rowLimit)                       // row limit
 {
-    PyObject *results, *tuple;
-    int row, rc;
+    PyObject *results, *row;
+    int rowNum, rc;
 
     // create an empty list
     results = PyList_New(0);
@@ -998,7 +1012,7 @@ static PyObject *Cursor_MultiFetch(
         return NULL;
 
     // fetch as many rows as possible
-    for (row = 0; rowLimit == 0 || row < rowLimit; row++) {
+    for (rowNum = 0; rowLimit == 0 || rowNum < rowLimit; rowNum++) {
         rc = Cursor_MoreRows(self);
         if (rc < 0) {
             Py_DECREF(results);
@@ -1006,17 +1020,17 @@ static PyObject *Cursor_MultiFetch(
         } else if (rc == 0) {
             break;
         } else {
-            tuple = Cursor_CreateTuple(self);
-            if (!tuple) {
+            row = Cursor_CreateRow(self);
+            if (!row) {
                 Py_DECREF(results);
                 return NULL;
             }
-            if (PyList_Append(results, tuple) < 0) {
-                Py_DECREF(tuple);
+            if (PyList_Append(results, row) < 0) {
+                Py_DECREF(row);
                 Py_DECREF(results);
                 return NULL;
             }
-            Py_DECREF(tuple);
+            Py_DECREF(row);
         }
     }
 
@@ -1042,7 +1056,7 @@ static PyObject *Cursor_FetchOne(
     if (rc < 0)
         return NULL;
     else if (rc > 0)
-        return Cursor_CreateTuple(self);
+        return Cursor_CreateRow(self);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -1189,7 +1203,7 @@ static PyObject *Cursor_GetNext(
     if (rc < 0)
         return NULL;
     else if (rc > 0)
-        return Cursor_CreateTuple(self);
+        return Cursor_CreateRow(self);
 
     // no more rows, return NULL without setting an exception
     return NULL;
