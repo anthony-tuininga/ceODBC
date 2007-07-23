@@ -401,10 +401,11 @@ static udt_Variable *Variable_NewForResultSet(
 
     // for long columns, set the size appropriately
     if (varType == &vt_LongVarchar || varType == &vt_LongBinary) {
-        if (cursor->setOutputSize == 0 ||
-                cursor->setOutputSizeColumn != position)
-            size = varType->defaultSize;
-        else size = cursor->setOutputSize;
+        if (cursor->setOutputSize > 0 &&
+                (cursor->setOutputSizeColumn == 0 ||
+                 position == cursor->setOutputSizeColumn))
+            size = cursor->setOutputSize;
+        else size = varType->defaultSize;
     }
 
     // create a variable of the correct type
