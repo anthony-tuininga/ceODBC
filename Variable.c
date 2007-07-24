@@ -282,9 +282,9 @@ static udt_VariableType *Variable_TypeByValue(
     PyObject* value)                    // Python type
 {
     if (value == Py_None)
-        return &vt_Varchar;
+        return &vt_String;
     if (PyString_Check(value))
-        return &vt_Varchar;
+        return &vt_String;
     if (PyBuffer_Check(value))
         return &vt_Binary;
     if (PyBool_Check(value))
@@ -317,14 +317,14 @@ static udt_VariableType *Variable_TypeByValue(
 static udt_VariableType *Variable_TypeByPythonType(
     PyObject* type)                     // Python type
 {
-    if (type == (PyObject*) &g_VarcharVarType)
-        return &vt_Varchar;
+    if (type == (PyObject*) &g_StringVarType)
+        return &vt_String;
     if (type == (PyObject*) &PyString_Type)
-        return &vt_Varchar;
+        return &vt_String;
     if (type == (PyObject*) g_StringApiType)
-        return &vt_Varchar;
-    if (type == (PyObject*) &g_LongVarcharVarType)
-        return &vt_LongVarchar;
+        return &vt_String;
+    if (type == (PyObject*) &g_LongStringVarType)
+        return &vt_LongString;
     if (type == (PyObject*) &g_BinaryVarType)
         return &vt_Binary;
     if (type == (PyObject*) &PyBuffer_Type)
@@ -407,10 +407,10 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_VARCHAR:
         case SQL_WVARCHAR:
         case SQL_GUID:
-            return &vt_Varchar;
+            return &vt_String;
         case SQL_LONGVARCHAR:
         case SQL_WLONGVARCHAR:
-            return &vt_LongVarchar;
+            return &vt_LongString;
         case SQL_BINARY:
         case SQL_VARBINARY:
             return &vt_Binary;
@@ -468,9 +468,9 @@ static int Variable_Check(
             object->ob_type == &g_DoubleVarType ||
             object->ob_type == &g_IntegerVarType ||
             object->ob_type == &g_LongBinaryVarType ||
-            object->ob_type == &g_LongVarcharVarType ||
+            object->ob_type == &g_LongStringVarType ||
             object->ob_type == &g_TimestampVarType ||
-            object->ob_type == &g_VarcharVarType);
+            object->ob_type == &g_StringVarType);
 }
 
 
@@ -519,7 +519,7 @@ static udt_Variable *Variable_NewByType(
     // passing an integer is assumed to be a string
     if (PyInt_Check(value)) {
         size = PyInt_AS_LONG(value);
-        return Variable_InternalNew(numElements, &vt_Varchar, size, 0);
+        return Variable_InternalNew(numElements, &vt_String, size, 0);
     }
 
     // handle directly bound variables
@@ -567,7 +567,7 @@ static udt_Variable *Variable_NewForResultSet(
         return NULL;
 
     // for long columns, set the size appropriately
-    if (varType == &vt_LongVarchar || varType == &vt_LongBinary) {
+    if (varType == &vt_LongString || varType == &vt_LongBinary) {
         if (cursor->setOutputSize > 0 &&
                 (cursor->setOutputSizeColumn == 0 ||
                  position == cursor->setOutputSizeColumn))

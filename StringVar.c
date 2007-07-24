@@ -9,25 +9,25 @@
 typedef struct {
     Variable_HEAD
     SQLCHAR *data;
-} udt_VarcharVar;
+} udt_StringVar;
 
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
 //-----------------------------------------------------------------------------
-static PyObject *VarcharVar_GetValue(udt_VarcharVar*, unsigned);
-static SQLUINTEGER VarcharVar_GetBufferSize(udt_VarcharVar*, SQLUINTEGER);
-static int VarcharVar_SetValue(udt_VarcharVar*, unsigned, PyObject*);
+static PyObject *StringVar_GetValue(udt_StringVar*, unsigned);
+static SQLUINTEGER StringVar_GetBufferSize(udt_StringVar*, SQLUINTEGER);
+static int StringVar_SetValue(udt_StringVar*, unsigned, PyObject*);
 
 
 //-----------------------------------------------------------------------------
 // Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_VarcharVarType = {
+static PyTypeObject g_StringVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.VarcharVar",                // tp_name
-    sizeof(udt_VarcharVar),             // tp_basicsize
+    "ceODBC.StringVar",                 // tp_name
+    sizeof(udt_StringVar),              // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -70,11 +70,11 @@ static PyTypeObject g_VarcharVarType = {
 };
 
  
-static PyTypeObject g_LongVarcharVarType = {
+static PyTypeObject g_LongStringVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.LongVarcharVar",            // tp_name
-    sizeof(udt_VarcharVar),             // tp_basicsize
+    "ceODBC.LongStringVar",             // tp_name
+    sizeof(udt_StringVar),              // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -120,11 +120,11 @@ static PyTypeObject g_LongVarcharVarType = {
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Varchar = {
-    (SetValueProc) VarcharVar_SetValue,
-    (GetValueProc) VarcharVar_GetValue,
-    (GetBufferSizeProc) VarcharVar_GetBufferSize,
-    &g_VarcharVarType,                  // Python type
+static udt_VariableType vt_String = {
+    (SetValueProc) StringVar_SetValue,
+    (GetValueProc) StringVar_GetValue,
+    (GetBufferSizeProc) StringVar_GetBufferSize,
+    &g_StringVarType,                   // Python type
     SQL_VARCHAR,                        // SQL type
     SQL_C_CHAR,                         // C data type
     0,                                  // buffer size
@@ -133,11 +133,11 @@ static udt_VariableType vt_Varchar = {
 };
 
 
-static udt_VariableType vt_LongVarchar = {
-    (SetValueProc) VarcharVar_SetValue,
-    (GetValueProc) VarcharVar_GetValue,
-    (GetBufferSizeProc) VarcharVar_GetBufferSize,
-    &g_LongVarcharVarType,              // Python type
+static udt_VariableType vt_LongString = {
+    (SetValueProc) StringVar_SetValue,
+    (GetValueProc) StringVar_GetValue,
+    (GetBufferSizeProc) StringVar_GetBufferSize,
+    &g_LongStringVarType,               // Python type
     SQL_LONGVARCHAR,                    // SQL type
     SQL_C_CHAR,                         // C data type
     0,                                  // buffer size
@@ -147,12 +147,12 @@ static udt_VariableType vt_LongVarchar = {
 
 
 //-----------------------------------------------------------------------------
-// VarcharVar_GetBufferSize()
+// StringVar_GetBufferSize()
 //   Returns the size to use for string buffers. ODBC requires the presence of
 // a NULL terminator so one extra space is allocated for that purpose.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER VarcharVar_GetBufferSize(
-    udt_VarcharVar *var,                // variable to determine value for
+static SQLUINTEGER StringVar_GetBufferSize(
+    udt_StringVar *var,                 // variable to determine value for
     SQLUINTEGER size)                   // size to allocate
 {
     return size + 1;
@@ -160,11 +160,11 @@ static SQLUINTEGER VarcharVar_GetBufferSize(
 
 
 //-----------------------------------------------------------------------------
-// VarcharVar_GetValue()
+// StringVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *VarcharVar_GetValue(
-    udt_VarcharVar *var,                // variable to determine value for
+static PyObject *StringVar_GetValue(
+    udt_StringVar *var,                 // variable to determine value for
     unsigned pos)                       // array position
 {
     return PyString_FromStringAndSize((char*) var->data +
@@ -173,11 +173,11 @@ static PyObject *VarcharVar_GetValue(
 
 
 //-----------------------------------------------------------------------------
-// VarcharVar_SetValue()
+// StringVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int VarcharVar_SetValue(
-    udt_VarcharVar *var,                // variable to set value for
+static int StringVar_SetValue(
+    udt_StringVar *var,                 // variable to set value for
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
