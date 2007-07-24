@@ -281,8 +281,10 @@ void initceODBC(void)
 
     // add the variable types
     ADD_TYPE_OBJECT("BigIntegerVar", &g_BigIntegerVarType)
+    ADD_TYPE_OBJECT("BinaryVar", &g_BinaryVarType)
     ADD_TYPE_OBJECT("BitVar", &g_BitVarType)
     ADD_TYPE_OBJECT("DateVar", &g_DateVarType)
+    ADD_TYPE_OBJECT("DecimalVar", &g_DecimalVarType)
     ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
     ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
     ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
