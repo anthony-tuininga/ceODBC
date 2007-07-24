@@ -11,7 +11,7 @@
 
 \date{\today}                   % date of release
 \release{HEAD}                  % software release
-\setreleaseinfo{}		% empty for final release
+\setreleaseinfo{}               % empty for final release
 \setshortversion{HEAD}          % major.minor only for software
 
 \begin{document}
@@ -195,6 +195,72 @@ information on the Python database API specification.
   supported by the database. It is a subclass of DatabaseError.
 \end{datadesc}
  
+\section{Variable Types}
+
+\strong{NOTE:} The DB API definition does not define these object.
+
+These classes all create variable objects (\ref{varobj}). They are created
+implicitly by cursor.execute() as needed and normally need not be created
+directly.
+
+\begin{datadesc}{BigIntegerVar}
+  Variable used to bind and/or fetch big integers. Values are returned as
+  Python longs and accept Python integers or longs.
+\end{datadesc}
+
+\begin{datadesc}{BinaryVar}
+  Variable used to bind and/or fetch binary data. Values are returned as Python
+  buffer objects and accept Python objects that implement the buffer protocol.
+\end{datadesc}
+
+\begin{datadesc}{BitVar}
+  Variable used to bind and/or fetch bits. Values are returned as Python
+  booleans and accept the same.
+\end{datadesc}
+
+\begin{datadesc}{DateVar}
+  Variable used to bind and/or fetch dates. Values are returned as Python
+  datetime.date objects and accept Python datetime.date or datetime.datetime
+  objects.
+\end{datadesc}
+
+\begin{datadesc}{DecimalVar}
+  Variable used to bind and/or fetch decimal numbers. Values are returned as
+  Python decimal.Decimal objects and accept the same.
+\end{datadesc}
+
+\begin{datadesc}{DoubleVar}
+  Variable used to bind and/or fetch floating point numbers. Values are
+  returned as Python floats and accept Python integers or floats.
+\end{datadesc}
+
+\begin{datadesc}{IntegerVar}
+  Variable used to bind and/or fetch integers. Values are returned as Python
+  integers and accept the same.
+\end{datadesc}
+
+\begin{datadesc}{LongBinaryVar}
+  Variable used to bind and/or fetch long binary data. Values are returned as
+  Python buffer objects and accept Python objects that implement the buffer
+  protocol.
+\end{datadesc}
+
+\begin{datadesc}{LongStringVar}
+  Variable used to bind and/or fetch long string data. Values are returned as
+  Python strings and accept the same.
+\end{datadesc}
+
+\begin{datadesc}{StringVar}
+  Variable used to bind and/or fetch string data. Values are returned as Python
+  strings and accept the same.
+\end{datadesc}
+
+\begin{datadesc}{TimestampVar}
+  Variable used to bind and/or fetch timestamps. Values are returned as Python
+  datetime.datetime objects and accept Python datetime.date or
+  datetime.datetime objects.
+\end{datadesc}
+
 \chapter{Connection Objects\label{connobj}}
 
 \strong{NOTE}: Any outstanding changes will be rolled back when the connection
@@ -392,6 +458,46 @@ object is destroyed or closed.
   prepared with prepare() or executed with execute().
 
   \strong{NOTE:} The DB API definition does not define this attribute.
+\end{datadesc}
+
+\chapter{Variable Objects\label{varobj}}
+
+\strong{NOTE:} The DB API definition does not define this object.
+
+\begin{datadesc}{bufferSize}
+  This read-only attribute returns the size of the buffer allocated for each
+  element.
+\end{datadesc}
+
+\begin{funcdesc}{getvalue}{\optional{\var{pos=0}}}
+  Return the value at the given position in the variable.
+\end{funcdesc}
+
+\begin{datadesc}{input}
+  This read-write attribute specifies whether the variable is used as an input
+  variable and should normally be left as True.
+\end{datadesc}
+
+\begin{datadesc}{numElements}
+  This read-only attribute returns the number of elements allocated.
+\end{datadesc}
+
+\begin{datadesc}{output}
+  This read-write attribute specifies whether the variable is used as an output
+  variable. It should normally be left as False except when calling stored
+  procedures with output variables.
+\end{datadesc}
+
+\begin{datadesc}{scale}
+  This read-only attribute returns the scale of the variable.
+\end{datadesc}
+
+\begin{funcdesc}{setvalue}{\var{pos}, \var{value}}
+  Set the value at the given position in the variable.
+\end{funcdesc}
+
+\begin{datadesc}{size}
+  This read-only attribute returns the size of the variable.
 \end{datadesc}
 
 \input{license}
