@@ -55,6 +55,9 @@ static PyObject *Variable_Repr(udt_Variable *);
 static int Variable_Resize(udt_Variable*, SQLUINTEGER);
 static int Variable_SetValue(udt_Variable*, unsigned, PyObject*);
 static udt_VariableType *Variable_TypeByPythonType(PyObject*);
+static PyObject *Variable_ExternalGetValue(udt_Variable*, PyObject*,
+        PyObject*);
+static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -66,6 +69,17 @@ static PyMemberDef g_VariableMembers[] = {
     { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
     { "size", T_INT, offsetof(udt_Variable, size), READONLY },
     { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// Declaration of variable methods
+//-----------------------------------------------------------------------------
+static PyMethodDef g_VariableMethods[] = {
+    { "getvalue", (PyCFunction) Variable_ExternalGetValue,
+            METH_VARARGS  | METH_KEYWORDS },
+    { "setvalue", (PyCFunction) Variable_ExternalSetValue, METH_VARARGS },
+    { NULL, NULL }
 };
 
 
@@ -687,6 +701,46 @@ static int Variable_SetValue(
 
     self->lengthOrIndicator[arrayPos] = 0;
     return (*self->type->setValueProc)(self, arrayPos, value);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_ExternalGetValue()
+//   Return the value of the variable at the given position.
+//-----------------------------------------------------------------------------
+static PyObject *Variable_ExternalGetValue(
+    udt_Variable *self,                 // variable to get value for
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] = { "pos", NULL };
+    unsigned pos = 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|i", keywordList,
+            &pos))
+        return NULL;
+    return Variable_GetValue(self, pos);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_ExternalSetValue()
+//   Set the value of the variable at the given position.
+//-----------------------------------------------------------------------------
+static PyObject *Variable_ExternalSetValue(
+    udt_Variable *self,                 // variable to set value for
+    PyObject *args)                     // arguments
+{
+    PyObject *value;
+    unsigned pos;
+
+    if (!PyArg_ParseTuple(args, "iO", &pos, &value))
+      return NULL;
+    if (Variable_SetValue(self, pos, value) < 0)
+      return NULL;
+
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 
