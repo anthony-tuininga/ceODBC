@@ -81,7 +81,7 @@ static PyTypeObject g_BigIntegerVarType = {
     0,                                  // tp_iter
     0,                                  // tp_iternext
     0,                                  // tp_methods
-    0,                                  // tp_members
+    g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
     0,                                  // tp_dict
@@ -128,7 +128,7 @@ static PyTypeObject g_DecimalVarType = {
     0,                                  // tp_iter
     0,                                  // tp_iternext
     0,                                  // tp_methods
-    0,                                  // tp_members
+    g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
     0,                                  // tp_dict
@@ -175,7 +175,7 @@ static PyTypeObject g_DoubleVarType = {
     0,                                  // tp_iter
     0,                                  // tp_iternext
     0,                                  // tp_methods
-    0,                                  // tp_members
+    g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
     0,                                  // tp_dict
@@ -222,7 +222,7 @@ static PyTypeObject g_IntegerVarType = {
     0,                                  // tp_iter
     0,                                  // tp_iternext
     0,                                  // tp_methods
-    0,                                  // tp_members
+    g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
     0,                                  // tp_dict

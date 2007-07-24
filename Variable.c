@@ -58,6 +58,18 @@ static udt_VariableType *Variable_TypeByPythonType(PyObject*);
 
 
 //-----------------------------------------------------------------------------
+// Declaration of variable members
+//-----------------------------------------------------------------------------
+static PyMemberDef g_VariableMembers[] = {
+    { "bufferSize", T_INT, offsetof(udt_Variable, bufferSize), READONLY },
+    { "numElements", T_INT, offsetof(udt_Variable, numElements), READONLY },
+    { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
+    { "size", T_INT, offsetof(udt_Variable, size), READONLY },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
 // Variable_InternalInit()
 //   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
