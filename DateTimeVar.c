@@ -60,7 +60,7 @@ static PyTypeObject g_DateVarType = {
     0,                                  // tp_weaklistoffset
     0,                                  // tp_iter
     0,                                  // tp_iternext
-    0,                                  // tp_methods
+    g_VariableMethods,                  // tp_methods
     g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
@@ -107,7 +107,7 @@ static PyTypeObject g_TimestampVarType = {
     0,                                  // tp_weaklistoffset
     0,                                  // tp_iter
     0,                                  // tp_iternext
-    0,                                  // tp_methods
+    g_VariableMethods,                  // tp_methods
     g_VariableMembers,                  // tp_members
     0,                                  // tp_getset
     0,                                  // tp_base
