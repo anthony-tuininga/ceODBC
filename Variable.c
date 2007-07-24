@@ -49,37 +49,28 @@ typedef struct _udt_VariableType {
 //-----------------------------------------------------------------------------
 // Declaration of common variable functions.
 //-----------------------------------------------------------------------------
+static PyObject *Variable_New(PyTypeObject*, PyObject*, PyObject*);
 static void Variable_Free(udt_Variable *);
 static PyObject *Variable_Repr(udt_Variable *);
 static int Variable_Resize(udt_Variable*, SQLUINTEGER);
-
-
-#include "BinaryVar.c"
-#include "BitVar.c"
-#include "NumberVar.c"
-#include "StringVar.c"
-#include "DateTimeVar.c"
+static int Variable_SetValue(udt_Variable*, unsigned, PyObject*);
+static udt_VariableType *Variable_TypeByPythonType(PyObject*);
 
 
 //-----------------------------------------------------------------------------
-// Variable_New()
-//   Allocate a new variable.
+// Variable_InternalInit()
+//   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_New(
-    udt_Cursor *cursor,                 // cursor to associate variable with
+static int Variable_InternalInit(
+    udt_Variable *self,                 // variable to initialize
     unsigned numElements,               // number of elements to allocate
     udt_VariableType *type,             // variable type
     SQLUINTEGER size,                   // size of variable
-    SQLSMALLINT scale)                  // scale of variable
+    SQLSMALLINT scale,                  // scale of variable
+    PyObject *value)                    // value to set (optional)
 {
     unsigned PY_LONG_LONG dataLength;
-    udt_Variable *self;
     SQLUINTEGER i;
-
-    // attempt to allocate the object
-    self = PyObject_NEW(udt_Variable, type->pythonType);
-    if (!self)
-        return NULL;
 
     // perform basic initialization
     self->position = -1;
@@ -100,58 +91,151 @@ static udt_Variable *Variable_New(
             (unsigned PY_LONG_LONG) self->bufferSize;
     if (dataLength > INT_MAX) {
         PyErr_SetString(PyExc_ValueError, "array size too large");
-        Py_DECREF(self);
-        return NULL;
+        return -1;
     }
     self->lengthOrIndicator = PyMem_Malloc(numElements * sizeof(SQLINTEGER));
     self->data = PyMem_Malloc((size_t) dataLength);
     if (!self->lengthOrIndicator || !self->data) {
         PyErr_NoMemory();
-        Py_DECREF(self);
-        return NULL;
+        return -1;
     }
 
     // ensure that all variable values start out NULL
     for (i = 0; i < numElements; i++)
         self->lengthOrIndicator[i] = SQL_NULL_DATA;
 
+    // set value, if applicable
+    if (value && Variable_SetValue(self, 0, value) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_DefaultInit()
+//   Default constructor.
+//-----------------------------------------------------------------------------
+static int Variable_DefaultInit(
+    udt_Variable *self,                 // variable being constructed
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    udt_VariableType *varType;
+    PyObject *value;
+    int numElements;
+
+    static char *keywordList[] = { "value", "numElements", NULL };
+
+    value = NULL;
+    numElements = 1;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oi", keywordList,
+            &value, &numElements))
+        return -1;
+    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    if (!varType)
+        return -1;
+    if (!Variable_InternalInit(self, numElements, varType,
+            varType->defaultSize, varType->defaultScale, value) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_InitWithScale()
+//   Constructor which accepts scale as an argument as well.
+//-----------------------------------------------------------------------------
+static int Variable_InitWithScale(
+    udt_Variable *self,                 // variable being constructed
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    udt_VariableType *varType;
+    int numElements, scale;
+    PyObject *value;
+
+    static char *keywordList[] = { "value", "scale", "numElements", NULL };
+
+    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    if (!varType)
+        return -1;
+    value = NULL;
+    numElements = 1;
+    scale = varType->defaultScale;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
+            &value, &scale, &numElements))
+        return -1;
+    if (!Variable_InternalInit(self, numElements, varType,
+            varType->defaultSize, scale, value) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_InitWithSize()
+//   Constructor which accepts scale as an argument as well.
+//-----------------------------------------------------------------------------
+static int Variable_InitWithSize(
+    udt_Variable *self,                 // variable being constructed
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    udt_VariableType *varType;
+    int numElements, size;
+    PyObject *value;
+
+    static char *keywordList[] = { "value", "size", "numElements", NULL };
+
+    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    if (!varType)
+        return -1;
+    value = NULL;
+    numElements = 1;
+    size = varType->defaultSize;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
+            &value, &size, &numElements))
+        return -1;
+    if (!Variable_InternalInit(self, numElements, varType, size,
+            varType->defaultScale, value) < 0)
+        return -1;
+
+    return 0;
+}
+
+
+#include "BinaryVar.c"
+#include "BitVar.c"
+#include "NumberVar.c"
+#include "StringVar.c"
+#include "DateTimeVar.c"
+
+
+//-----------------------------------------------------------------------------
+// Variable_InternalNew()
+//   Internal method of creating a new variable.
+//-----------------------------------------------------------------------------
+static udt_Variable *Variable_InternalNew(
+    unsigned numElements,               // number of elements to allocate
+    udt_VariableType *type,             // variable type
+    SQLUINTEGER size,                   // size of variable
+    SQLSMALLINT scale)                  // scale of variable
+{
+    udt_Variable *self;
+
+    self = PyObject_NEW(udt_Variable, type->pythonType);
+    if (!self)
+        return NULL;
+    if (Variable_InternalInit(self, numElements, type, size, scale,
+            NULL) < 0) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
     return self;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_Free()
-//   Free an existing variable.
-//-----------------------------------------------------------------------------
-static void Variable_Free(
-    udt_Variable *self)                 // variable to free
-{
-    if (self->lengthOrIndicator)
-        PyMem_Free(self->lengthOrIndicator);
-    if (self->data)
-        PyMem_Free(self->data);
-    self->ob_type->tp_free((PyObject*) self);
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_Check()
-//   Returns a boolean indicating if the object is a variable.
-//-----------------------------------------------------------------------------
-static int Variable_Check(
-    PyObject *object)                   // Python object to check
-{
-    return (object->ob_type == &g_BigIntegerVarType ||
-            object->ob_type == &g_BinaryVarType ||
-            object->ob_type == &g_BitVarType ||
-            object->ob_type == &g_DateVarType ||
-            object->ob_type == &g_DecimalVarType ||
-            object->ob_type == &g_DoubleVarType ||
-            object->ob_type == &g_IntegerVarType ||
-            object->ob_type == &g_LongBinaryVarType ||
-            object->ob_type == &g_LongVarcharVarType ||
-            object->ob_type == &g_TimestampVarType ||
-            object->ob_type == &g_VarcharVarType);
 }
 
 
@@ -308,6 +392,55 @@ static udt_VariableType *Variable_TypeBySqlDataType (
 
 
 //-----------------------------------------------------------------------------
+// Variable_New()
+//   Create a new cursor object.
+//-----------------------------------------------------------------------------
+static PyObject *Variable_New(
+    PyTypeObject *type,                 // type object
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    return type->tp_alloc(type, 0);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_Free()
+//   Free an existing variable.
+//-----------------------------------------------------------------------------
+static void Variable_Free(
+    udt_Variable *self)                 // variable to free
+{
+    if (self->lengthOrIndicator)
+        PyMem_Free(self->lengthOrIndicator);
+    if (self->data)
+        PyMem_Free(self->data);
+    self->ob_type->tp_free((PyObject*) self);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_Check()
+//   Returns a boolean indicating if the object is a variable.
+//-----------------------------------------------------------------------------
+static int Variable_Check(
+    PyObject *object)                   // Python object to check
+{
+    return (object->ob_type == &g_BigIntegerVarType ||
+            object->ob_type == &g_BinaryVarType ||
+            object->ob_type == &g_BitVarType ||
+            object->ob_type == &g_DateVarType ||
+            object->ob_type == &g_DecimalVarType ||
+            object->ob_type == &g_DoubleVarType ||
+            object->ob_type == &g_IntegerVarType ||
+            object->ob_type == &g_LongBinaryVarType ||
+            object->ob_type == &g_LongVarcharVarType ||
+            object->ob_type == &g_TimestampVarType ||
+            object->ob_type == &g_VarcharVarType);
+}
+
+
+//-----------------------------------------------------------------------------
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
@@ -328,7 +461,7 @@ static udt_Variable *Variable_NewByValue(
     else if (PyString_Check(value))
         size = PyString_GET_SIZE(value);
     else size = varType->defaultSize;
-    var = Variable_New(cursor, numElements, varType, size,
+    var = Variable_InternalNew(numElements, varType, size,
             varType->defaultScale);
     if (!var)
         return NULL;
@@ -352,7 +485,7 @@ static udt_Variable *Variable_NewByType(
     // passing an integer is assumed to be a string
     if (PyInt_Check(value)) {
         size = PyInt_AS_LONG(value);
-        return Variable_New(cursor, numElements, &vt_Varchar, size, 0);
+        return Variable_InternalNew(numElements, &vt_Varchar, size, 0);
     }
 
     // handle directly bound variables
@@ -365,7 +498,7 @@ static udt_Variable *Variable_NewByType(
     varType = Variable_TypeByPythonType(value);
     if (!varType)
         return NULL;
-    return Variable_New(cursor, numElements, varType, varType->defaultSize,
+    return Variable_InternalNew(numElements, varType, varType->defaultSize,
             varType->defaultScale);
 }
 
@@ -409,7 +542,7 @@ static udt_Variable *Variable_NewForResultSet(
     }
 
     // create a variable of the correct type
-    var = Variable_New(cursor, cursor->fetchArraySize, varType, size, scale);
+    var = Variable_InternalNew(cursor->fetchArraySize, varType, size, scale);
     if (!var)
         return NULL;
 

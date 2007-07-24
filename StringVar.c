@@ -15,9 +15,9 @@ typedef struct {
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
 //-----------------------------------------------------------------------------
-static int VarcharVar_SetValue(udt_VarcharVar*, unsigned, PyObject*);
 static PyObject *VarcharVar_GetValue(udt_VarcharVar*, unsigned);
 static SQLUINTEGER VarcharVar_GetBufferSize(udt_VarcharVar*, SQLUINTEGER);
+static int VarcharVar_SetValue(udt_VarcharVar*, unsigned, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -44,8 +44,29 @@ static PyTypeObject g_VarcharVarType = {
     0,                                  // tp_getattro
     0,                                  // tp_setattro
     0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                        // tp_flags
+    0,                                  // tp_doc
+    0,                                  // tp_traverse
+    0,                                  // tp_clear
+    0,                                  // tp_richcompare
+    0,                                  // tp_weaklistoffset
+    0,                                  // tp_iter
+    0,                                  // tp_iternext
+    0,                                  // tp_methods
+    0,                                  // tp_members
+    0,                                  // tp_getset
+    0,                                  // tp_base
+    0,                                  // tp_dict
+    0,                                  // tp_descr_get
+    0,                                  // tp_descr_set
+    0,                                  // tp_dictoffset
+    (initproc) Variable_InitWithSize,   // tp_init
+    0,                                  // tp_alloc
+    (newfunc) Variable_New,             // tp_new
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+    0                                   // tp_bases
 };
 
  
@@ -70,8 +91,29 @@ static PyTypeObject g_LongVarcharVarType = {
     0,                                  // tp_getattro
     0,                                  // tp_setattro
     0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                        // tp_flags
+    0,                                  // tp_doc
+    0,                                  // tp_traverse
+    0,                                  // tp_clear
+    0,                                  // tp_richcompare
+    0,                                  // tp_weaklistoffset
+    0,                                  // tp_iter
+    0,                                  // tp_iternext
+    0,                                  // tp_methods
+    0,                                  // tp_members
+    0,                                  // tp_getset
+    0,                                  // tp_base
+    0,                                  // tp_dict
+    0,                                  // tp_descr_get
+    0,                                  // tp_descr_set
+    0,                                  // tp_dictoffset
+    (initproc) Variable_InitWithSize,   // tp_init
+    0,                                  // tp_alloc
+    (newfunc) Variable_New,             // tp_new
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+    0                                   // tp_bases
 };
 
  
@@ -102,6 +144,32 @@ static udt_VariableType vt_LongVarchar = {
     128 * 1024,                         // default size
     0                                   // default scale
 };
+
+
+//-----------------------------------------------------------------------------
+// VarcharVar_GetBufferSize()
+//   Returns the size to use for string buffers. ODBC requires the presence of
+// a NULL terminator so one extra space is allocated for that purpose.
+//-----------------------------------------------------------------------------
+static SQLUINTEGER VarcharVar_GetBufferSize(
+    udt_VarcharVar *var,                // variable to determine value for
+    SQLUINTEGER size)                   // size to allocate
+{
+    return size + 1;
+}
+
+
+//-----------------------------------------------------------------------------
+// VarcharVar_GetValue()
+//   Returns the value stored at the given array position.
+//-----------------------------------------------------------------------------
+static PyObject *VarcharVar_GetValue(
+    udt_VarcharVar *var,                // variable to determine value for
+    unsigned pos)                       // array position
+{
+    return PyString_FromStringAndSize((char*) var->data +
+            pos * var->bufferSize, var->lengthOrIndicator[pos]);
+}
 
 
 //-----------------------------------------------------------------------------
@@ -137,31 +205,5 @@ static int VarcharVar_SetValue(
         memcpy(var->data + var->bufferSize * pos, buffer, size);
 
     return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// VarcharVar_GetValue()
-//   Returns the value stored at the given array position.
-//-----------------------------------------------------------------------------
-static PyObject *VarcharVar_GetValue(
-    udt_VarcharVar *var,                // variable to determine value for
-    unsigned pos)                       // array position
-{
-    return PyString_FromStringAndSize((char*) var->data +
-            pos * var->bufferSize, var->lengthOrIndicator[pos]);
-}
-
-
-//-----------------------------------------------------------------------------
-// VarcharVar_GetBufferSize()
-//   Returns the size to use for string buffers. ODBC requires the presence of
-// a NULL terminator so one extra space is allocated for that purpose.
-//-----------------------------------------------------------------------------
-static SQLUINTEGER VarcharVar_GetBufferSize(
-    udt_VarcharVar *var,                // variable to determine value for
-    SQLUINTEGER size)                   // size to allocate
-{
-    return size + 1;
 }
 

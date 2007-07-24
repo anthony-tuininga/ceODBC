@@ -43,8 +43,29 @@ static PyTypeObject g_BitVarType = {
     0,                                  // tp_getattro
     0,                                  // tp_setattro
     0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                        // tp_flags
+    0,                                  // tp_doc
+    0,                                  // tp_traverse
+    0,                                  // tp_clear
+    0,                                  // tp_richcompare
+    0,                                  // tp_weaklistoffset
+    0,                                  // tp_iter
+    0,                                  // tp_iternext
+    0,                                  // tp_methods
+    0,                                  // tp_members
+    0,                                  // tp_getset
+    0,                                  // tp_base
+    0,                                  // tp_dict
+    0,                                  // tp_descr_get
+    0,                                  // tp_descr_set
+    0,                                  // tp_dictoffset
+    (initproc) Variable_DefaultInit,    // tp_init
+    0,                                  // tp_alloc
+    (newfunc) Variable_New,             // tp_new
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+    0                                   // tp_bases
 };
 
 
@@ -65,6 +86,18 @@ static udt_VariableType vt_Bit = {
 
 
 //-----------------------------------------------------------------------------
+// BitVar_GetValue()
+//   Returns the value stored at the given array position.
+//-----------------------------------------------------------------------------
+static PyObject *BitVar_GetValue(
+    udt_BitVar *var,                    // variable to determine value for
+    unsigned pos)                       // array position
+{
+    return PyBool_FromLong(var->data[pos]);
+}
+
+
+//-----------------------------------------------------------------------------
 // BitVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
@@ -79,17 +112,5 @@ static int BitVar_SetValue(
     }
     PyErr_SetString(PyExc_TypeError, "expecting boolean data");
     return -1;
-}
-
-
-//-----------------------------------------------------------------------------
-// BitVar_GetValue()
-//   Returns the value stored at the given array position.
-//-----------------------------------------------------------------------------
-static PyObject *BitVar_GetValue(
-    udt_BitVar *var,                    // variable to determine value for
-    unsigned pos)                       // array position
-{
-    return PyBool_FromLong(var->data[pos]);
 }
 

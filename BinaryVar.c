@@ -15,9 +15,9 @@ typedef struct {
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
 //-----------------------------------------------------------------------------
-static int BinaryVar_SetValue(udt_BinaryVar*, unsigned, PyObject*);
-static PyObject *BinaryVar_GetValue(udt_BinaryVar*, unsigned);
 static SQLUINTEGER BinaryVar_GetBufferSize(udt_BinaryVar*, SQLUINTEGER);
+static PyObject *BinaryVar_GetValue(udt_BinaryVar*, unsigned);
+static int BinaryVar_SetValue(udt_BinaryVar*, unsigned, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -44,8 +44,29 @@ static PyTypeObject g_BinaryVarType = {
     0,                                  // tp_getattro
     0,                                  // tp_setattro
     0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                        // tp_flags
+    0,                                  // tp_doc
+    0,                                  // tp_traverse
+    0,                                  // tp_clear
+    0,                                  // tp_richcompare
+    0,                                  // tp_weaklistoffset
+    0,                                  // tp_iter
+    0,                                  // tp_iternext
+    0,                                  // tp_methods
+    0,                                  // tp_members
+    0,                                  // tp_getset
+    0,                                  // tp_base
+    0,                                  // tp_dict
+    0,                                  // tp_descr_get
+    0,                                  // tp_descr_set
+    0,                                  // tp_dictoffset
+    (initproc) Variable_InitWithSize,   // tp_init
+    0,                                  // tp_alloc
+    (newfunc) Variable_New,             // tp_new
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+    0                                   // tp_bases
 };
 
 
@@ -70,8 +91,29 @@ static PyTypeObject g_LongBinaryVarType = {
     0,                                  // tp_getattro
     0,                                  // tp_setattro
     0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                        // tp_flags
+    0,                                  // tp_doc
+    0,                                  // tp_traverse
+    0,                                  // tp_clear
+    0,                                  // tp_richcompare
+    0,                                  // tp_weaklistoffset
+    0,                                  // tp_iter
+    0,                                  // tp_iternext
+    0,                                  // tp_methods
+    0,                                  // tp_members
+    0,                                  // tp_getset
+    0,                                  // tp_base
+    0,                                  // tp_dict
+    0,                                  // tp_descr_get
+    0,                                  // tp_descr_set
+    0,                                  // tp_dictoffset
+    (initproc) Variable_InitWithSize,   // tp_init
+    0,                                  // tp_alloc
+    (newfunc) Variable_New,             // tp_new
+    0,                                  // tp_free
+    0,                                  // tp_is_gc
+    0                                   // tp_bases
 };
 
 
@@ -105,28 +147,14 @@ static udt_VariableType vt_LongBinary = {
 
 
 //-----------------------------------------------------------------------------
-// BinaryVar_SetValue()
-//   Set the value of the variable.
+// BinaryVar_GetBufferSize()
+//   Returns the size to use for binary buffers.
 //-----------------------------------------------------------------------------
-static int BinaryVar_SetValue(
-    udt_BinaryVar *var,                 // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static SQLUINTEGER BinaryVar_GetBufferSize(
+    udt_BinaryVar *var,                 // variable to determine value for
+    SQLUINTEGER size)                   // size to allocate
 {
-    const void *buffer;
-    Py_ssize_t size;
-
-    if (PyObject_AsReadBuffer(value, &buffer, &size) < 0)
-        return -1;
-    if (size > var->size) {
-        if (Variable_Resize( (udt_Variable*) var, size) < 0)
-            return -1;
-    }
-    var->lengthOrIndicator[pos] = (SQLINTEGER) size;
-    if (size)
-        memcpy(var->data + var->bufferSize * pos, buffer, size);
-
-    return 0;
+    return size;
 }
 
 
@@ -151,13 +179,27 @@ static PyObject *BinaryVar_GetValue(
 
 
 //-----------------------------------------------------------------------------
-// BinaryVar_GetBufferSize()
-//   Returns the size to use for binary buffers.
+// BinaryVar_SetValue()
+//   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER BinaryVar_GetBufferSize(
-    udt_BinaryVar *var,                 // variable to determine value for
-    SQLUINTEGER size)                   // size to allocate
+static int BinaryVar_SetValue(
+    udt_BinaryVar *var,                 // variable to set value for
+    unsigned pos,                       // array position to set
+    PyObject *value)                    // value to set
 {
-    return size;
+    const void *buffer;
+    Py_ssize_t size;
+
+    if (PyObject_AsReadBuffer(value, &buffer, &size) < 0)
+        return -1;
+    if (size > var->size) {
+        if (Variable_Resize( (udt_Variable*) var, size) < 0)
+            return -1;
+    }
+    var->lengthOrIndicator[pos] = (SQLINTEGER) size;
+    if (size)
+        memcpy(var->data + var->bufferSize * pos, buffer, size);
+
+    return 0;
 }
 
