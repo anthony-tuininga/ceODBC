@@ -761,15 +761,16 @@ static int Cursor_InternalPrepare(
         LogMessageV(LOG_LEVEL_DEBUG, "SQL\n%s", PyString_AS_STRING(statement));
     }
 
+    // close original statement if necessary in order to discard results
+    if (self->statement)
+        SQLCloseCursor(self->handle);
+
     // nothing to do if the statement is identical to the one already stored
     if (statement == Py_None || statement == self->statement)
         return 0;
 
-    // keep track of the statement; close original cursor if necessary
-    if (self->statement) {
-        SQLCloseCursor(self->handle);
-        Py_DECREF(self->statement);
-    }
+    // keep track of statement
+    Py_XDECREF(self->statement);
     Py_INCREF(statement);
     self->statement = statement;
 
