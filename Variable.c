@@ -15,7 +15,9 @@ struct _udt_VariableType;
     struct _udt_VariableType *type; \
     SQLUINTEGER size; \
     SQLUINTEGER bufferSize; \
-    SQLSMALLINT scale;
+    SQLSMALLINT scale; \
+    int input; \
+    int output;
 typedef struct {
     Variable_HEAD
     void *data;
@@ -65,7 +67,9 @@ static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
 //-----------------------------------------------------------------------------
 static PyMemberDef g_VariableMembers[] = {
     { "bufferSize", T_INT, offsetof(udt_Variable, bufferSize), READONLY },
+    { "input", T_INT, offsetof(udt_Variable, input), 0 },
     { "numElements", T_INT, offsetof(udt_Variable, numElements), READONLY },
+    { "output", T_INT, offsetof(udt_Variable, output), 0 },
     { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
     { "size", T_INT, offsetof(udt_Variable, size), READONLY },
     { NULL }
@@ -93,7 +97,9 @@ static int Variable_InternalInit(
     udt_VariableType *type,             // variable type
     SQLUINTEGER size,                   // size of variable
     SQLSMALLINT scale,                  // scale of variable
-    PyObject *value)                    // value to set (optional)
+    PyObject *value,                    // value to set (optional)
+    int input,                          // input variable?
+    int output)                         // output variable?
 {
     unsigned PY_LONG_LONG dataLength;
     SQLUINTEGER i;
@@ -109,6 +115,8 @@ static int Variable_InternalInit(
     else self->bufferSize = type->bufferSize;
     self->scale = scale;
     self->type = type;
+    self->input = input;
+    self->output = output;
     self->lengthOrIndicator = NULL;
     self->data = NULL;
 
@@ -162,7 +170,7 @@ static int Variable_DefaultInit(
     if (!varType)
         return -1;
     if (!Variable_InternalInit(self, numElements, varType,
-            varType->defaultSize, varType->defaultScale, value) < 0)
+            varType->defaultSize, varType->defaultScale, value, 1, 1) < 0)
         return -1;
 
     return 0;
@@ -194,7 +202,7 @@ static int Variable_InitWithScale(
             &value, &scale, &numElements))
         return -1;
     if (!Variable_InternalInit(self, numElements, varType,
-            varType->defaultSize, scale, value) < 0)
+            varType->defaultSize, scale, value, 1, 1) < 0)
         return -1;
 
     return 0;
@@ -226,7 +234,7 @@ static int Variable_InitWithSize(
             &value, &size, &numElements))
         return -1;
     if (!Variable_InternalInit(self, numElements, varType, size,
-            varType->defaultScale, value) < 0)
+            varType->defaultScale, value, 1, 1) < 0)
         return -1;
 
     return 0;
@@ -256,7 +264,7 @@ static udt_Variable *Variable_InternalNew(
     if (!self)
         return NULL;
     if (Variable_InternalInit(self, numElements, type, size, scale,
-            NULL) < 0) {
+            NULL, 1, 0) < 0) {
         Py_DECREF(self);
         return NULL;
     }
@@ -594,10 +602,16 @@ static int Variable_BindParameter(
     udt_Cursor *cursor,                 // cursor to bind to
     SQLUSMALLINT position)              // position to bind to
 {
+    SQLSMALLINT inputOutputType;
     SQLRETURN rc;
 
     self->position = position;
-    rc = SQLBindParameter(cursor->handle, position, SQL_PARAM_INPUT,
+    if (self->input && self->output)
+        inputOutputType = SQL_PARAM_INPUT_OUTPUT;
+    else if (self->output)
+        inputOutputType = SQL_PARAM_OUTPUT;
+    else inputOutputType = SQL_PARAM_INPUT;
+    rc = SQLBindParameter(cursor->handle, position, inputOutputType,
             self->type->cDataType, self->type->sqlDataType, self->size,
             self->scale, self->data, self->bufferSize,
             self->lengthOrIndicator);
