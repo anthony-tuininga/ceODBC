@@ -310,6 +310,18 @@ object is destroyed or closed.
   \strong{NOTE:} The DB API definition does not define this attribute.
 \end{datadesc}
 
+\begin{funcdesc}{callfunc}{\var{name}, \var{returnType}, \var{*args}}
+  Call a function with the given name. The return type is specified in the
+  same notation as is required by setinputsizes(). The result of the call is
+  the return value of the function.
+\end{funcdesc}
+
+\begin{funcdesc}{callproc}{\var{name}, \var{*args}}
+  Call a procedure with the given name. The result of the call is a modified
+  copy of the input sequence. Input parameters are left untouched; output and
+  input/output parameters are replaced with possibly new values.
+\end{funcdesc}
+
 \begin{funcdesc}{close}{}
   Close the cursor now, rather than whenever __del__ is called. The cursor will
   be unusable from this point forward; an Error exception will be raised if any
