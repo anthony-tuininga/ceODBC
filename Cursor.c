@@ -37,6 +37,8 @@ static void Cursor_Free(udt_Cursor*);
 //-----------------------------------------------------------------------------
 static PyObject *Cursor_GetIter(udt_Cursor*);
 static PyObject *Cursor_GetNext(udt_Cursor*);
+static PyObject *Cursor_CallFunc(udt_Cursor*, PyObject*);
+static PyObject *Cursor_CallProc(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Close(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Execute(udt_Cursor*, PyObject*);
 static PyObject *Cursor_ExecuteMany(udt_Cursor*, PyObject*);
@@ -65,6 +67,8 @@ static PyMethodDef g_CursorMethods[] = {
     { "prepare", (PyCFunction) Cursor_Prepare, METH_VARARGS },
     { "setinputsizes", (PyCFunction) Cursor_SetInputSizes, METH_VARARGS },
     { "setoutputsize", (PyCFunction) Cursor_SetOutputSize, METH_VARARGS },
+    { "callfunc", (PyCFunction) Cursor_CallFunc, METH_VARARGS },
+    { "callproc", (PyCFunction) Cursor_CallProc, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
     { NULL, NULL }
 };
@@ -538,7 +542,6 @@ static int Cursor_InternalExecute(
         self->rowCount = 0;
         return 0;
     }
-
     if (CheckForError(self, rc, "Cursor_InternalExecute()") < 0)
         return -1;
 
@@ -929,6 +932,175 @@ static PyObject *Cursor_ExecuteMany(
 
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_Call()
+//   Call procedure or function.
+//-----------------------------------------------------------------------------
+static int Cursor_Call(
+    udt_Cursor *self,                   // cursor to call procedure/function on
+    udt_Variable *returnValueVar,       // return value (optional)
+    PyObject *procedureName,            // name of procedure/function
+    PyObject *args,                     // method args
+    int argsOffset)                     // offset into method args
+{
+    int i, numArgs, statementBufferSize;
+    char *statement, *ptr;
+    PyObject *temp;
+
+    // determine the arguments to the procedure
+    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+        return -1;
+    if (argsOffset > 0) {
+        temp = PyTuple_GetSlice(args, argsOffset, PyTuple_GET_SIZE(args));
+        Py_DECREF(args);
+        if (!temp)
+            return -1;
+        args = temp;
+    }
+    numArgs = PyTuple_GET_SIZE(args);
+
+    // include the return value, if necessary
+    if (returnValueVar) {
+        temp = PySequence_List(args);
+        Py_DECREF(args);
+        if (!temp)
+            return -1;
+        if (PyList_Insert(temp, 0, (PyObject*) returnValueVar) < 0) {
+            Py_DECREF(temp);
+            return -1;
+        }
+        args = temp;
+    }
+
+    // calculate the statement to execute
+    statementBufferSize = PyString_GET_SIZE(procedureName) + numArgs * 2 + 14;
+    statement = PyMem_Malloc(statementBufferSize);
+    if (!statement) {
+        Py_DECREF(args);
+        PyErr_NoMemory();
+        return -1;
+    }
+    strcpy(statement, "{");
+    if (returnValueVar)
+        strcat(statement, "? = ");
+    strcat(statement, "CALL ");
+    strcat(statement, PyString_AS_STRING(procedureName));
+    ptr = statement + strlen(statement);
+    if (numArgs > 0) {
+        *ptr++ = '(';
+        for (i = 0; i < numArgs; i++) {
+            if (i > 0)
+                *ptr++ = ',';
+            *ptr++ = '?';
+        }
+        *ptr++ = ')';
+    }
+    *ptr++ = '}';
+    *ptr = '\0';
+
+    // execute the statement on the cursor
+    temp = PyObject_CallMethod( (PyObject*) self, "execute", "sO", statement,
+            args);
+    PyMem_Free(statement);
+    Py_DECREF(args);
+    if (!temp)
+        return -1;
+    Py_DECREF(temp);
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_CallFunc()
+//   Call function, returning the returned value.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_CallFunc(
+    udt_Cursor *self,                   // cursor to call procedure on
+    PyObject *args)                     // arguments
+{
+    PyObject *functionName, *returnType, *results;
+    udt_Variable *returnValueVar;
+    int numArgs;
+
+    // verify we have the right arguments
+    numArgs = PyTuple_GET_SIZE(args);
+    if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError,
+                "expecting function name and return type");
+        return NULL;
+    }
+    functionName = PyTuple_GET_ITEM(args, 0);
+    returnType = PyTuple_GET_ITEM(args, 1);
+    if (!PyString_Check(functionName)) {
+        PyErr_SetString(PyExc_TypeError, "expecting a string");
+        return NULL;
+    }
+
+    // create the return value variable
+    returnValueVar = Variable_NewByType(self, returnType, 1);
+    if (!returnValueVar)
+        return NULL;
+    returnValueVar->input = 0;
+    returnValueVar->output = 1;
+
+    // call the function
+    if (Cursor_Call(self, returnValueVar, functionName, args, 2) < 0)
+        return NULL;
+
+    // create the return value
+    results = Variable_GetValue(returnValueVar, 0);
+    Py_DECREF(returnValueVar);
+    return results;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_CallProc()
+//   Call procedure, return (possibly) modified set of values.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_CallProc(
+    udt_Cursor *self,                   // cursor to call procedure on
+    PyObject *args)                     // arguments
+{
+    PyObject *procedureName, *results, *var, *temp;
+    int numArgs, i;
+
+    // verify we have the right arguments
+    numArgs = PyTuple_GET_SIZE(args);
+    if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "expecting procedure name");
+        return NULL;
+    }
+    procedureName = PyTuple_GET_ITEM(args, 0);
+    if (!PyString_Check(procedureName)) {
+        PyErr_SetString(PyExc_TypeError, "expecting a string");
+        return NULL;
+    }
+
+    // call the procedure
+    if (Cursor_Call(self, NULL, procedureName, args, 1) < 0)
+        return NULL;
+
+    // create the return value
+    numArgs = PyList_GET_SIZE(self->parameterVars);
+    results = PyList_New(numArgs);
+    if (!results)
+        return NULL;
+    for (i = 0; i < numArgs; i++) {
+        var = PyList_GET_ITEM(self->parameterVars, i);
+        temp = Variable_GetValue((udt_Variable*) var, 0);
+        if (!temp) {
+            Py_DECREF(results);
+            return NULL;
+        }
+        PyList_SET_ITEM(results, i, temp);
+    }
+
+    return results;
 }
 
 
