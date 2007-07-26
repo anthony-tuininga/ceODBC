@@ -1,7 +1,8 @@
 Open Source Python/ODBC Utility - ceODBC
 
-ceODBC is a Python extension module that allows access to ODBC and 
-conforms to the Python database API 2.0 specifications with a few exceptions.
+ceODBC is a Python extension module that enables access to databases using the
+ODBC API and conforms to the Python database API 2.0 specifications with a few
+exceptions.
 
 See http://www.python.org/topics/database/DatabaseAPI-2.0.html for more
 information on the Python database API specification.
