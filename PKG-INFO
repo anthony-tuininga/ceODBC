@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: ceODBC
+Version: 1.0
+Author: Anthony Tuininga
+Author-email: anthony tuininga at gmail com
+Maintainer: Anthony Tuininga
+Maintainer-email: anthony tuininga at gmail com
+Home-page: http://ceodbc.sourceforge.net
+Summary: Python interface to ODBC
+Description: Python interface to ODBC conforming to the Python DB API 2.0 specification. See http://www.python.org/topics/database/DatabaseAPI-2.0.html.
+Keywords: ODBC
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Python Software Foundation License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python
+Classifier: Topic :: Database
