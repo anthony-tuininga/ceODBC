@@ -21,7 +21,8 @@ BUILD_VERSION = "HEAD"
 # the environment variable CX_LOGGING_INCLUDE_DIR is used to locate the
 # include file cx_Logging.h and the environment variable CX_LOGGING_LIB_DIR
 # is used to locate the cx_Logging library
-WITH_CX_LOGGING = True
+WITH_CX_LOGGING = "CX_LOGGING_LIB_DIR" in os.environ \
+        and "CX_LOGGING_INCLUDE_DIR" in os.environ
 
 # setup link and compile args
 includeDirs = []
