@@ -59,6 +59,6 @@ setup(
             "See http://www.python.org/topics/database/DatabaseAPI-2.0.html.",
         author = "Anthony Tuininga",
         author_email = "anthony.tuininga@gmail.com",
-        url = "http://starship.python.net/crew/atuining",
+        url = "http://ceodbc.sourceforge.net",
         ext_modules = [extension])
 
