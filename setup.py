@@ -24,6 +24,14 @@ BUILD_VERSION = "1.0"
 WITH_CX_LOGGING = "CX_LOGGING_LIB_DIR" in os.environ \
         and "CX_LOGGING_INCLUDE_DIR" in os.environ
 
+# define the list of files to be included as documentation for Windows
+dataFiles = None
+if sys.platform in ("win32", "cygwin"):
+    baseName = "ceODBC-doc"
+    dataFiles = [ (baseName, [ "LICENSE.TXT", "README.TXT" ]) ]
+    htmlFiles = [n.strip() for n in file("MANIFEST") if n.startswith("html")]
+    dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
+
 # setup link and compile args
 includeDirs = []
 libraryDirs = []
@@ -50,6 +58,7 @@ extension = Extension(
 # perform the setup
 setup(
         name = "ceODBC",
+        data_files = dataFiles,
         version = BUILD_VERSION,
         description = "Python interface to ODBC",
         license = "See LICENSE.txt",
