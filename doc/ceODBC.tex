@@ -31,7 +31,7 @@ information.
 \begin{abstract}
 
 \noindent
-ceODBC is a Python extension module that allows access to databases using the
+ceODBC is a Python extension module that enables access to databases using the
 ODBC API and conforms to the Python database API 2.0 specifications with a few
 exceptions.
 See \url{http://www.python.org/topics/database/DatabaseAPI-2.0.html} for more
@@ -92,7 +92,7 @@ information on the Python database API specification.
   Python time module for details).
 \end{funcdesc}
 
-\section{Constants}
+\section{Constants}\label{constants}
 
 \begin{datadesc}{apilevel}
   String constant stating the supported DB API level. Currently '2.0'.
@@ -142,7 +142,7 @@ information on the Python database API specification.
   \strong{NOTE:} This attribute is an extension to the DB API definition.
 \end{datadesc}
 
-\section{Exceptions}
+\section{Exceptions}\label{exceptions}
 
 \begin{datadesc}{Warning}
   Exception raised for important warnings and defined by the DB API but not
@@ -195,13 +195,15 @@ information on the Python database API specification.
   supported by the database. It is a subclass of DatabaseError.
 \end{datadesc}
  
-\section{Variable Types}
+\section{Variable Types}\label{vartypes}
 
 \strong{NOTE:} The DB API definition does not define these object.
 
 These classes all create variable objects (\ref{varobj}). They are created
 implicitly by cursor.execute() as needed and normally need not be created
-directly.
+directly. These classes can also be passed in to cursor.setinputsizes() in
+favor of the types defined by the DB API in order to have finer control over
+the types of variables created.
 
 \begin{datadesc}{BigIntegerVar}
   Variable used to bind and/or fetch big integers. Values are returned as
@@ -282,7 +284,7 @@ object is destroyed or closed.
 \end{funcdesc}
 
 \begin{datadesc}{dsn}
-  This read-only attribute returns the TNS entry of the database to which a
+  This read-only attribute returns the DSN of the database to which a
   connection has been established.
 
   \strong{NOTE:} This attribute is an extension to the DB API definition.
@@ -304,22 +306,24 @@ object is destroyed or closed.
 
 \begin{datadesc}{bindarraysize}
   This read-write attribute specifies the number of rows to bind at a time and
-  is used when creating variables via setinputsizes() or var(). It defaults to
-  1 meaning to bind a single row at a time.
+  is used when creating variables via setinputsizes(). It defaults to 1 meaning
+  to bind a single row at a time.
 
   \strong{NOTE:} The DB API definition does not define this attribute.
 \end{datadesc}
 
 \begin{funcdesc}{callfunc}{\var{name}, \var{returnType}, \var{*args}}
-  Call a function with the given name. The return type is specified in the
-  same notation as is required by setinputsizes(). The result of the call is
-  the return value of the function.
+  Call a function with the given name. Parameters may also be passed as a
+  single list or tuple to conform to the DB API. The return type is specified
+  in the same notation as is required by setinputsizes(). The result of the
+  call is the return value of the function.
 \end{funcdesc}
 
 \begin{funcdesc}{callproc}{\var{name}, \var{*args}}
-  Call a procedure with the given name. The result of the call is a modified
-  copy of the input sequence. Input parameters are left untouched; output and
-  input/output parameters are replaced with possibly new values.
+  Call a procedure with the given name. Parameters may also be passed as a
+  single list or tuple to conform to the DB API. The result of the call is a
+  modified copy of the input sequence. Input parameters are left untouched;
+  output and input/output parameters are replaced with possibly new values.
 \end{funcdesc}
 
 \begin{funcdesc}{close}{}
@@ -343,7 +347,8 @@ object is destroyed or closed.
   be None for operations that do not return rows or if the cursor has not had
   an operation invoked via the execute() method yet.
 
-  The type will be one of the type objects defined at the module level.
+  The type will be one of the variable type objects (\ref{vartypes}) and is
+  comparable to the type objects defined by the DB API.
 \end{datadesc}
 
 \begin{funcdesc}{execute}{\var{statement}, {\var{*args}}}
