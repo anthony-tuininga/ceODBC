@@ -1141,10 +1141,10 @@ static int Cursor_InternalFetch(
     Py_BEGIN_ALLOW_THREADS
     rc = SQLFetch(self->handle);
     Py_END_ALLOW_THREADS
-    if (rc != SQL_NO_DATA) {
-        if (CheckForError(self, rc, "Cursor_InternalFetch(): fetch") < 0)
-            return -1;
-    }
+    if (rc == SQL_NO_DATA)
+        self->actualRows = 0;
+    else if (CheckForError(self, rc, "Cursor_InternalFetch(): fetch") < 0)
+        return -1;
     self->rowNum = 0;
     return 0;
 }
