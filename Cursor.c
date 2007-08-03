@@ -181,33 +181,22 @@ static PyObject *Cursor_New(
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Init()
-//   Create a new cursor object.
+// Cursor_InternalInit()
+//   Internal method used for creating a new cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_Init(
+static int Cursor_InternalInit(
     udt_Cursor *self,                   // cursor object
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+    udt_Connection *connection)         // connection object
 {
-    udt_Connection *connection;
     SQLRETURN rc;
-
-    // parse arguments
-    if (!PyArg_ParseTuple(args, "O!", &g_ConnectionType, &connection))
-        return -1;
 
     // initialize members
     self->handleType = SQL_HANDLE_STMT;
     self->handle = SQL_NULL_HANDLE;
     Py_INCREF(connection);
-    self->resultSetVars = NULL;
-    self->parameterVars = NULL;
     self->connection = connection;
     self->arraySize = 1;
     self->bindArraySize = 1;
-    self->setInputSizes = 0;
-    self->setOutputSize = 0;
-    self->setOutputSizeColumn = 0;
     self->logSql = connection->logSql;
 
     // allocate handle
@@ -218,6 +207,44 @@ static int Cursor_Init(
         return -1;
 
     return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_InternalNew()
+//   Internal method of creating a new cursor.
+//-----------------------------------------------------------------------------
+static udt_Cursor *Cursor_InternalNew(
+    udt_Connection *connection)         // connection object
+{
+    udt_Cursor *self;
+
+    self = PyObject_NEW(udt_Cursor, &g_CursorType);
+    if (!self)
+        return NULL;
+    if (Cursor_InternalInit(self, connection) < 0) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    return self;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_Init()
+//   Create a new cursor object.
+//-----------------------------------------------------------------------------
+static int Cursor_Init(
+    udt_Cursor *self,                   // cursor object
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    udt_Connection *connection;
+
+    if (!PyArg_ParseTuple(args, "O!", &g_ConnectionType, &connection))
+        return -1;
+    return Cursor_InternalInit(self, connection);
 }
 
 
@@ -518,6 +545,26 @@ static int Cursor_BindParameters(
     }
 
     return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_InternalCatalogHelper()
+//   Internal method used by the catalog methods in order to set up the result
+// set that is supposed to be returned.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_InternalCatalogHelper(
+    udt_Cursor *self)                   // cursor to fetch from
+{
+    if (!Cursor_PrepareResultSet(self) < 0) {
+        Py_DECREF(self);
+        return NULL;
+    }
+    self->rowCount = 0;
+    self->actualRows = -1;
+    self->rowNum = 0;
+
+    return (PyObject*) self;
 }
 
 
