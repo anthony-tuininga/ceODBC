@@ -28,6 +28,7 @@ static PyObject *Connection_Rollback(udt_Connection*, PyObject*);
 static PyObject *Connection_NewCursor(udt_Connection*, PyObject*);
 static PyObject *Connection_ContextManagerEnter(udt_Connection*, PyObject*);
 static PyObject *Connection_ContextManagerExit(udt_Connection*, PyObject*);
+static PyObject *Connection_Tables(udt_Connection*, PyObject*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -38,6 +39,8 @@ static PyMethodDef g_ConnectionMethods[] = {
     { "commit", (PyCFunction) Connection_Commit, METH_NOARGS },
     { "rollback", (PyCFunction) Connection_Rollback, METH_NOARGS },
     { "close", (PyCFunction) Connection_Close, METH_NOARGS },
+    { "tables", (PyCFunction) Connection_Tables,
+            METH_VARARGS | METH_KEYWORDS },
     { "__enter__", (PyCFunction) Connection_ContextManagerEnter, METH_NOARGS },
     { "__exit__", (PyCFunction) Connection_ContextManagerExit, METH_VARARGS },
     { NULL }
@@ -403,5 +406,46 @@ static PyObject *Connection_ContextManagerExit(
 
     Py_INCREF(Py_False);
     return Py_False;
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_Tables()
+//   Return the tables (as a result set) available via the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_Tables(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] =
+            { "catalog", "schema", "table", "type", NULL };
+    int catalogLength, schemaLength, tableLength, typeLength;
+    char *catalog, *schema, *table, *type;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    catalog = schema = table = type = NULL;
+    catalogLength = schemaLength = tableLength = typeLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#z#",
+            keywordList, &catalog, &catalogLength, &schema, &schemaLength,
+            &table, &tableLength, &type, &typeLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call method to determine tables
+    rc = SQLTables(cursor->handle, catalog, catalogLength, schema, schemaLength,
+            table, tableLength, type, typeLength);
+    if (CheckForError(cursor, rc, "Cursor_Tables()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
 }
 
