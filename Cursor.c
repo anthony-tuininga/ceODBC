@@ -194,10 +194,20 @@ static int Cursor_InternalInit(
     self->handleType = SQL_HANDLE_STMT;
     self->handle = SQL_NULL_HANDLE;
     Py_INCREF(connection);
+    self->resultSetVars = NULL;
+    self->parameterVars = NULL;
+    self->statement = NULL;
+    self->rowFactory = NULL;
     self->connection = connection;
     self->arraySize = 1;
     self->bindArraySize = 1;
     self->logSql = connection->logSql;
+    self->setInputSizes = 0;
+    self->setOutputSize = 0;
+    self->setOutputSizeColumn = 0;
+    self->rowCount = 0;
+    self->actualRows = 0;
+    self->rowNum = 0;
 
     // allocate handle
     rc = SQLAllocHandle(self->handleType, self->connection->handle,
