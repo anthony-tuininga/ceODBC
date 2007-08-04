@@ -427,7 +427,7 @@ static PyObject *Connection_Procedures(
 {
     static char *keywordList[] = { "catalog", "schema", "proc", NULL };
     int catalogLength, schemaLength, procLength;
-    char *catalog, *schema, *proc;
+    SQLCHAR *catalog, *schema, *proc;
     udt_Cursor *cursor;
     SQLRETURN rc;
 
@@ -468,7 +468,7 @@ static PyObject *Connection_Tables(
     static char *keywordList[] =
             { "catalog", "schema", "table", "type", NULL };
     int catalogLength, schemaLength, tableLength, typeLength;
-    char *catalog, *schema, *table, *type;
+    SQLCHAR *catalog, *schema, *table, *type;
     udt_Cursor *cursor;
     SQLRETURN rc;
 
@@ -510,7 +510,7 @@ static PyObject *Connection_TablePrivileges(
     static char *keywordList[] =
             { "catalog", "schema", "table", NULL };
     int catalogLength, schemaLength, tableLength;
-    char *catalog, *schema, *table;
+    SQLCHAR *catalog, *schema, *table;
     udt_Cursor *cursor;
     SQLRETURN rc;
 
