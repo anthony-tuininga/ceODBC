@@ -1,0 +1,11 @@
+Changes from 1.0 to 1.1
+ 1) Added support for determining the columns, column privileges, foreign keys,
+    primary keys, procedures, procedure columns, tables and table privileges
+    available in the catalog.
+ 2) Added support for getting/setting the autocommit flag for connections.
+ 3) Added support for getting/setting the cursor name which is useful for
+    performing positioned updates and deletes (as in delete from X where
+    current of cursorname).
+ 4) Explicitly set end of rows when SQL_NO_DATA is returned from SQLFetch() as
+    some drivers do not properly set the number of rows fetched.
+
