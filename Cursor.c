@@ -49,6 +49,8 @@ static PyObject *Cursor_Prepare(udt_Cursor*, PyObject*);
 static PyObject *Cursor_SetInputSizes(udt_Cursor*, PyObject*);
 static PyObject *Cursor_SetOutputSize(udt_Cursor*, PyObject*);
 static PyObject *Cursor_GetDescription(udt_Cursor*, void*);
+static PyObject *Cursor_GetName(udt_Cursor*, void*);
+static int Cursor_SetName(udt_Cursor*, PyObject*, void*);
 static PyObject *Cursor_New(PyTypeObject*, PyObject*, PyObject*);
 static int Cursor_Init(udt_Cursor*, PyObject*, PyObject*);
 static PyObject *Cursor_Repr(udt_Cursor*);
@@ -94,6 +96,7 @@ static PyMemberDef g_CursorMembers[] = {
 //-----------------------------------------------------------------------------
 static PyGetSetDef g_CursorCalcMembers[] = {
     { "description", (getter) Cursor_GetDescription, 0, 0, 0 },
+    { "name", (getter) Cursor_GetName, (setter) Cursor_SetName, 0, 0 },
     { NULL }
 };
 
@@ -723,6 +726,50 @@ static PyObject *Cursor_GetDescription(
     }
 
     return results;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_GetName()
+//   Return the name associated with the cursor.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_GetName(
+    udt_Cursor *self,                   // cursor object
+    void *arg)                          // optional argument (ignored)
+{
+    SQLSMALLINT nameLength;
+    char name[255];
+    SQLRETURN rc;
+
+    rc = SQLGetCursorName(self->handle, name, sizeof(name), &nameLength);
+    if (CheckForError(self, rc, "Cursor_GetName()") < 0)
+        return NULL;
+    return PyString_FromStringAndSize(name, nameLength);
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_SetName()
+//   Set the name associated with the cursor.
+//-----------------------------------------------------------------------------
+static int Cursor_SetName(
+    udt_Cursor *self,                   // cursor object
+    PyObject *value,                    // value to set
+    void *arg)                          // optional argument (ignored)
+{
+    SQLRETURN rc;
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expecting string");
+        return -1;
+    }
+
+    rc = SQLSetCursorName(self->handle, PyString_AS_STRING(value),
+            PyString_GET_SIZE(value));
+    if (CheckForError(self, rc, "Cursor_SetName()") < 0)
+        return -1;
+
+    return 0;
 }
 
 
