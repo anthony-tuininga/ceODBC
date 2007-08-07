@@ -28,7 +28,7 @@ WITH_CX_LOGGING = "CX_LOGGING_LIB_DIR" in os.environ \
 dataFiles = None
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
-    dataFiles = [ (baseName, [ "LICENSE.TXT", "README.TXT" ]) ]
+    dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
     htmlFiles = [n.strip() for n in file("MANIFEST") if n.startswith("html")]
     dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
 
