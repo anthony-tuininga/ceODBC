@@ -39,6 +39,8 @@ static PyObject *Connection_ProcedureColumns(udt_Connection*, PyObject*,
 static PyObject *Connection_Tables(udt_Connection*, PyObject*, PyObject*);
 static PyObject *Connection_TablePrivileges(udt_Connection*, PyObject*,
         PyObject*);
+static PyObject *Connection_GetAutoCommit(udt_Connection*, void*);
+static int Connection_SetAutoCommit(udt_Connection*, PyObject*, void*);
 
 
 //-----------------------------------------------------------------------------
@@ -82,6 +84,16 @@ static PyMemberDef g_ConnectionMembers[] = {
 
 
 //-----------------------------------------------------------------------------
+// declaration of calculated members for Python type "Connection"
+//-----------------------------------------------------------------------------
+static PyGetSetDef g_ConnectionCalcMembers[] = {
+    { "autocommit", (getter) Connection_GetAutoCommit,
+            (setter) Connection_SetAutoCommit, 0, 0 },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
 // declaration of Python type "Connection"
 //-----------------------------------------------------------------------------
 static PyTypeObject g_ConnectionType = {
@@ -116,7 +128,7 @@ static PyTypeObject g_ConnectionType = {
     0,                                  // tp_iternext
     g_ConnectionMethods,                // tp_methods
     g_ConnectionMembers,                // tp_members
-    0,                                  // tp_getset
+    g_ConnectionCalcMembers,            // tp_getset
     0,                                  // tp_base
     0,                                  // tp_dict
     0,                                  // tp_descr_get
@@ -438,7 +450,7 @@ static PyObject *Connection_ContextManagerExit(
 //   Return columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Columns(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -479,7 +491,7 @@ static PyObject *Connection_Columns(
 //   Return column privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_ColumnPrivileges(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -520,7 +532,7 @@ static PyObject *Connection_ColumnPrivileges(
 //   Return foreign keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_ForeignKeys(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -566,7 +578,7 @@ static PyObject *Connection_ForeignKeys(
 //   Return primary keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_PrimaryKeys(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -606,7 +618,7 @@ static PyObject *Connection_PrimaryKeys(
 //   Return procedures from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Procedures(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -646,7 +658,7 @@ static PyObject *Connection_Procedures(
 //   Return procedure columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_ProcedureColumns(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -687,7 +699,7 @@ static PyObject *Connection_ProcedureColumns(
 //   Return tables from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Tables(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -728,7 +740,7 @@ static PyObject *Connection_Tables(
 //   Return table privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_TablePrivileges(
-    udt_Connection *self,               // cursor to fetch from
+    udt_Connection *self,               // connection to fetch from
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
@@ -761,5 +773,58 @@ static PyObject *Connection_TablePrivileges(
     }
 
     return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_GetAutoCommit()
+//   Return the value of the autocommit flag.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_GetAutoCommit(
+    udt_Connection *self,               // connection to get value from
+    void* arg)                          // argument (unused)
+{
+    SQLUINTEGER autocommit;
+    PyObject *result;
+    SQLRETURN rc;
+
+    rc = SQLGetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+            &autocommit, SQL_IS_UINTEGER, NULL);
+    if (CheckForError(self, rc, "Connection_GetAutoCommit()") < 0)
+        return NULL;
+    if (autocommit)
+        result = Py_True;
+    else result = Py_False;
+    Py_INCREF(result);
+    return result;
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_SetAutoCommit()
+//   Set the value of the autocommit flag.
+//-----------------------------------------------------------------------------
+static int Connection_SetAutoCommit(
+    udt_Connection *self,               // connection to set value on
+    PyObject *value,                    // value to set
+    void* arg)                          // argument (unused)
+{
+    SQLUINTEGER sqlValue;
+    SQLRETURN rc;
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expecting boolean");
+        return -1;
+    }
+    if (value == Py_True)
+        sqlValue = SQL_AUTOCOMMIT_ON;
+    else sqlValue = SQL_AUTOCOMMIT_OFF;
+
+    rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+            (SQLPOINTER) sqlValue, SQL_IS_UINTEGER);
+    if (CheckForError(self, rc,
+            "Connection_Init(): turning off autocommit") < 0)
+        return -1;
+    return 0;
 }
 
