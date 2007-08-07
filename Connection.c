@@ -28,7 +28,14 @@ static PyObject *Connection_Rollback(udt_Connection*, PyObject*);
 static PyObject *Connection_NewCursor(udt_Connection*, PyObject*);
 static PyObject *Connection_ContextManagerEnter(udt_Connection*, PyObject*);
 static PyObject *Connection_ContextManagerExit(udt_Connection*, PyObject*);
+static PyObject *Connection_Columns(udt_Connection*, PyObject*, PyObject*);
+static PyObject *Connection_ColumnPrivileges(udt_Connection*, PyObject*,
+        PyObject*);
+static PyObject *Connection_ForeignKeys(udt_Connection*, PyObject*, PyObject*);
+static PyObject *Connection_PrimaryKeys(udt_Connection*, PyObject*, PyObject*);
 static PyObject *Connection_Procedures(udt_Connection*, PyObject*, PyObject*);
+static PyObject *Connection_ProcedureColumns(udt_Connection*, PyObject*,
+        PyObject*);
 static PyObject *Connection_Tables(udt_Connection*, PyObject*, PyObject*);
 static PyObject *Connection_TablePrivileges(udt_Connection*, PyObject*,
         PyObject*);
@@ -42,7 +49,17 @@ static PyMethodDef g_ConnectionMethods[] = {
     { "commit", (PyCFunction) Connection_Commit, METH_NOARGS },
     { "rollback", (PyCFunction) Connection_Rollback, METH_NOARGS },
     { "close", (PyCFunction) Connection_Close, METH_NOARGS },
+    { "columns", (PyCFunction) Connection_Columns,
+            METH_VARARGS | METH_KEYWORDS },
+    { "columnprivileges", (PyCFunction) Connection_ColumnPrivileges,
+            METH_VARARGS | METH_KEYWORDS },
+    { "foreignkeys", (PyCFunction) Connection_ForeignKeys,
+            METH_VARARGS | METH_KEYWORDS },
+    { "primarykeys", (PyCFunction) Connection_PrimaryKeys,
+            METH_VARARGS | METH_KEYWORDS },
     { "procedures", (PyCFunction) Connection_Procedures,
+            METH_VARARGS | METH_KEYWORDS },
+    { "procedurecolumns", (PyCFunction) Connection_ProcedureColumns,
             METH_VARARGS | METH_KEYWORDS },
     { "tables", (PyCFunction) Connection_Tables,
             METH_VARARGS | METH_KEYWORDS },
@@ -417,8 +434,176 @@ static PyObject *Connection_ContextManagerExit(
 
 
 //-----------------------------------------------------------------------------
+// Connection_Columns()
+//   Return columns from the catalog for the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_Columns(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] =
+            { "catalog", "schema", "table", "column", NULL };
+    int catalogLength, schemaLength, tableLength, columnLength;
+    SQLCHAR *catalog, *schema, *table, *column;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    catalog = schema = table = column = NULL;
+    catalogLength = schemaLength = tableLength = columnLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#z#",
+            keywordList, &catalog, &catalogLength, &schema, &schemaLength,
+            &table, &tableLength, &column, &columnLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call catalog method
+    rc = SQLColumns(cursor->handle, catalog, catalogLength, schema,
+            schemaLength, table, tableLength, column, columnLength);
+    if (CheckForError(cursor, rc, "Connection_Columns()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_ColumnPrivileges()
+//   Return column privileges from the catalog for the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_ColumnPrivileges(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] =
+            { "catalog", "schema", "table", "column", NULL };
+    int catalogLength, schemaLength, tableLength, columnLength;
+    SQLCHAR *catalog, *schema, *table, *column;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    catalog = schema = table = column = NULL;
+    catalogLength = schemaLength = tableLength = columnLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#z#",
+            keywordList, &catalog, &catalogLength, &schema, &schemaLength,
+            &table, &tableLength, &column, &columnLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call catalog method
+    rc = SQLColumnPrivileges(cursor->handle, catalog, catalogLength, schema,
+            schemaLength, table, tableLength, column, columnLength);
+    if (CheckForError(cursor, rc, "Connection_ColumnPrivileges()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_ForeignKeys()
+//   Return foreign keys from the catalog for the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_ForeignKeys(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] = { "pkcatalog", "pkschema", "pktable",
+            "fkcatalog", "fkschema", "fktable", NULL };
+    SQLCHAR *pkCatalog, *pkSchema, *pkTable, *fkCatalog, *fkSchema, *fkTable;
+    int pkCatalogLength, pkSchemaLength, pkTableLength, fkCatalogLength;
+    int fkSchemaLength, fkTableLength;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    pkCatalog = pkSchema = pkTable = fkCatalog = fkSchema = fkTable = NULL;
+    pkCatalogLength = pkSchemaLength = pkTableLength = 0;
+    fkCatalogLength = fkSchemaLength = fkTableLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#z#z#z#",
+            keywordList, &pkCatalog, &pkCatalogLength, &pkSchema,
+            &pkSchemaLength, &pkTable, &pkTableLength, &fkCatalog,
+            &fkCatalogLength, &fkSchema, &fkSchemaLength, &fkTable,
+            &fkTableLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call catalog method
+    rc = SQLForeignKeys(cursor->handle, pkCatalog, pkCatalogLength, pkSchema,
+            pkSchemaLength, pkTable, pkTableLength, fkCatalog, fkCatalogLength,
+            fkSchema, fkSchemaLength, fkTable, fkTableLength);
+    if (CheckForError(cursor, rc, "Connection_ForeignKeys()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_PrimaryKeys()
+//   Return primary keys from the catalog for the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_PrimaryKeys(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] = { "catalog", "schema", "table", NULL };
+    int catalogLength, schemaLength, tableLength;
+    SQLCHAR *catalog, *schema, *table;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    catalog = schema = table = NULL;
+    catalogLength = schemaLength = tableLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#",
+            keywordList, &catalog, &catalogLength, &schema, &schemaLength,
+            &table, &tableLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call catalog method
+    rc = SQLPrimaryKeys(cursor->handle, catalog, catalogLength, schema,
+            schemaLength, table, tableLength);
+    if (CheckForError(cursor, rc, "Connection_PrimaryKeys()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
 // Connection_Procedures()
-//   Return the procedures (as a result set) available via the data source.
+//   Return procedures from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Procedures(
     udt_Connection *self,               // cursor to fetch from
@@ -444,10 +629,51 @@ static PyObject *Connection_Procedures(
     if (!cursor)
         return NULL;
 
-    // call method to determine procedures
+    // call catalog method
     rc = SQLProcedures(cursor->handle, catalog, catalogLength, schema,
             schemaLength, proc, procLength);
-    if (CheckForError(cursor, rc, "Cursor_Procedures()") < 0) {
+    if (CheckForError(cursor, rc, "Connection_Procedures()") < 0) {
+        Py_DECREF(cursor);
+        return NULL;
+    }
+
+    return Cursor_InternalCatalogHelper(cursor);
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_ProcedureColumns()
+//   Return procedure columns from the catalog for the data source.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_ProcedureColumns(
+    udt_Connection *self,               // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] =
+            { "catalog", "schema", "proc", "column", NULL };
+    int catalogLength, schemaLength, procLength, columnLength;
+    SQLCHAR *catalog, *schema, *proc, *column;
+    udt_Cursor *cursor;
+    SQLRETURN rc;
+
+    // parse arguments
+    catalog = schema = proc = column = NULL;
+    catalogLength = schemaLength = procLength = columnLength = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|z#z#z#z#",
+            keywordList, &catalog, &catalogLength, &schema, &schemaLength,
+            &proc, &procLength, &column, &columnLength))
+        return NULL;
+
+    // create cursor
+    cursor = Cursor_InternalNew(self);
+    if (!cursor)
+        return NULL;
+
+    // call catalog method
+    rc = SQLProcedureColumns(cursor->handle, catalog, catalogLength, schema,
+            schemaLength, proc, procLength, column, columnLength);
+    if (CheckForError(cursor, rc, "Connection_ProcedureColumns()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -458,7 +684,7 @@ static PyObject *Connection_Procedures(
 
 //-----------------------------------------------------------------------------
 // Connection_Tables()
-//   Return the tables (as a result set) available via the data source.
+//   Return tables from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Tables(
     udt_Connection *self,               // cursor to fetch from
@@ -485,10 +711,10 @@ static PyObject *Connection_Tables(
     if (!cursor)
         return NULL;
 
-    // call method to determine tables
+    // call catalog method
     rc = SQLTables(cursor->handle, catalog, catalogLength, schema, schemaLength,
             table, tableLength, type, typeLength);
-    if (CheckForError(cursor, rc, "Cursor_Tables()") < 0) {
+    if (CheckForError(cursor, rc, "Connection_Tables()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -499,8 +725,7 @@ static PyObject *Connection_Tables(
 
 //-----------------------------------------------------------------------------
 // Connection_TablePrivileges()
-//   Return the table privileges (as a result set) available via the data
-// source.
+//   Return table privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
 static PyObject *Connection_TablePrivileges(
     udt_Connection *self,               // cursor to fetch from
@@ -527,10 +752,10 @@ static PyObject *Connection_TablePrivileges(
     if (!cursor)
         return NULL;
 
-    // call method to determine table privileges
+    // call catalog method
     rc = SQLTablePrivileges(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength);
-    if (CheckForError(cursor, rc, "Cursor_TablePrivileges()") < 0) {
+    if (CheckForError(cursor, rc, "Connection_TablePrivileges()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
