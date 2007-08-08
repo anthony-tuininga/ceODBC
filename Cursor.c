@@ -741,7 +741,8 @@ static PyObject *Cursor_GetName(
     char name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorName(self->handle, name, sizeof(name), &nameLength);
+    rc = SQLGetCursorName(self->handle, (SQLCHAR*) name, sizeof(name),
+            &nameLength);
     if (CheckForError(self, rc, "Cursor_GetName()") < 0)
         return NULL;
     return PyString_FromStringAndSize(name, nameLength);
@@ -764,7 +765,7 @@ static int Cursor_SetName(
         return -1;
     }
 
-    rc = SQLSetCursorName(self->handle, PyString_AS_STRING(value),
+    rc = SQLSetCursorName(self->handle, (SQLCHAR*) PyString_AS_STRING(value),
             PyString_GET_SIZE(value));
     if (CheckForError(self, rc, "Cursor_SetName()") < 0)
         return -1;
