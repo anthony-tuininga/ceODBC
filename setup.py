@@ -53,7 +53,10 @@ extension = Extension(
         library_dirs = libraryDirs,
         libraries = libs,
         define_macros = defineMacros,
-        sources = ["ceODBC.c"])
+        sources = ["ceODBC.c"],
+        depends = ["ApiTypes.c", "BinaryVar.c", "BitVar.c", "Connection.c",
+                "Cursor.c", "DateTimeVar.c", "Environment.c", "Error.c",
+                "NumberVar.c", "StringVar.c", "Variable.c"])
 
 # perform the setup
 setup(
