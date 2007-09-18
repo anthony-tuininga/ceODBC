@@ -297,6 +297,8 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_Double;
     if (value->ob_type == (PyTypeObject*) g_DecimalType)
         return &vt_Decimal;
+    if (PyTime_Check(value))
+        return &vt_Time;
     if (PyDateTime_Check(value))
         return &vt_Timestamp;
     if (PyDate_Check(value))
@@ -359,6 +361,10 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_Date;
     if (type == (PyObject*) PyDateTimeAPI->DateType)
         return &vt_Date;
+    if (type == (PyObject*) &g_TimeVarType)
+        return &vt_Time;
+    if (type == (PyObject*) PyDateTimeAPI->TimeType)
+        return &vt_Time;
     if (type == (PyObject*) &g_TimestampVarType)
         return &vt_Timestamp;
     if (type == (PyObject*) PyDateTimeAPI->DateTimeType)
@@ -400,6 +406,8 @@ static udt_VariableType *Variable_TypeBySqlDataType (
             return &vt_Decimal;
         case SQL_TYPE_DATE:
             return &vt_Date;
+        case SQL_TYPE_TIME:
+            return &vt_Time;
         case SQL_TYPE_TIMESTAMP:
             return &vt_Timestamp;
         case SQL_CHAR:
