@@ -224,6 +224,8 @@ void initceODBC(void)
         return;
     if (PyType_Ready(&g_StringVarType) < 0)
         return;
+    if (PyType_Ready(&g_TimeVarType) < 0)
+        return;
     if (PyType_Ready(&g_TimestampVarType) < 0)
         return;
 
@@ -290,6 +292,7 @@ void initceODBC(void)
     ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
     ADD_TYPE_OBJECT("LongStringVar", &g_LongStringVarType)
     ADD_TYPE_OBJECT("StringVar", &g_StringVarType)
+    ADD_TYPE_OBJECT("TimeVar", &g_TimeVarType)
     ADD_TYPE_OBJECT("TimestampVar", &g_TimestampVarType)
 
     // add the API types required by the DB API
