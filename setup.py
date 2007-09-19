@@ -15,7 +15,7 @@ from distutils.errors import DistutilsSetupError
 from distutils.extension import Extension
 
 # define build version
-BUILD_VERSION = "HEAD"
+BUILD_VERSION = "1.2b1"
 
 # specify whether the cx_Logging module should be used for logging;
 # the environment variable CX_LOGGING_INCLUDE_DIR is used to locate the
