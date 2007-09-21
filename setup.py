@@ -29,7 +29,8 @@ dataFiles = None
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
     dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
-    htmlFiles = [n.strip() for n in file("MANIFEST") if n.startswith("html")]
+    htmlFiles = [os.path.join("html", n) for n in os.listdir("html") \
+            if not n.startswith(".")]
     dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
 
 # setup link and compile args
