@@ -7,6 +7,7 @@ Unix platforms
     python setup.py build install
 """
 
+import distutils.command.build_ext
 import os
 import sys
 
@@ -17,41 +18,100 @@ from distutils.extension import Extension
 # define build version
 BUILD_VERSION = "1.2b1"
 
-# specify whether the cx_Logging module should be used for logging;
-# the environment variable CX_LOGGING_INCLUDE_DIR is used to locate the
-# include file cx_Logging.h and the environment variable CX_LOGGING_LIB_DIR
-# is used to locate the cx_Logging library
-WITH_CX_LOGGING = "CX_LOGGING_LIB_DIR" in os.environ \
-        and "CX_LOGGING_INCLUDE_DIR" in os.environ
+# define class to allow building the module with or without cx_Logging
+class build_ext(distutils.command.build_ext.build_ext):
+    user_options = distutils.command.build_ext.build_ext.user_options + [
+        ('with-cx-logging', None,
+         'include logging with the cx_Logging module'),
+        ('cx-logging', None,
+         'specify the location of the cx_Logging sources')
+    ]
 
-# define the list of files to be included as documentation for Windows
+    def _build_cx_logging(self):
+        sourceDir = self.cx_logging
+        origDir = os.getcwd()
+        scriptArgs = ["build"]
+        command = self.distribution.get_command_obj("build")
+        if command.compiler is not None:
+            scriptArgs.append("--compiler=%s" % command.compiler)
+        os.chdir(sourceDir)
+        print "building cx_Logging in", sourceDir
+        distribution = distutils.core.run_setup("setup.py", scriptArgs)
+        module, = distribution.ext_modules
+        command = distribution.get_command_obj("build_ext")
+        command.ensure_finalized()
+        if command.compiler is None:
+            command.run()
+        else:
+            command.build_extensions()
+        dirName = os.path.join(sourceDir, command.build_lib)
+        os.chdir(origDir)
+        return os.path.join(sourceDir, command.build_lib,
+                command.get_ext_filename(module.name))
+
+    def build_extension(self, ext):
+        if self.with_cx_logging:
+            os.environ["LD_RUN_PATH"] = "${ORIGIN}"
+            ext.define_macros.append(("WITH_CX_LOGGING", None))
+            ext.include_dirs = [self.cx_logging]
+            name = self._build_cx_logging()
+            ext.extra_link_args = [name]
+        distutils.command.build_ext.build_ext.build_extension(self, ext)
+
+    def finalize_options(self):
+        distutils.command.build_ext.build_ext.finalize_options(self)
+        envName = "CX_LOGGING_SOURCE"
+        if self.with_cx_logging is None:
+            self.with_cx_logging = envName in os.environ
+        if self.with_cx_logging:
+            if self.cx_logging is None:
+                self.cx_logging = os.environ.get(envName)
+            if self.cx_logging is None:
+                dirName = os.path.join("..", "..", "cx_Logging", "trunk")
+                self.cx_logging = os.path.realpath(dirName)
+            os.environ[envName] = self.cx_logging
+
+    def initialize_options(self):
+        distutils.command.build_ext.build_ext.initialize_options(self)
+        self.with_cx_logging = None
+        self.cx_logging = None
+
+
+# define the list of files to be included as documentation
 dataFiles = None
+options = None
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
     dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
     htmlFiles = [os.path.join("html", n) for n in os.listdir("html") \
             if not n.startswith(".")]
     dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
+else:
+    docFiles = "HISTORY.txt LICENSE.txt README.txt html"
+    options = dict(bdist_rpm = dict(doc_files = docFiles))
 
 # setup link and compile args
-includeDirs = []
-libraryDirs = []
 defineMacros = [("BUILD_VERSION", BUILD_VERSION)]
 if sys.platform == "win32":
     libs = ["odbc32"]
 else:
     libs = ["odbc"]
-if WITH_CX_LOGGING:
-    libraryDirs.append(os.environ["CX_LOGGING_LIB_DIR"])
-    libs.append("cx_Logging")
-    includeDirs = [os.environ["CX_LOGGING_INCLUDE_DIR"]]
-    defineMacros.append(("WITH_CX_LOGGING", None))
+
+# define the classifiers for the package index
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Python Software Foundation License",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: C",
+        "Programming Language :: Python",
+        "Topic :: Database"
+]
 
 # setup the extension
 extension = Extension(
         name = "ceODBC",
-        include_dirs = includeDirs,
-        library_dirs = libraryDirs,
         libraries = libs,
         define_macros = defineMacros,
         sources = ["ceODBC.c"],
@@ -62,16 +122,21 @@ extension = Extension(
 # perform the setup
 setup(
         name = "ceODBC",
-        data_files = dataFiles,
         version = BUILD_VERSION,
         description = "Python interface to ODBC",
-        license = "See LICENSE.txt",
+        license = "Python Software Foundation License",
         long_description = \
             "Python interface to ODBC conforming to the Python DB API 2.0 "
             "specification.\n"
             "See http://www.python.org/topics/database/DatabaseAPI-2.0.html.",
         author = "Anthony Tuininga",
         author_email = "anthony.tuininga@gmail.com",
+        maintainer = "Anthony Tuininga",
+        maintainer_email = "anthony.tuininga@gmail.com",
         url = "http://ceodbc.sourceforge.net",
-        ext_modules = [extension])
+        ext_modules = [extension],
+        data_files = dataFiles,
+        classifiers = classifiers,
+        cmdclass = dict(build_ext = build_ext),
+        options = options)
 
