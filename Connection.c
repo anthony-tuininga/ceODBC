@@ -199,15 +199,20 @@ static int Connection_Init(
 {
     SQLSMALLINT actualDsnLength;
     char actualDsn[1024], *dsn;
-    int dsnLength;
+    int dsnLength, autocommit;
+    PyObject *autocommitObj;
     SQLRETURN rc;
 
     // define keyword arguments
-    static char *keywordList[] = { "dsn", NULL };
+    static char *keywordList[] = { "dsn", "autocommit", NULL };
 
     // parse arguments
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "s#", keywordList,
-            &dsn, &dsnLength))
+    autocommitObj = Py_None;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "s#|O", keywordList,
+            &dsn, &dsnLength, &autocommitObj))
+        return -1;
+    autocommit = PyObject_IsTrue(autocommitObj);
+    if (autocommit < 0)
         return -1;
 
     // set up the environment
@@ -222,13 +227,6 @@ static int Connection_Init(
             "Connection_Init(): allocate DBC handle") < 0)
         return -1;
 
-    // turn off autocommit
-    rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
-            (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
-    if (CheckForError(self, rc,
-            "Connection_Init(): turning off autocommit") < 0)
-        return -1;
-
     // connecting to driver
     rc = SQLDriverConnect(self->handle, NULL, (SQLCHAR*) dsn, dsnLength,
             (SQLCHAR*) actualDsn, sizeof(actualDsn), &actualDsnLength,
@@ -236,6 +234,15 @@ static int Connection_Init(
     if (CheckForError(self, rc,
             "Connection_Init(): connecting to driver") < 0)
         return -1;
+
+    // turn off autocommit
+    if (!autocommit) {
+        rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+                (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
+        if (CheckForError(self, rc,
+                "Connection_Init(): turning off autocommit") < 0)
+            return -1;
+    }
 
     // mark connection as connected
     self->isConnected = 1;
