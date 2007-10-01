@@ -79,16 +79,13 @@ class build_ext(distutils.command.build_ext.build_ext):
 
 # define the list of files to be included as documentation
 dataFiles = None
-options = None
+docFiles = "HISTORY.txt LICENSE.txt README.txt html"
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
     dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
     htmlFiles = [os.path.join("html", n) for n in os.listdir("html") \
             if not n.startswith(".")]
     dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
-else:
-    docFiles = "HISTORY.txt LICENSE.txt README.txt html"
-    options = dict(bdist_rpm = dict(doc_files = docFiles))
 
 # setup link and compile args
 defineMacros = [("BUILD_VERSION", BUILD_VERSION)]
@@ -138,5 +135,5 @@ setup(
         data_files = dataFiles,
         classifiers = classifiers,
         cmdclass = dict(build_ext = build_ext),
-        options = options)
+        options = dict(bdist_rpm = dict(doc_files = docFiles)))
 
