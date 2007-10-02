@@ -44,10 +44,12 @@ class build_ext(distutils.command.build_ext.build_ext):
             command.run()
         else:
             command.build_extensions()
-        dirName = os.path.join(sourceDir, command.build_lib)
         os.chdir(origDir)
-        return os.path.join(sourceDir, command.build_lib,
-                command.get_ext_filename(module.name))
+        if sys.platform == "win32":
+            return os.path.join(sourceDir, command.importLibraryName)
+        else:
+            return os.path.join(sourceDir, command.build_lib,
+                    command.get_ext_filename(module.name))
 
     def build_extension(self, ext):
         if self.with_cx_logging:
@@ -55,7 +57,11 @@ class build_ext(distutils.command.build_ext.build_ext):
             ext.define_macros.append(("WITH_CX_LOGGING", None))
             ext.include_dirs = [self.cx_logging]
             name = self._build_cx_logging()
-            ext.extra_link_args = [name]
+            if sys.platform == "win32":
+                ext.library_dirs = [os.path.dirname(name)]
+                ext.libraries.append("cx_Logging")
+            else:
+                ext.extra_link_args = [name]
         distutils.command.build_ext.build_ext.build_extension(self, ext)
 
     def finalize_options(self):
