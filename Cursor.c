@@ -638,12 +638,12 @@ static PyObject *Cursor_ItemDescription(
     SQLUSMALLINT position)              // position in description
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
+    SQLUINTEGER precision, size;
     udt_VariableType *varType;
-    SQLUINTEGER precision;
+    int i, displaySize;
     PyObject *tuple;
     char name[256];
     SQLRETURN rc;
-    int i;
 
     // retrieve information about the column
     rc = SQLDescribeCol(self->handle, position, (SQLCHAR*) name, sizeof(name),
@@ -662,15 +662,36 @@ static PyObject *Cursor_ItemDescription(
     if (!tuple)
         return NULL;
 
+    // reset precision and scale for all but numbers
+    size = precision;
+    if (varType != &vt_BigInteger &&
+            varType != &vt_Bit &&
+            varType != &vt_Integer &&
+            varType != &vt_Double &&
+            varType != &vt_Decimal) {
+        precision = 0;
+        scale = 0;
+    }
+
+    // set display size based on data type
+    displaySize = size;
+    if (varType == &vt_BigInteger ||
+            varType == &vt_Integer)
+        displaySize = size + 1;
+    else if (varType == &vt_Double ||
+            varType == &vt_Decimal) {
+        displaySize = size + 1;
+        if (scale > 0)
+            displaySize++;
+    }
+
     // set each of the items in the tuple
     Py_INCREF(varType->pythonType);
-    Py_INCREF(Py_None);
-    Py_INCREF(Py_None);
     PyTuple_SET_ITEM(tuple, 0,
             PyString_FromStringAndSize( (char*) name, nameLength));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
-    PyTuple_SET_ITEM(tuple, 2, Py_None);
-    PyTuple_SET_ITEM(tuple, 3, Py_None);
+    PyTuple_SET_ITEM(tuple, 2, PyInt_FromLong(displaySize));
+    PyTuple_SET_ITEM(tuple, 3, PyInt_FromLong(size));
     PyTuple_SET_ITEM(tuple, 4, PyInt_FromLong(precision));
     PyTuple_SET_ITEM(tuple, 5, PyInt_FromLong(scale));
     PyTuple_SET_ITEM(tuple, 6, PyBool_FromLong(nullable != SQL_NO_NULLS));
