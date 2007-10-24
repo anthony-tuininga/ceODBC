@@ -22,6 +22,13 @@
 #define LogMessageV(...)
 #endif
 
+// define Py_ssize_t for versions before Python 2.5
+#if PY_VERSION_HEX < 0x02050000
+typedef int Py_ssize_t;
+#define PY_SSIZE_T_MAX INT_MAX
+#define PY_SSIZE_T_MIN INT_MIN
+#endif
+
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
     apiTypeObject = ApiType_New(module, name); \
