@@ -810,7 +810,7 @@ static PyObject *Cursor_Close(
         return NULL;
 
     // close the cursor
-    rc = SQLCloseCursor(self->handle);
+    rc = SQLFreeHandle(self->handleType, self->handle);
     if (CheckForError(self, rc, "Cursor_Close()") < 0)
         return NULL;
     self->handle = NULL;
