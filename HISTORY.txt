@@ -1,6 +1,6 @@
 Changes from 1.1 to 1.2
  1) Added support for time data as requested by Dmitry Solitsky.
- 2) Added support for Python 2.4 as requested by 
+ 2) Added support for Python 2.4 as requested by Lukasz Szybalski.
  3) Added support for setting the autocommit flag in the connection constructor
     since some drivers do not support transactions and raise a "driver not
     capable" exception if any attempt is made to turn autocommit off; thanks to
