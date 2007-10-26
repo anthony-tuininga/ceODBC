@@ -26,11 +26,24 @@ follows:
 	python setup.py install
 
 
+The following packages are required on Linux before compilation is possible:
+
+    python-dev
+    unixodbc
+    unixodbc-dev
+
+
 USAGE EXAMPLE:
+
+Note that the "<DSN>" in the example below should be replaced with an
+appropriate string that ODBC understands. For example, if a system DSN called
+"MYDATA" has been created in the ODBC manager, use "DSN=MYDATA" to connect.
+For what is termed DSN-less connections, search the Internet for appropriate
+strings.
 
 import ceODBC
 
-connection = ceODBC.connect("DSN")
+connection = ceODBC.connect("<DSN>")
 
 cursor = connection.cursor()
 cursor.execute("""
@@ -43,6 +56,13 @@ for column_1, column_2, column_3 in cursor:
     print "Values:", column_1, column_2, column_3
 
 
-EXCEPTIONS:
+NOTES:
+
 Please see the included documentation for additional information.
+
+If your driver is not capable of transactions (often indicated by the exception
+"driver not capable" when connecting) then use the following statement to
+connect instead:
+
+connection = ceODBC.connect("<DSN>", autocommit = True)
 
