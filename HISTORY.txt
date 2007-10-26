@@ -1,3 +1,22 @@
+Changes from 1.1 to 1.2
+ 1) Added support for time data as requested by Dmitry Solitsky.
+ 2) Added support for Python 2.4 as requested by 
+ 3) Added support for setting the autocommit flag in the connection constructor
+    since some drivers do not support transactions and raise a "driver not
+    capable" exception if any attempt is made to turn autocommit off; thanks to
+    Carl Karsten for working with me to resolve this problem.
+ 4) Added support for calculating the size and display size of columns in the
+    description attribute of cursors as requested by Carl Karsten.
+ 5) Use SQLFreeHandle() rather than SQLCloseCursor() since closing a cursor in
+    the ODBC sense is not the same as closing a cursor in the DB API sense and
+    caused strange exceptions to occur if no query was executed before calling
+    cursor.close().
+ 6) Added additional documentation to README.txt as requested by Lukasz
+    Szybalski.
+ 7) Tweaked setup script and associated configuration files to make it easier
+    to build and distribute; better support for building with cx_Logging if
+    desired.
+
 Changes from 1.0 to 1.1
  1) Added support for determining the columns, column privileges, foreign keys,
     primary keys, procedures, procedure columns, tables and table privileges
