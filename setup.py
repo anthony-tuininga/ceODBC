@@ -16,7 +16,7 @@ from distutils.errors import DistutilsSetupError
 from distutils.extension import Extension
 
 # define build version
-BUILD_VERSION = "1.2b1"
+BUILD_VERSION = "1.2"
 
 # define class to allow building the module with or without cx_Logging
 class build_ext(distutils.command.build_ext.build_ext):
