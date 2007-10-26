@@ -54,7 +54,7 @@
 </h1>
 
 <p>
-<strong>NOTE:</strong> The DB API definition does not define these object.
+<strong>NOTE:</strong> The DB API definition does not define these objects.
 
 <p>
 These classes all create variable objects (<a href="varobj.html#varobj">4</a>). They are created
@@ -136,7 +136,15 @@ the types of variables created.
 </dd></dl>
 
 <p>
-<dl><dt><b><tt id='l2h-41' xml:id='l2h-41'>TimestampVar</tt></b></dt>
+<dl><dt><b><tt id='l2h-41' xml:id='l2h-41'>TimeVar</tt></b></dt>
+<dd>
+  Variable used to bind and/or fetch time data. Values are returned as Python
+  datetime.time objects and accept Python datetime.time or datetime.datetime
+  objects.
+</dd></dl>
+
+<p>
+<dl><dt><b><tt id='l2h-42' xml:id='l2h-42'>TimestampVar</tt></b></dt>
 <dd>
   Variable used to bind and/or fetch timestamps. Values are returned as Python
   datetime.datetime objects and accept Python datetime.date or
@@ -178,7 +186,7 @@ the types of variables created.
 </div>
 </div>
 <hr />
-<span class="release-info">Release HEAD, documentation updated on July 25, 2007.</span>
+<span class="release-info">Release HEAD, documentation updated on October 26, 2007.</span>
 </div>
 <!--End of Navigation Panel-->
 

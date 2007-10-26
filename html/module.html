@@ -65,14 +65,17 @@
 <p>
 <dl><dt><table cellpadding="0" cellspacing="0"><tr valign="baseline">
   <td><nobr><b><tt id='l2h-2' xml:id='l2h-2' class="function">Connection</tt></b>(</nobr></td>
-  <td><var><var>dsn</var></var>)</td></tr></table></dt>
+  <td><var><var>dsn</var></var><big>[</big><var><var>autocommit=False</var></var><big>]</big><var></var>)</td></tr></table></dt>
 <dd>
 <dt><table cellpadding="0" cellspacing="0"><tr valign="baseline">
   <td><nobr><b><tt class="function">connect</tt></b>(</nobr></td>
   <td><var><var>dsn</var></var>)</td></tr></table></dt>
 <dd>  Constructor for creating a connection to the database. Return a Connection
-  object (<a href="connobj.html#connobj">2</a>). The only argument expected is the DSN in the format
-  that ODBC expects.
+  object (<a href="connobj.html#connobj">2</a>). The only required argument is the DSN in the format
+  that ODBC expects. The autocommit flag can be set in the constructor or it
+  can be manipulated after the connection has been established. If you are
+  using a driver that does not handle transactions, ensure that this value is
+  set to true or you may get a "driver not capable" exception.
 </dl>
 
 <p>
@@ -190,7 +193,7 @@
 </div>
 </div>
 <hr />
-<span class="release-info">Release HEAD, documentation updated on July 25, 2007.</span>
+<span class="release-info">Release HEAD, documentation updated on October 26, 2007.</span>
 </div>
 <!--End of Navigation Panel-->
 
