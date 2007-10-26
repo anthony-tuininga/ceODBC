@@ -52,7 +52,9 @@ information on the Python database API specification.
   Constructor for creating a connection to the database. Return a Connection
   object (\ref{connobj}). The only required argument is the DSN in the format
   that ODBC expects. The autocommit flag can be set in the constructor or it
-  can be manipulated after the connection has been established.
+  can be manipulated after the connection has been established. If you are
+  using a driver that does not handle transactions, ensure that this value is
+  set to true or you may get a "driver not capable" exception.
 \end{funcdesc}
 
 \begin{funcdesc}{Cursor}{\var{connection}}
