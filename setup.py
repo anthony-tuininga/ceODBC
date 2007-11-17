@@ -99,6 +99,7 @@ if sys.platform == "win32":
     libs = ["odbc32"]
 else:
     libs = ["odbc"]
+    defineMacros.append(("SQL_WCHART_CONVERT", None))
 
 # define the classifiers for the package index
 classifiers = [
@@ -120,7 +121,7 @@ extension = Extension(
         sources = ["ceODBC.c"],
         depends = ["ApiTypes.c", "BinaryVar.c", "BitVar.c", "Connection.c",
                 "Cursor.c", "DateTimeVar.c", "Environment.c", "Error.c",
-                "NumberVar.c", "StringVar.c", "Variable.c"])
+                "NumberVar.c", "StringVar.c", "UnicodeVar.c", "Variable.c"])
 
 # perform the setup
 setup(

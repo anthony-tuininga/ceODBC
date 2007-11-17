@@ -229,11 +229,15 @@ void initceODBC(void)
         return;
     if (PyType_Ready(&g_LongStringVarType) < 0)
         return;
+    if (PyType_Ready(&g_LongUnicodeVarType) < 0)
+        return;
     if (PyType_Ready(&g_StringVarType) < 0)
         return;
     if (PyType_Ready(&g_TimeVarType) < 0)
         return;
     if (PyType_Ready(&g_TimestampVarType) < 0)
+        return;
+    if (PyType_Ready(&g_UnicodeVarType) < 0)
         return;
 
     // initialize module

@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
-// StringVar.c
-//   Defines the routines specific to string types.
+// UnicodeVar.c
+//   Defines the routines specific to unicode types.
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
@@ -8,26 +8,26 @@
 //-----------------------------------------------------------------------------
 typedef struct {
     Variable_HEAD
-    SQLCHAR *data;
-} udt_StringVar;
+    SQLWCHAR *data;
+} udt_UnicodeVar;
 
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
 //-----------------------------------------------------------------------------
-static PyObject *StringVar_GetValue(udt_StringVar*, unsigned);
-static SQLUINTEGER StringVar_GetBufferSize(udt_StringVar*, SQLUINTEGER);
-static int StringVar_SetValue(udt_StringVar*, unsigned, PyObject*);
+static PyObject *UnicodeVar_GetValue(udt_UnicodeVar*, unsigned);
+static SQLUINTEGER UnicodeVar_GetBufferSize(udt_UnicodeVar*, SQLUINTEGER);
+static int UnicodeVar_SetValue(udt_UnicodeVar*, unsigned, PyObject*);
 
 
 //-----------------------------------------------------------------------------
 // Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_StringVarType = {
+static PyTypeObject g_UnicodeVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.StringVar",                 // tp_name
-    sizeof(udt_StringVar),              // tp_basicsize
+    "ceODBC.UnicodeVar",                // tp_name
+    sizeof(udt_UnicodeVar),             // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -70,11 +70,11 @@ static PyTypeObject g_StringVarType = {
 };
 
  
-static PyTypeObject g_LongStringVarType = {
+static PyTypeObject g_LongUnicodeVarType = {
     PyObject_HEAD_INIT(NULL)
     0,                                  // ob_size
-    "ceODBC.LongStringVar",             // tp_name
-    sizeof(udt_StringVar),              // tp_basicsize
+    "ceODBC.LongUnicodeVar",            // tp_name
+    sizeof(udt_UnicodeVar),             // tp_basicsize
     0,                                  // tp_itemsize
     (destructor) Variable_Free,         // tp_dealloc
     0,                                  // tp_print
@@ -120,26 +120,26 @@ static PyTypeObject g_LongStringVarType = {
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_String = {
-    (SetValueProc) StringVar_SetValue,
-    (GetValueProc) StringVar_GetValue,
-    (GetBufferSizeProc) StringVar_GetBufferSize,
-    &g_StringVarType,                   // Python type
-    SQL_VARCHAR,                        // SQL type
-    SQL_C_CHAR,                         // C data type
+static udt_VariableType vt_Unicode = {
+    (SetValueProc) UnicodeVar_SetValue,
+    (GetValueProc) UnicodeVar_GetValue,
+    (GetBufferSizeProc) UnicodeVar_GetBufferSize,
+    &g_UnicodeVarType,                  // Python type
+    SQL_WVARCHAR,                       // SQL type
+    SQL_C_WCHAR,                        // C data type
     0,                                  // buffer size
     255,                                // default size
     0                                   // default scale
 };
 
 
-static udt_VariableType vt_LongString = {
-    (SetValueProc) StringVar_SetValue,
-    (GetValueProc) StringVar_GetValue,
-    (GetBufferSizeProc) StringVar_GetBufferSize,
-    &g_LongStringVarType,               // Python type
-    SQL_LONGVARCHAR,                    // SQL type
-    SQL_C_CHAR,                         // C data type
+static udt_VariableType vt_LongUnicode = {
+    (SetValueProc) UnicodeVar_SetValue,
+    (GetValueProc) UnicodeVar_GetValue,
+    (GetBufferSizeProc) UnicodeVar_GetBufferSize,
+    &g_LongUnicodeVarType,              // Python type
+    SQL_WLONGVARCHAR,                   // SQL type
+    SQL_C_WCHAR,                        // C data type
     0,                                  // buffer size
     128 * 1024,                         // default size
     0                                   // default scale
@@ -147,53 +147,51 @@ static udt_VariableType vt_LongString = {
 
 
 //-----------------------------------------------------------------------------
-// StringVar_GetBufferSize()
+// UnicodeVar_GetBufferSize()
 //   Returns the size to use for string buffers. ODBC requires the presence of
 // a NULL terminator so one extra space is allocated for that purpose.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER StringVar_GetBufferSize(
-    udt_StringVar *var,                 // variable to determine value for
+static SQLUINTEGER UnicodeVar_GetBufferSize(
+    udt_UnicodeVar *var,                // variable to determine value for
     SQLUINTEGER size)                   // size to allocate
 {
-    return size + 1;
+    return (size + 1) * sizeof(WCHAR);
 }
 
 
 //-----------------------------------------------------------------------------
-// StringVar_GetValue()
+// UnicodeVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *StringVar_GetValue(
-    udt_StringVar *var,                 // variable to determine value for
+static PyObject *UnicodeVar_GetValue(
+    udt_UnicodeVar *var,                // variable to determine value for
     unsigned pos)                       // array position
 {
-    return PyString_FromStringAndSize((char*) var->data +
-            pos * var->bufferSize, var->lengthOrIndicator[pos]);
+    return PyUnicode_FromWideChar((WCHAR*) (var->data +
+            pos * var->bufferSize), var->lengthOrIndicator[pos]);
 }
 
 
 //-----------------------------------------------------------------------------
-// StringVar_SetValue()
+// UnicodeVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int StringVar_SetValue(
-    udt_StringVar *var,                 // variable to set value for
+static int UnicodeVar_SetValue(
+    udt_UnicodeVar *var,                // variable to set value for
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    const void *buffer;
     Py_ssize_t size;
+    WCHAR *buffer;
 
-    // get the buffer data and size for binding
-    if (PyString_Check(value)) {
-        buffer = PyString_AS_STRING(value);
-        size = PyString_GET_SIZE(value);
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expecting string data");
+    // confirm that the value is Unicode
+    if (!PyUnicode_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expecting unicode data");
         return -1;
     }
 
     // resize the variable if necessary
+    size = PyUnicode_GET_SIZE(value);
     if (size > var->size) {
         if (Variable_Resize((udt_Variable*) var, size) < 0)
             return -1;
@@ -201,8 +199,11 @@ static int StringVar_SetValue(
 
     // keep a copy of the string
     var->lengthOrIndicator[pos] = (SQLINTEGER) size;
-    if (size)
-        memcpy(var->data + var->bufferSize * pos, buffer, size);
+    if (size) {
+        buffer = (WCHAR*) (var->data + var->bufferSize * pos);
+        if (PyUnicode_AsWideChar((PyUnicodeObject*) value, buffer, size) < 0)
+            return -1;
+    }
 
     return 0;
 }

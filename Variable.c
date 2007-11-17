@@ -245,6 +245,7 @@ static int Variable_InitWithSize(
 #include "BitVar.c"
 #include "NumberVar.c"
 #include "StringVar.c"
+#include "UnicodeVar.c"
 #include "DateTimeVar.c"
 
 
@@ -285,6 +286,8 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_String;
     if (PyString_Check(value))
         return &vt_String;
+    if (PyUnicode_Check(value))
+        return &vt_Unicode;
     if (PyBuffer_Check(value))
         return &vt_Binary;
     if (PyBool_Check(value))
@@ -327,6 +330,12 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_String;
     if (type == (PyObject*) &g_LongStringVarType)
         return &vt_LongString;
+    if (type == (PyObject*) &g_UnicodeVarType)
+        return &vt_Unicode;
+    if (type == (PyObject*) &PyUnicode_Type)
+        return &vt_Unicode;
+    if (type == (PyObject*) &g_LongUnicodeVarType)
+        return &vt_LongUnicode;
     if (type == (PyObject*) &g_BinaryVarType)
         return &vt_Binary;
     if (type == (PyObject*) &PyBuffer_Type)
@@ -413,12 +422,14 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_CHAR:
         case SQL_WCHAR:
         case SQL_VARCHAR:
-        case SQL_WVARCHAR:
         case SQL_GUID:
             return &vt_String;
+        case SQL_WVARCHAR:
+            return &vt_Unicode;
         case SQL_LONGVARCHAR:
-        case SQL_WLONGVARCHAR:
             return &vt_LongString;
+        case SQL_WLONGVARCHAR:
+            return &vt_LongUnicode;
         case SQL_BINARY:
         case SQL_VARBINARY:
             return &vt_Binary;
@@ -477,8 +488,10 @@ static int Variable_Check(
             object->ob_type == &g_IntegerVarType ||
             object->ob_type == &g_LongBinaryVarType ||
             object->ob_type == &g_LongStringVarType ||
+            object->ob_type == &g_LongUnicodeVarType ||
             object->ob_type == &g_TimestampVarType ||
-            object->ob_type == &g_StringVarType);
+            object->ob_type == &g_StringVarType ||
+            object->ob_type == &g_UnicodeVarType);
 }
 
 
