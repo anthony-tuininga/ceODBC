@@ -167,8 +167,11 @@ static PyObject *UnicodeVar_GetValue(
     udt_UnicodeVar *var,                // variable to determine value for
     unsigned pos)                       // array position
 {
-    return PyUnicode_FromWideChar((WCHAR*) (var->data +
-            pos * var->bufferSize), var->lengthOrIndicator[pos]);
+    Py_ssize_t size;
+
+    size = var->lengthOrIndicator[pos] / sizeof(WCHAR);
+    return PyUnicode_FromWideChar((WCHAR*) (var->data + pos * var->bufferSize),
+            size);
 }
 
 
@@ -198,7 +201,7 @@ static int UnicodeVar_SetValue(
     }
 
     // keep a copy of the string
-    var->lengthOrIndicator[pos] = (SQLINTEGER) size;
+    var->lengthOrIndicator[pos] = (SQLINTEGER) size * sizeof(WCHAR);
     if (size) {
         buffer = (WCHAR*) (var->data + var->bufferSize * pos);
         if (PyUnicode_AsWideChar((PyUnicodeObject*) value, buffer, size) < 0)

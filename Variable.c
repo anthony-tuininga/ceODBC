@@ -420,10 +420,10 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_TYPE_TIMESTAMP:
             return &vt_Timestamp;
         case SQL_CHAR:
-        case SQL_WCHAR:
         case SQL_VARCHAR:
         case SQL_GUID:
             return &vt_String;
+        case SQL_WCHAR:
         case SQL_WVARCHAR:
             return &vt_Unicode;
         case SQL_LONGVARCHAR:
