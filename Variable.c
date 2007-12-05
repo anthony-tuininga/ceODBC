@@ -393,6 +393,7 @@ static udt_VariableType *Variable_TypeByPythonType(
 // does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
 static udt_VariableType *Variable_TypeBySqlDataType (
+    udt_Cursor *cursor,                 // associated cursor
     SQLSMALLINT sqlDataType)            // SQL data type
 {
     char buffer[100];
@@ -422,14 +423,16 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_CHAR:
         case SQL_VARCHAR:
         case SQL_GUID:
-            return &vt_String;
         case SQL_WCHAR:
         case SQL_WVARCHAR:
-            return &vt_Unicode;
+            if (cursor->connection->unicode)
+                return &vt_Unicode;
+            return &vt_String;
         case SQL_LONGVARCHAR:
-            return &vt_LongString;
         case SQL_WLONGVARCHAR:
-            return &vt_LongUnicode;
+            if (cursor->connection->unicode)
+                return &vt_LongUnicode;
+            return &vt_LongString;
         case SQL_BINARY:
         case SQL_VARBINARY:
             return &vt_Binary;
@@ -583,7 +586,7 @@ static udt_Variable *Variable_NewForResultSet(
         return NULL;
 
     // determine data type
-    varType = Variable_TypeBySqlDataType(dataType);
+    varType = Variable_TypeBySqlDataType(cursor, dataType);
     if (!varType)
         return NULL;
 
