@@ -12,6 +12,7 @@ typedef struct {
     int isConnected;
     PyObject *dsn;
     int logSql;
+    int unicode;
 } udt_Connection;
 
 
@@ -79,6 +80,7 @@ static PyMethodDef g_ConnectionMethods[] = {
 static PyMemberDef g_ConnectionMembers[] = {
     { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
     { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
+    { "unicode", T_INT, offsetof(udt_Connection, unicode), 0 },
     { NULL }
 };
 
@@ -183,6 +185,7 @@ static PyObject* Connection_New(
     self->dsn = NULL;
     self->isConnected = 0;
     self->logSql = 1;
+    self->unicode = 0;
 
     return (PyObject*) self;
 }
@@ -197,22 +200,25 @@ static int Connection_Init(
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
+    PyObject *autocommitObj, *unicodeObj;
+    int dsnLength, autocommit, unicode;
     SQLSMALLINT actualDsnLength;
     char actualDsn[1024], *dsn;
-    int dsnLength, autocommit;
-    PyObject *autocommitObj;
     SQLRETURN rc;
 
     // define keyword arguments
-    static char *keywordList[] = { "dsn", "autocommit", NULL };
+    static char *keywordList[] = { "dsn", "autocommit", "unicode", NULL };
 
     // parse arguments
-    autocommitObj = Py_None;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "s#|O", keywordList,
-            &dsn, &dsnLength, &autocommitObj))
+    autocommitObj = unicodeObj = Py_None;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "s#|OO", keywordList,
+            &dsn, &dsnLength, &autocommitObj, &unicodeObj))
         return -1;
     autocommit = PyObject_IsTrue(autocommitObj);
     if (autocommit < 0)
+        return -1;
+    unicode = PyObject_IsTrue(unicodeObj);
+    if (unicode < 0)
         return -1;
 
     // set up the environment
@@ -246,6 +252,7 @@ static int Connection_Init(
 
     // mark connection as connected
     self->isConnected = 1;
+    self->unicode = unicode;
 
     // save copy of constructed DSN
     self->dsn = PyString_FromStringAndSize(actualDsn, actualDsnLength);

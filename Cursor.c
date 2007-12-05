@@ -653,7 +653,7 @@ static PyObject *Cursor_ItemDescription(
         return NULL;
 
     // determine variable type
-    varType = Variable_TypeBySqlDataType(dataType);
+    varType = Variable_TypeBySqlDataType(self, dataType);
     if (!varType)
         return NULL;
 
