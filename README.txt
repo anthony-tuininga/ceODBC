@@ -25,6 +25,10 @@ follows:
 	python setup.py build
 	python setup.py install
 
+If you wish to use cx_Logging for logging, run these commands instead:
+
+    python setup.py build_ext --with-cx-logging --cx-logging <SourceDir>
+    python setup.py install
 
 The following packages are required on Linux before compilation is possible:
 
