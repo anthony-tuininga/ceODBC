@@ -1,0 +1,252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Connection Object &mdash; ceODBC v4.4a1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:   '',
+        VERSION:    '4.4a1'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/interface.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="contents" title="Global table of contents" href="contents.html" />
+    <link rel="index" title="Global index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="ceODBC v4.4a1 documentation" href="index.html" />
+    <link rel="next" title="Cursor Object" href="cursor.html" />
+    <link rel="prev" title="Module Interface" href="module.html" />
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px"><a href="genindex.html" title="General Index" accesskey="I">index</a></li>
+        <li class="right"><a href="modindex.html" title="Global Module Index" accesskey="M">modules</a> |</li>
+          <li class="right"><a href="cursor.html" title="Cursor Object" accesskey="N">next</a> |</li>
+          <li class="right"><a href="module.html" title="Module Interface" accesskey="P">previous</a> |</li>
+        <li><a href="index.html">ceODBC v4.4a1 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  
+  <div class="section" id="connection-object">
+<span id="connobj"></span><h1 id="connection-object"><span id="connobj"></span>Connection Object<a class="headerlink" href="#connection-object" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Any outstanding changes will be rolled back when the connection object
+is destroyed or closed.</p>
+</div>
+<dl class="method">
+<dt id="Connection.__enter__">
+<!--#Connection.__enter__#--><tt class="descclassname">Connection.</tt><tt class="descname">__enter__</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.__enter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The entry point for the connection as a context manager, a feature available
+in Python 2.5 and higher. It returns itself.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.__exit__">
+<!--#Connection.__exit__#--><tt class="descclassname">Connection.</tt><tt class="descname">__exit__</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.__exit__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The exit point for the connection as a context manager, a feature available
+in Python 2.5 and higher. In the event of an exception, the transaction is
+rolled back; otherwise, the transaction is committed.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Connection.autocommit">
+<!--#Connection.autocommit#--><tt class="descclassname">Connection.</tt><tt class="descname">autocommit</tt><a class="headerlink" href="#Connection.autocommit" title="Permalink to this definition">¶</a></dt>
+<dd><p>This read-write attribute returns the setting of the autocommit flag for the
+connection. When set, any statements executed are automatically committed
+if successful; otherwise, a commit() or rollback() must be issued for the
+changes to be committed to (or rolled back from) the database.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This attribute is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.close">
+<!--#Connection.close#--><tt class="descclassname">Connection.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.close" title="Permalink to this definition">¶</a></dt>
+<dd>Close the connection now, rather than whenever __del__ is called. The
+connection will be unusable from this point forward; an Error exception will
+be raised if any operation is attempted with the connection. The same
+applies to any cursor objects trying to use the connection.</dd></dl>
+
+<dl class="method">
+<dt id="Connection.columnprivileges">
+<!--#Connection.columnprivileges#--><tt class="descclassname">Connection.</tt><tt class="descname">columnprivileges</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>table=None</em>, <em>column=None</em><big>)</big><a class="headerlink" href="#Connection.columnprivileges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the privileges for columns in the catalog
+filtered by the parameters catalog, schema, table and column as desired. See
+the ODBC API reference for SQLColumnPrivileges() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.columns">
+<!--#Connection.columns#--><tt class="descclassname">Connection.</tt><tt class="descname">columns</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>table=None</em>, <em>column=None</em><big>)</big><a class="headerlink" href="#Connection.columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the columns in the catalog filtered by the
+parameters catalog, schema, table and column as desired. See the ODBC API
+reference for SQLColumns() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.commit">
+<!--#Connection.commit#--><tt class="descclassname">Connection.</tt><tt class="descname">commit</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.commit" title="Permalink to this definition">¶</a></dt>
+<dd>Commit any pending transactions to the database.</dd></dl>
+
+<dl class="method">
+<dt id="Connection.cursor">
+<!--#Connection.cursor#--><tt class="descclassname">Connection.</tt><tt class="descname">cursor</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.cursor" title="Permalink to this definition">¶</a></dt>
+<dd>Return a new Cursor object (<a class="reference external" href="cursor.html#cursorobj"><em>Cursor Object</em></a>) using the connection.</dd></dl>
+
+<dl class="attribute">
+<dt id="Connection.dsn">
+<!--#Connection.dsn#--><tt class="descclassname">Connection.</tt><tt class="descname">dsn</tt><a class="headerlink" href="#Connection.dsn" title="Permalink to this definition">¶</a></dt>
+<dd><p>This read-only attribute returns the DSN of the database to which a
+connection has been established.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This attribute is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.foreignkeys">
+<!--#Connection.foreignkeys#--><tt class="descclassname">Connection.</tt><tt class="descname">foreignkeys</tt><big>(</big><em>pkcatalog=None</em>, <em>pkschema=None</em>, <em>pktable=None</em>, <em>fkcatalog=None</em>, <em>fkschema=None</em>, <em>fktable=None</em><big>)</big><a class="headerlink" href="#Connection.foreignkeys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the foreign keys in the catalog filtered by the
+parameters catalog, schema and table for both the primary and foreign key
+table as desired. See the ODBC API reference for SQLForeignKeys() for more
+information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.primarykeys">
+<!--#Connection.primarykeys#--><tt class="descclassname">Connection.</tt><tt class="descname">primarykeys</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>table=None</em><big>)</big><a class="headerlink" href="#Connection.primarykeys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the primary key columns in the catalog filtered
+by the parameters catalog, schema and table as desired. See the ODBC API
+reference for SQLPrimaryKeys() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.procedurecolumns">
+<!--#Connection.procedurecolumns#--><tt class="descclassname">Connection.</tt><tt class="descname">procedurecolumns</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>proc=None</em>, <em>column=None</em><big>)</big><a class="headerlink" href="#Connection.procedurecolumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the columns for procedures in the catalog
+filtered by the parameters catalog, schema, proc and column as desired. See
+the ODBC API reference for SQLProcedureColumns() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.procedures">
+<!--#Connection.procedures#--><tt class="descclassname">Connection.</tt><tt class="descname">procedures</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>proc=None</em><big>)</big><a class="headerlink" href="#Connection.procedures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the procedures in the catalog filtered by the
+parameters catalog, schema and proc as desired. See the ODBC API reference
+for SQLProcedures() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.rollback">
+<!--#Connection.rollback#--><tt class="descclassname">Connection.</tt><tt class="descname">rollback</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.rollback" title="Permalink to this definition">¶</a></dt>
+<dd>Rollback any pending transactions.</dd></dl>
+
+<dl class="method">
+<dt id="Connection.tableprivileges">
+<!--#Connection.tableprivileges#--><tt class="descclassname">Connection.</tt><tt class="descname">tableprivileges</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>table=None</em><big>)</big><a class="headerlink" href="#Connection.tableprivileges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the privileges for tables in the catalog filtered
+by the parameters catalog, schema and table as desired. See the ODBC API
+reference for SQLTablePrivileges() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.tables">
+<!--#Connection.tables#--><tt class="descclassname">Connection.</tt><tt class="descname">tables</tt><big>(</big><em>catalog=None</em>, <em>schema=None</em>, <em>table=None</em><big>)</big><a class="headerlink" href="#Connection.tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a cursor containing the tables in the catalog filtered by the
+parameters catalog, schema and table as desired. See the ODBC API reference
+for SQLTables() for more information.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is an extension to the DB API definition.</p>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="sidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="module.html" title="previous chapter">Module Interface</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="cursor.html" title="next chapter">Cursor Object</a></p>
+            <h3>Quick search</h3>
+            <form class="search" action="search.html" method="get">
+              <input type="text" name="q" size="18" /> <input type="submit" value="Go" />
+              <input type="hidden" name="check_keywords" value="yes" />
+              <input type="hidden" name="area" value="default" />
+            </form>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px"><a href="genindex.html" title="General Index" accesskey="I">index</a></li>
+        <li class="right"><a href="modindex.html" title="Global Module Index" accesskey="M">modules</a> |</li>
+          <li class="right"><a href="cursor.html" title="Cursor Object" accesskey="N">next</a> |</li>
+          <li class="right"><a href="module.html" title="Module Interface" accesskey="P">previous</a> |</li>
+        <li><a href="index.html">ceODBC v4.4a1 documentation</a> &raquo;</li>
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2008, Anthony Tuininga.
+      Last updated on May 23, 2008.
+    </div>
+  </body>
+</html>
