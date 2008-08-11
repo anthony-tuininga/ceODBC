@@ -396,7 +396,8 @@ static int Cursor_BindParameterHelper(
     unsigned arrayPos,			// array position to set
     PyObject *value,			// value to bind
     udt_Variable *origVar,		// original variable bound
-    udt_Variable **newVar)		// new variable to be bound
+    udt_Variable **newVar,		// new variable to be bound
+    int deferTypeAssignment)    // defer type assignment if null value?
 {
     int isValueVar;
 
@@ -455,7 +456,7 @@ static int Cursor_BindParameterHelper(
             (*newVar)->position = -1;
 
         // otherwise, create a new variable
-        } else {
+        } else if (value != Py_None || !deferTypeAssignment) {
             *newVar = Variable_NewByValue(self, value, numElements);
             if (!*newVar)
                 return -1;
@@ -474,7 +475,7 @@ static int Cursor_BindParameterHelper(
 //   Log the bind parameter.
 //-----------------------------------------------------------------------------
 static void Cursor_LogBindParameter(
-    udt_Variable *var,                  // variable bound
+    unsigned position,                  // position being bound
     PyObject *value)                    // value being bound
 {
     PyObject *valueRepr;
@@ -484,7 +485,7 @@ static void Cursor_LogBindParameter(
     if (!valueRepr)
         valueReprStr = "unable to repr";
     else valueReprStr = PyString_AS_STRING(valueRepr);
-    LogMessageV(LOG_LEVEL_DEBUG, "    %d => %s", var->position, valueReprStr);
+    LogMessageV(LOG_LEVEL_DEBUG, "    %d => %s", position, valueReprStr);
     Py_XDECREF(valueRepr);
 }
 
@@ -498,7 +499,8 @@ static int Cursor_BindParameters(
     PyObject *parameters,		// parameters to bind
     int parametersOffset,       // offset into parameters
     unsigned numElements,		// number of elements to create
-    unsigned arrayPos)			// array position to set
+    unsigned arrayPos,			// array position to set
+    int deferTypeAssignment)    // defer type assignment if null value?
 {
     int i, numParams, origNumParams;
     udt_Variable *newVar, *origVar;
@@ -526,7 +528,7 @@ static int Cursor_BindParameters(
                 origVar = NULL;
         } else origVar = NULL;
         if (Cursor_BindParameterHelper(self, numElements, arrayPos, value,
-                origVar, &newVar) < 0)
+                origVar, &newVar, deferTypeAssignment) < 0)
             return -1;
         if (newVar) {
             if (i < PyList_GET_SIZE(self->parameterVars)) {
@@ -546,15 +548,12 @@ static int Cursor_BindParameters(
             if (Variable_BindParameter(newVar, self, i + 1) < 0)
                 return -1;
         }
-        if (!newVar && origVar->position < 0) {
+        if (!newVar && origVar && origVar->position < 0) {
             if (Variable_BindParameter(origVar, self, i + 1) < 0)
                 return -1;
         }
-        if (self->logSql) {
-            if (!newVar)
-                newVar = origVar;
-            Cursor_LogBindParameter(newVar, value);
-        }
+        if (self->logSql)
+            Cursor_LogBindParameter(i + 1, value);
     }
 
     return 0;
@@ -982,7 +981,7 @@ static PyObject *Cursor_Execute(
     argsOffset = 1;
     if (Cursor_MassageArgs(&args, &argsOffset) < 0)
         return NULL;
-    if (Cursor_BindParameters(self, args, argsOffset, 1, 0) < 0) {
+    if (Cursor_BindParameters(self, args, argsOffset, 1, 0, 0) < 0) {
         Py_DECREF(args);
         return NULL;
     }
@@ -1042,7 +1041,8 @@ static PyObject *Cursor_ExecuteMany(
                     "expecting a list of sequences");
             return NULL;
         }
-        if (Cursor_BindParameters(self, arguments, 0, numRows, i) < 0)
+        if (Cursor_BindParameters(self, arguments, 0, numRows, i,
+                (i < numRows - 1)) < 0)
             return NULL;
     }
 
