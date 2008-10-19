@@ -86,7 +86,6 @@ static PyMemberDef g_CursorMembers[] = {
     { "rowcount", T_INT, offsetof(udt_Cursor, rowCount), READONLY },
     { "statement", T_OBJECT, offsetof(udt_Cursor, statement), READONLY },
     { "connection", T_OBJECT_EX, offsetof(udt_Cursor, connection), READONLY },
-    { "row_factory", T_OBJECT, offsetof(udt_Cursor, rowFactory), 0 },
     { "rowfactory", T_OBJECT, offsetof(udt_Cursor, rowFactory), 0 },
     { NULL }
 };
