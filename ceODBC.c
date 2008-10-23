@@ -136,12 +136,20 @@ static PyObject* TimeFromTicks(PyObject* self, PyObject* args)
 {
     double inputTicks;
     struct tm *time;
+#ifdef WIN32
+    __time64_t ticks;
+#else
     time_t ticks;
+#endif
 
     if (!PyArg_ParseTuple(args, "d", &inputTicks))
         return NULL;
     ticks = (long) inputTicks;
+#ifdef WIN32
+    time = _localtime64(&ticks);
+#else
     time = localtime(&ticks);
+#endif
     return PyTime_FromTime(time->tm_hour, time->tm_min, time->tm_sec, 0);
 }
 
