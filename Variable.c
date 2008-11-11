@@ -590,8 +590,20 @@ static udt_Variable *Variable_NewForResultSet(
     if (!varType)
         return NULL;
 
+    // some ODBC drivers do not return a long string but instead return string
+    // with a length of zero; provide a workaround
+    if (length == 0) {
+        if (varType == &vt_String)
+            varType = &vt_LongString;
+        else if (varType == &vt_Unicode)
+            varType = &vt_LongUnicode;
+        else if (varType == &vt_Binary)
+            varType = &vt_LongBinary;
+    }
+
     // for long columns, set the size appropriately
-    if (varType == &vt_LongString || varType == &vt_LongBinary) {
+    if (varType == &vt_LongString || varType == &vt_LongUnicode ||
+            varType == &vt_LongBinary) {
         if (cursor->setOutputSize > 0 &&
                 (cursor->setOutputSizeColumn == 0 ||
                  position == cursor->setOutputSizeColumn))
