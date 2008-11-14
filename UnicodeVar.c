@@ -155,7 +155,7 @@ static SQLUINTEGER UnicodeVar_GetBufferSize(
     udt_UnicodeVar *var,                // variable to determine value for
     SQLUINTEGER size)                   // size to allocate
 {
-    return (size + 1) * sizeof(WCHAR);
+    return (size + 1) * 2;
 }
 
 
@@ -167,11 +167,14 @@ static PyObject *UnicodeVar_GetValue(
     udt_UnicodeVar *var,                // variable to determine value for
     unsigned pos)                       // array position
 {
-    Py_ssize_t size;
-
-    size = var->lengthOrIndicator[pos] / sizeof(WCHAR);
-    return PyUnicode_FromWideChar((WCHAR*) (var->data + pos * var->bufferSize),
-            size);
+#ifdef Py_UNICODE_WIDE
+    return PyUnicode_DecodeUTF16((char*) var->data + pos * var->bufferSize,
+            var->lengthOrIndicator[pos], NULL, NULL);
+#else
+    return PyUnicode_FromUnicode(
+            (Py_UNICODE*) (var->data + pos * var->bufferSize),
+            var->lengthOrIndicator[pos] / 2);
+#endif
 }
 
 
