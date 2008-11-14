@@ -187,8 +187,7 @@ static int UnicodeVar_SetValue(
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    Py_ssize_t size;
-    WCHAR *buffer;
+    udt_StringBuffer buffer;
 
     // confirm that the value is Unicode
     if (!PyUnicode_Check(value)) {
@@ -197,19 +196,20 @@ static int UnicodeVar_SetValue(
     }
 
     // resize the variable if necessary
-    size = PyUnicode_GET_SIZE(value);
-    if (size > var->size) {
-        if (Variable_Resize((udt_Variable*) var, size) < 0)
+    if (StringBuffer_FromUnicode(&buffer, value) < 0)
+        return -1;
+    if (buffer.size > var->size) {
+        if (Variable_Resize((udt_Variable*) var, buffer.size) < 0) {
+            StringBuffer_Clear(&buffer);
             return -1;
+        }
     }
 
     // keep a copy of the string
-    var->lengthOrIndicator[pos] = (SQLINTEGER) size * sizeof(WCHAR);
-    if (size) {
-        buffer = (WCHAR*) (var->data + var->bufferSize * pos);
-        if (PyUnicode_AsWideChar((PyUnicodeObject*) value, buffer, size) < 0)
-            return -1;
-    }
+    var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.size;
+    if (buffer.size)
+        memcpy(var->data + var->bufferSize * pos, buffer.ptr, buffer.size);
+    StringBuffer_Clear(&buffer);
 
     return 0;
 }

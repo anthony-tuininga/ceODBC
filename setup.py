@@ -35,7 +35,7 @@ class build_ext(distutils.command.build_ext.build_ext):
         if command.compiler is not None:
             scriptArgs.append("--compiler=%s" % command.compiler)
         os.chdir(sourceDir)
-        print "building cx_Logging in", sourceDir
+        sys.stdout.write("building cx_Logging in %s\n" % sourceDir)
         distribution = distutils.core.run_setup("setup.py", scriptArgs)
         module, = distribution.ext_modules
         command = distribution.get_command_obj("build_ext")
@@ -121,7 +121,8 @@ extension = Extension(
         sources = ["ceODBC.c"],
         depends = ["ApiTypes.c", "BinaryVar.c", "BitVar.c", "Connection.c",
                 "Cursor.c", "DateTimeVar.c", "Environment.c", "Error.c",
-                "NumberVar.c", "StringVar.c", "UnicodeVar.c", "Variable.c"])
+                "NumberVar.c", "StringUtils.c", "StringVar.c", "UnicodeVar.c",
+                "Variable.c"])
 
 # perform the setup
 setup(
