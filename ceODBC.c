@@ -29,6 +29,10 @@ typedef int Py_ssize_t;
 #define PY_SSIZE_T_MIN INT_MIN
 #endif
 
+// define simple construct for determining endianness of the platform
+// ODBC uses native encoding with OCI_UTF16
+#define IS_LITTLE_ENDIAN (int)*(unsigned char*) &one
+
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
     apiTypeObject = ApiType_New(module, name); \
@@ -70,6 +74,8 @@ static PyObject *g_NotSupportedErrorException = NULL;
 //-----------------------------------------------------------------------------
 static PyObject *g_DecimalType = NULL;
 
+#include "StringUtils.c"
+
 //-----------------------------------------------------------------------------
 // GetModuleAndName()
 //   Return the module and name for the type.
@@ -89,7 +95,6 @@ static int GetModuleAndName(
     }
     return 0;
 }
-
 
 #include "ApiTypes.c"
 
