@@ -365,6 +365,7 @@ static PyObject *Connection_Commit(
     Py_END_ALLOW_THREADS
     if (CheckForError(self, rc, "Connection_Commit()") < 0)
         return NULL;
+    LogMessage(LOG_LEVEL_DEBUG, "transaction committed");
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -391,6 +392,7 @@ static PyObject *Connection_Rollback(
     Py_END_ALLOW_THREADS
     if (CheckForError(self, rc, "Connection_Commit()") < 0)
         return NULL;
+    LogMessage(LOG_LEVEL_DEBUG, "transaction rolled back");
 
     Py_INCREF(Py_None);
     return Py_None;
