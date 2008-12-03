@@ -595,8 +595,7 @@ static int Cursor_InternalExecute(
     rc = SQLExecute(self->handle);
     Py_END_ALLOW_THREADS
 
-    // SQL_NO_DATA can be returned from (for example) a delete statement that
-    // didn't actually delete any rows; ignore this foolishness
+    // SQL_NO_DATA is returned from statements which do not affect any rows
     if (rc == SQL_NO_DATA) {
         self->rowCount = 0;
         return 0;
