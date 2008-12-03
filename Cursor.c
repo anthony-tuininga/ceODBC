@@ -890,8 +890,11 @@ static int Cursor_InternalPrepare(
     }
 
     // close original statement if necessary in order to discard results
-    if (self->statement)
-        SQLCloseCursor(self->handle);
+    if (self->statement) {
+        rc = SQLCancel(self->handle);
+        if (CheckForError(self, rc, "Cursor_InternalPrepare(): cancel") < 0)
+            return -1;
+    }
 
     // nothing to do if the statement is identical to the one already stored
     if (statement == Py_None || statement == self->statement)
@@ -913,7 +916,7 @@ static int Cursor_InternalPrepare(
     rc = SQLPrepare(self->handle, (SQLCHAR*) PyString_AS_STRING(statement),
             PyString_GET_SIZE(statement));
     Py_END_ALLOW_THREADS
-    if (CheckForError(self, rc, "Cursor_InternalPrepare()") < 0)
+    if (CheckForError(self, rc, "Cursor_InternalPrepare(): prepare") < 0)
         return -1;
 
     // clear parameters
