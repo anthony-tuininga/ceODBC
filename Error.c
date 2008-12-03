@@ -146,7 +146,7 @@ static int Error_CheckForError(
                 sizeof(error->errorText) - 1, &length);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
             strcpy(error->errorText, "cannot get diagnostic message text");
-        error->errorText[length] = '\0';
+        else error->errorText[length] = '\0';
     }
 
     PyErr_SetObject(g_DatabaseErrorException, (PyObject*) error);
