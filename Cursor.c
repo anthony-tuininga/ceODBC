@@ -40,6 +40,7 @@ static PyObject *Cursor_GetNext(udt_Cursor*);
 static PyObject *Cursor_CallFunc(udt_Cursor*, PyObject*);
 static PyObject *Cursor_CallProc(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Close(udt_Cursor*, PyObject*);
+static PyObject *Cursor_NextSet(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Execute(udt_Cursor*, PyObject*);
 static PyObject *Cursor_ExecuteMany(udt_Cursor*, PyObject*);
 static PyObject *Cursor_FetchOne(udt_Cursor*, PyObject*);
@@ -72,6 +73,7 @@ static PyMethodDef g_CursorMethods[] = {
     { "callfunc", (PyCFunction) Cursor_CallFunc, METH_VARARGS },
     { "callproc", (PyCFunction) Cursor_CallProc, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
+    { "nextset", (PyCFunction) Cursor_NextSet, METH_NOARGS },
     { NULL, NULL }
 };
 
@@ -382,6 +384,11 @@ static int Cursor_PrepareResultSet(
         PyList_SET_ITEM(self->resultSetVars, position, (PyObject *) var);
     }
 
+    // set internal counters
+    self->rowCount = 0;
+    self->actualRows = -1;
+    self->rowNum = 0;
+
     return 0;
 }
 
@@ -572,9 +579,6 @@ static PyObject *Cursor_InternalCatalogHelper(
         Py_DECREF(self);
         return NULL;
     }
-    self->rowCount = 0;
-    self->actualRows = -1;
-    self->rowNum = 0;
 
     return (PyObject*) self;
 }
@@ -608,11 +612,7 @@ static int Cursor_InternalExecute(
         return -1;
 
     // determine the value of the rowcount attribute
-    if (self->resultSetVars) {
-        self->rowCount = 0;
-        self->actualRows = -1;
-        self->rowNum = 0;
-    } else {
+    if (!self->resultSetVars) {
         rc = SQLRowCount(self->handle, &self->rowCount);
         if (CheckForError(self, rc, "Cursor_SetRowCount()") < 0)
             return -1;
@@ -815,6 +815,39 @@ static PyObject *Cursor_Close(
 
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_NextSet()
+//   Return the next result set for the cursor.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_NextSet(
+    udt_Cursor *self,                   // cursor to close
+    PyObject *args)                     // arguments
+{
+    SQLRETURN rc;
+
+    // make sure cursor is actually open
+    if (Cursor_IsOpen(self) < 0)
+        return NULL;
+
+    // get the next result set
+    rc = SQLMoreResults(self->handle);
+    if (rc == SQL_NO_DATA) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    if (CheckForError(self, rc, "Cursor_NextSet()") < 0)
+        return NULL;
+
+    // set up result set
+    Py_CLEAR(self->resultSetVars);
+    if (Cursor_PrepareResultSet(self) < 0)
+        return NULL;
+
+    Py_INCREF(self);
+    return (PyObject*) self;
 }
 
 
