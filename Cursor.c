@@ -55,6 +55,7 @@ static int Cursor_SetName(udt_Cursor*, PyObject*, void*);
 static PyObject *Cursor_New(PyTypeObject*, PyObject*, PyObject*);
 static int Cursor_Init(udt_Cursor*, PyObject*, PyObject*);
 static PyObject *Cursor_Repr(udt_Cursor*);
+static PyObject *Cursor_Var(udt_Cursor*, PyObject*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
@@ -74,6 +75,7 @@ static PyMethodDef g_CursorMethods[] = {
     { "callproc", (PyCFunction) Cursor_CallProc, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
     { "nextset", (PyCFunction) Cursor_NextSet, METH_NOARGS },
+    { "var", (PyCFunction) Cursor_Var, METH_VARARGS | METH_KEYWORDS },
     { NULL, NULL }
 };
 
@@ -1508,6 +1510,56 @@ static PyObject *Cursor_SetOutputSize(
 
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_Var()
+//   Create a bind variable and return it.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_Var(
+    udt_Cursor *self,                   // cursor to fetch from
+    PyObject *args,                     // arguments
+    PyObject *keywordArgs)              // keyword arguments
+{
+    static char *keywordList[] = { "type", "size", "scale", "arraysize",
+            "inconverter", "outconverter", "input", "output", NULL };
+    int size, arraySize, scale, input, output;
+    PyObject *inConverter, *outConverter;
+    udt_VariableType *varType;
+    udt_Variable *var;
+    PyObject *type;
+
+    // parse arguments
+    size = 0;
+    input = 1;
+    output = 0;
+    arraySize = self->bindArraySize;
+    inConverter = outConverter = NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O|iiiOOii",
+            keywordList, &type, &size, &scale, &arraySize, &inConverter,
+            &outConverter, &input, &output))
+        return NULL;
+
+    // determine the type of variable
+    varType = Variable_TypeByPythonType(type);
+    if (!varType)
+        return NULL;
+
+    // create the variable
+    var = Variable_InternalNew(arraySize, varType, size, scale);
+    if (!var)
+        return NULL;
+
+    // set associated variables
+    Py_XINCREF(inConverter);
+    var->inConverter = inConverter;
+    Py_XINCREF(outConverter);
+    var->outConverter = outConverter;
+    var->input = input;
+    var->output = output;
+
+    return (PyObject*) var;
 }
 
 
