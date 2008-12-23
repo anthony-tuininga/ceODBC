@@ -52,7 +52,7 @@ Cursor Object
    if any operation is attempted with the cursor.
 
 
-.. method:: Cursor.connection
+.. attribute:: Cursor.connection
 
    This read-only attribute returns a reference to the connection object on
    which the cursor was created.
@@ -177,6 +177,15 @@ Cursor Object
       mentioned in PEP 249 as an optional extension.
 
 
+.. method:: Cursor.nextset()
+
+   Make the cursor skip to the next available set, discarding any remaining
+   row from the current set. If there are no more sets, None is returned;
+   otherwise, the cursor ifself is returned as a convenience for fetching data
+   from it. Note that not all databases support the concept of multiple result
+   sets.
+
+
 .. method:: Cursor.prepare(statement)
 
    This can be used before a call to execute() to define the statement that
@@ -236,4 +245,22 @@ Cursor Object
    .. note::
 
       The DB API definition does not define this attribute.
+
+
+.. method:: Cursor.var(type, [size, scale, arraysize, inconverter, outconverter, input = True, output = False])
+
+   Create a variable associated with the cursor of the given type and
+   characteristics and return a variable object (:ref:`varobj`). If the
+   arraysize is not specified, the bind array size (usually 1) is used. The
+   inconverter and outconverter specify methods used for converting values
+   to/from the database. More information can be found in the section on
+   variable objects.
+ 
+   This method was designed for use with in/out variables where the length or
+   type cannot be determined automatically from the Python object passed in or
+   for use in input and output type handlers defined on cursors or connections.
+
+   .. note:: 
+
+      The DB API definition does not define this method.
 

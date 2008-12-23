@@ -17,7 +17,9 @@ struct _udt_VariableType;
     SQLUINTEGER bufferSize; \
     SQLSMALLINT scale; \
     int input; \
-    int output;
+    int output; \
+    PyObject *inConverter; \
+    PyObject *outConverter;
 typedef struct {
     Variable_HEAD
     void *data;
@@ -67,8 +69,10 @@ static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
 //-----------------------------------------------------------------------------
 static PyMemberDef g_VariableMembers[] = {
     { "bufferSize", T_INT, offsetof(udt_Variable, bufferSize), READONLY },
+    { "inconverter", T_OBJECT, offsetof(udt_Variable, inConverter), 0 },
     { "input", T_INT, offsetof(udt_Variable, input), 0 },
     { "numElements", T_INT, offsetof(udt_Variable, numElements), READONLY },
+    { "outconverter", T_OBJECT, offsetof(udt_Variable, outConverter), 0 },
     { "output", T_INT, offsetof(udt_Variable, output), 0 },
     { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
     { "size", T_INT, offsetof(udt_Variable, size), READONLY },
@@ -119,6 +123,8 @@ static int Variable_InternalInit(
     self->output = output;
     self->lengthOrIndicator = NULL;
     self->data = NULL;
+    self->inConverter = NULL;
+    self->outConverter = NULL;
 
     // allocate the indicator and data arrays
     dataLength = (unsigned PY_LONG_LONG) numElements *
@@ -471,7 +477,9 @@ static void Variable_Free(
         PyMem_Free(self->lengthOrIndicator);
     if (self->data)
         PyMem_Free(self->data);
-    self->ob_type->tp_free((PyObject*) self);
+    Py_CLEAR(self->inConverter);
+    Py_CLEAR(self->outConverter);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 
@@ -703,6 +711,8 @@ static PyObject *Variable_GetValue(
     udt_Variable *self,                 // variable to get the value for
     unsigned arrayPos)                  // array position
 {
+    PyObject *value, *result;
+
     // ensure we do not exceed the number of allocated elements
     if (arrayPos >= self->numElements) {
         PyErr_SetString(PyExc_IndexError,
@@ -723,7 +733,15 @@ static PyObject *Variable_GetValue(
                 self->position, arrayPos, self->lengthOrIndicator[arrayPos],
                 self->bufferSize);
 
-    return (*self->type->getValueProc)(self, arrayPos);
+    // calculate value to return
+    value = (*self->type->getValueProc)(self, arrayPos);
+    if (value && self->outConverter && self->outConverter != Py_None) {
+        result = PyObject_CallFunctionObjArgs(self->outConverter, value, NULL);
+        Py_DECREF(value);
+        return result;
+    }
+
+    return value;
 }
 
 
@@ -736,6 +754,9 @@ static int Variable_SetValue(
     unsigned arrayPos,                  // array position
     PyObject *value)                    // value to set
 {
+    PyObject *convertedValue = NULL;
+    int result;
+
     // ensure we do not exceed the number of allocated elements
     if (arrayPos >= self->numElements) {
         PyErr_SetString(PyExc_IndexError,
@@ -743,14 +764,26 @@ static int Variable_SetValue(
         return -1;
     }
 
+    // convert value, if necessary
+    if (self->inConverter && self->inConverter != Py_None) {
+        convertedValue = PyObject_CallFunctionObjArgs(self->inConverter, value,
+                NULL);
+        if (!convertedValue)
+            return -1;
+        value = convertedValue;
+    }
+
     // check for a NULL value
     if (value == Py_None) {
         self->lengthOrIndicator[arrayPos] = SQL_NULL_DATA;
+        Py_XDECREF(convertedValue);
         return 0;
     }
 
     self->lengthOrIndicator[arrayPos] = 0;
-    return (*self->type->setValueProc)(self, arrayPos, value);
+    result = (*self->type->setValueProc)(self, arrayPos, value);
+    Py_XDECREF(convertedValue);
+    return result;
 }
 
 
