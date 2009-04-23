@@ -11,7 +11,7 @@ struct _udt_VariableType;
     PyObject_HEAD \
     SQLSMALLINT position; \
     SQLINTEGER numElements; \
-    SQLINTEGER *lengthOrIndicator; \
+    SQLLEN *lengthOrIndicator; \
     struct _udt_VariableType *type; \
     SQLUINTEGER size; \
     SQLUINTEGER bufferSize; \
@@ -133,7 +133,7 @@ static int Variable_InternalInit(
         PyErr_SetString(PyExc_ValueError, "array size too large");
         return -1;
     }
-    self->lengthOrIndicator = PyMem_Malloc(numElements * sizeof(SQLINTEGER));
+    self->lengthOrIndicator = PyMem_Malloc(numElements * sizeof(SQLLEN));
     self->data = PyMem_Malloc((size_t) dataLength);
     if (!self->lengthOrIndicator || !self->data) {
         PyErr_NoMemory();
@@ -581,7 +581,7 @@ static udt_Variable *Variable_NewForResultSet(
     SQLSMALLINT dataType, length, scale, nullable;
     udt_VariableType *varType;
     udt_Variable *var;
-    SQLUINTEGER size;
+    SQLULEN size;
     SQLRETURN rc;
     char name[1];
 
