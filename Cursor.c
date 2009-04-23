@@ -15,11 +15,11 @@ typedef struct {
     PyObject *rowFactory;
     int arraySize;
     int bindArraySize;
-    int fetchArraySize;
+    SQLULEN fetchArraySize;
     int setInputSizes;
     int setOutputSize;
     int setOutputSizeColumn;
-    SQLINTEGER rowCount;
+    SQLLEN rowCount;
     int actualRows;
     int rowNum;
     int logSql;
@@ -638,9 +638,9 @@ static PyObject *Cursor_ItemDescription(
     SQLUSMALLINT position)              // position in description
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
-    SQLUINTEGER precision, size;
+    SQLULEN precision, size, displaySize;
     udt_VariableType *varType;
-    int i, displaySize;
+    int i;
     PyObject *tuple;
     char name[256];
     SQLRETURN rc;
