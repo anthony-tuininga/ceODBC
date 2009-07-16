@@ -113,9 +113,11 @@ static int Error_CheckForError(
     const char *context)                // context
 {
     SQLINTEGER numRecords;
+    int i, sizeRemaining;
     SQLSMALLINT length;
     udt_Error *error;
     SQLRETURN rc;
+    char *ptr;
 
     // handle simple cases
     if (rcToCheck == SQL_SUCCESS || rcToCheck == SQL_SUCCESS_WITH_INFO)
@@ -141,12 +143,21 @@ static int Error_CheckForError(
     } else if (numRecords == 0) {
         strcpy(error->errorText, "no diagnostic message text available");
     } else {
-        rc = SQLGetDiagField(obj->handleType, obj->handle, 1,
-                SQL_DIAG_MESSAGE_TEXT, error->errorText,
-                sizeof(error->errorText) - 1, &length);
-        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
-            strcpy(error->errorText, "cannot get diagnostic message text");
-        else error->errorText[length] = '\0';
+        ptr = error->errorText;
+        sizeRemaining = sizeof(error->errorText) - 1;
+        for (i = 1; i <= numRecords; i++) {
+            rc = SQLGetDiagField(obj->handleType, obj->handle, i,
+                    SQL_DIAG_MESSAGE_TEXT, ptr, sizeRemaining, &length);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+                strcpy(error->errorText, "cannot get diagnostic message text"); 
+                break;
+            }
+            if (i > 1)
+                *(ptr - 1) = '\n';
+            *(ptr + length) = '\0';
+            ptr += length + 1;
+            sizeRemaining -= length - 1;
+        }
     }
 
     PyErr_SetObject(g_DatabaseErrorException, (PyObject*) error);
