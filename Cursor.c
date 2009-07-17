@@ -41,6 +41,7 @@ static PyObject *Cursor_CallFunc(udt_Cursor*, PyObject*);
 static PyObject *Cursor_CallProc(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Close(udt_Cursor*, PyObject*);
 static PyObject *Cursor_NextSet(udt_Cursor*, PyObject*);
+static PyObject *Cursor_ExecDirect(udt_Cursor*, PyObject*);
 static PyObject *Cursor_Execute(udt_Cursor*, PyObject*);
 static PyObject *Cursor_ExecuteMany(udt_Cursor*, PyObject*);
 static PyObject *Cursor_FetchOne(udt_Cursor*, PyObject*);
@@ -75,6 +76,7 @@ static PyMethodDef g_CursorMethods[] = {
     { "callproc", (PyCFunction) Cursor_CallProc, METH_VARARGS },
     { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
     { "nextset", (PyCFunction) Cursor_NextSet, METH_NOARGS },
+    { "execdirect", (PyCFunction) Cursor_ExecDirect, METH_VARARGS },
     { "var", (PyCFunction) Cursor_Var, METH_VARARGS | METH_KEYWORDS },
     { NULL, NULL }
 };
@@ -587,20 +589,14 @@ static PyObject *Cursor_InternalCatalogHelper(
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalExecute()
+// Cursor_InternalExecuteHelper()
 //   Perform the work of executing a cursor and set the rowcount appropriately
 // regardless of whether an error takes place.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalExecute(
-    udt_Cursor *self)                   // cursor to perform the execute on
+static int Cursor_InternalExecuteHelper(
+    udt_Cursor *self,                   // cursor to perform the execute on
+    SQLRETURN rc)                       // return code from ODBC routine
 {
-    SQLRETURN rc;
-
-    // execute the statement
-    Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecute(self->handle);
-    Py_END_ALLOW_THREADS
-
     // SQL_NO_DATA is returned from statements which do not affect any rows
     if (rc == SQL_NO_DATA) {
         self->rowCount = 0;
@@ -626,6 +622,23 @@ static int Cursor_InternalExecute(
     self->setOutputSizeColumn = 0;
 
     return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_InternalExecute()
+//   Perform the work of executing a cursor and set the rowcount appropriately
+// regardless of whether an error takes place.
+//-----------------------------------------------------------------------------
+static int Cursor_InternalExecute(
+    udt_Cursor *self)                   // cursor to perform the execute on
+{
+    SQLRETURN rc;
+
+    Py_BEGIN_ALLOW_THREADS
+    rc = SQLExecute(self->handle);
+    Py_END_ALLOW_THREADS
+    return Cursor_InternalExecuteHelper(self, rc);
 }
 
 
@@ -976,6 +989,58 @@ static PyObject *Cursor_Prepare(
         return NULL;
     if (Cursor_InternalPrepare(self, statement) < 0)
         return NULL;
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_ExecDirect()
+//   Execute the statement.
+//-----------------------------------------------------------------------------
+static PyObject *Cursor_ExecDirect(
+    udt_Cursor *self,                   // cursor to execute
+    PyObject *args)                     // arguments
+{
+    PyObject *statement;
+    SQLRETURN rc;
+
+    // parse arguments
+    if (!PyArg_ParseTuple(args, "S", &statement))
+        return NULL;
+    if (Cursor_IsOpen(self) < 0)
+        return NULL;
+
+    // log the statement, if applicable
+    if (self->logSql)
+        LogMessageV(LOG_LEVEL_DEBUG, "SQL\n%s", PyString_AS_STRING(statement));
+
+    // clear previous statement, if applicable
+    if (self->statement)
+        SQLCloseCursor(self->handle);
+    Py_XDECREF(self->statement);
+    self->statement = NULL;
+    Py_XDECREF(self->resultSetVars);
+    self->resultSetVars = NULL;
+    Py_XDECREF(self->rowFactory);
+    self->rowFactory = NULL;
+    Py_XDECREF(self->parameterVars);
+    self->parameterVars = NULL;
+
+    // execute the statement
+    Py_BEGIN_ALLOW_THREADS
+    rc = SQLExecDirect(self->handle, (SQLCHAR*) PyString_AS_STRING(statement),
+            PyString_GET_SIZE(statement));
+    Py_END_ALLOW_THREADS
+    if (Cursor_InternalExecuteHelper(self, rc) < 0)
+        return NULL;
+
+    // for queries, return the cursor for convenience
+    if (self->resultSetVars) {
+        Py_INCREF(self);
+        return (PyObject*) self;
+    }
 
     Py_INCREF(Py_None);
     return Py_None;

@@ -75,6 +75,22 @@ Cursor Object
   comparable to the type objects defined by the DB API.
 
 
+.. method:: Cursor.execdirect(statement)
+
+   Execute a statement against the database using SQLExecDirect instead of
+   SQLExecute. This is necessary in some situations due to bugs in ODBC drivers
+   such as exhibited by the SQL Server ODBC driver when calling certain stored
+   procedures.
+
+   If the statement is a query, the cursor is returned as a convenience since
+   cursors implement the iterator protocol and there is thus no need to call
+   one of the appropriate fetch methods; otherwise None is returned.
+
+   .. note::
+
+      ::The DB API definition does not define this method.
+
+
 .. method:: Cursor.execute(statement, \*args)
 
    Execute a statement against the database. Paramters may also be passed as a
