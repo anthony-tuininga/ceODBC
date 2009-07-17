@@ -20,6 +20,8 @@ BUILD_VERSION = "1.3b1"
 
 # define class to allow building the module with or without cx_Logging
 class build_ext(distutils.command.build_ext.build_ext):
+    global distutils
+    global os
     user_options = distutils.command.build_ext.build_ext.user_options + [
         ('with-cx-logging', None,
          'include logging with the cx_Logging module'),
