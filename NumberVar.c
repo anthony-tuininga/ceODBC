@@ -51,8 +51,7 @@ static int IntegerVar_SetValue(udt_IntegerVar*, unsigned, PyObject*);
 // Declaration of Python types
 //-----------------------------------------------------------------------------
 static PyTypeObject g_BigIntegerVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BigIntegerVar",             // tp_name
     sizeof(udt_BigIntegerVar),          // tp_basicsize
     0,                                  // tp_itemsize
@@ -98,8 +97,7 @@ static PyTypeObject g_BigIntegerVarType = {
 
 
 static PyTypeObject g_DecimalVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DecimalVar",                // tp_name
     sizeof(udt_DecimalVar),             // tp_basicsize
     0,                                  // tp_itemsize
@@ -145,8 +143,7 @@ static PyTypeObject g_DecimalVarType = {
 
 
 static PyTypeObject g_DoubleVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DoubleVar",                 // tp_name
     sizeof(udt_DoubleVar),              // tp_basicsize
     0,                                  // tp_itemsize
@@ -192,8 +189,7 @@ static PyTypeObject g_DoubleVarType = {
 
 
 static PyTypeObject g_IntegerVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.IntegerVar",                // tp_name
     sizeof(udt_IntegerVar),             // tp_basicsize
     0,                                  // tp_itemsize
@@ -323,7 +319,7 @@ static int BigIntegerVar_SetValue(
     } else {
         PyErr_Format(PyExc_TypeError,
                 "expecting integer data, got value of type %s instead",
-                value->ob_type->tp_name);
+                Py_TYPE(value)->tp_name);
         return -1;
     }
 
@@ -428,7 +424,7 @@ static int DecimalVar_SetValue(
 {
     PyObject *tupleValue;
 
-    if (value->ob_type != (PyTypeObject*) g_DecimalType) {
+    if (Py_TYPE(value) != (PyTypeObject*) g_DecimalType) {
         PyErr_SetString(PyExc_TypeError, "expecting decimal object");
         return -1;
     }
@@ -473,7 +469,7 @@ static int DoubleVar_SetValue(
     else {
         PyErr_Format(PyExc_TypeError,
                 "expecting floating point data, got value of type %s instead",
-                value->ob_type->tp_name);
+                Py_TYPE(value)->tp_name);
         return -1;
     }
 
@@ -508,7 +504,7 @@ static int IntegerVar_SetValue(
     }
     PyErr_Format(PyExc_TypeError,
             "expecting integer data, got value of type %s instead",
-            value->ob_type->tp_name);
+            Py_TYPE(value)->tp_name);
     return -1;
 }
 

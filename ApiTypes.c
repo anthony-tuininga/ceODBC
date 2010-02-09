@@ -35,8 +35,7 @@ static PyMemberDef g_ApiTypeTypeMembers[] = {
 // declaration of the Python type
 //-----------------------------------------------------------------------------
 static PyTypeObject g_ApiTypeType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC._ApiType",                  // tp_name
     sizeof(udt_ApiType),                // tp_basicsize
     0,                                  // tp_itemsize
@@ -77,7 +76,7 @@ static void ApiType_Free(
 {
     Py_XDECREF(self->name);
     Py_XDECREF(self->types);
-    self->ob_type->tp_free((PyObject*) self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 
@@ -117,7 +116,7 @@ static PyObject *ApiType_Repr(
 {
     PyObject *module, *name, *result;
 
-    if (GetModuleAndName(self->ob_type, &module, &name) < 0)
+    if (GetModuleAndName(Py_TYPE(self), &module, &name) < 0)
         return NULL;
     result = PyString_FromFormat("<%s.%s %s>", PyString_AS_STRING(module),
             PyString_AS_STRING(name), PyString_AS_STRING(self->name));

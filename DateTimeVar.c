@@ -39,8 +39,7 @@ static int TimestampVar_SetValue(udt_TimestampVar*, unsigned, PyObject*);
 // Python type declaration
 //-----------------------------------------------------------------------------
 static PyTypeObject g_DateVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DateVar",                   // tp_name
     sizeof(udt_DateVar),                // tp_basicsize
     0,                                  // tp_itemsize
@@ -86,8 +85,7 @@ static PyTypeObject g_DateVarType = {
 
 
 static PyTypeObject g_TimeVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.TimeVar",                   // tp_name
     sizeof(udt_TimeVar),                // tp_basicsize
     0,                                  // tp_itemsize
@@ -133,8 +131,7 @@ static PyTypeObject g_TimeVarType = {
 
 
 static PyTypeObject g_TimestampVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.TimestampVar",              // tp_name
     sizeof(udt_TimestampVar),           // tp_basicsize
     0,                                  // tp_itemsize

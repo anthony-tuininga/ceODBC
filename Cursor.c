@@ -111,8 +111,7 @@ static PyGetSetDef g_CursorCalcMembers[] = {
 // declaration of Python type "Cursor"
 //-----------------------------------------------------------------------------
 static PyTypeObject g_CursorType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Cursor",                    // tp_name
     sizeof(udt_Cursor),                 // tp_basicsize
     0,                                  // tp_itemsize
@@ -279,7 +278,7 @@ static PyObject *Cursor_Repr(
     connectionRepr = PyObject_Repr((PyObject*) cursor->connection);
     if (!connectionRepr)
         return NULL;
-    if (GetModuleAndName(cursor->ob_type, &module, &name) < 0) {
+    if (GetModuleAndName(Py_TYPE(cursor), &module, &name) < 0) {
         Py_DECREF(connectionRepr);
         return NULL;
     }
@@ -307,7 +306,7 @@ static void Cursor_Free(
     Py_XDECREF(self->parameterVars);
     Py_XDECREF(self->statement);
     Py_XDECREF(self->rowFactory);
-    self->ob_type->tp_free((PyObject*) self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 

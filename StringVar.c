@@ -24,8 +24,7 @@ static int StringVar_SetValue(udt_StringVar*, unsigned, PyObject*);
 // Declaration of Python types
 //-----------------------------------------------------------------------------
 static PyTypeObject g_StringVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.StringVar",                 // tp_name
     sizeof(udt_StringVar),              // tp_basicsize
     0,                                  // tp_itemsize
@@ -71,8 +70,7 @@ static PyTypeObject g_StringVarType = {
 
  
 static PyTypeObject g_LongStringVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.LongStringVar",             // tp_name
     sizeof(udt_StringVar),              // tp_basicsize
     0,                                  // tp_itemsize

@@ -172,7 +172,7 @@ static int Variable_DefaultInit(
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oi", keywordList,
             &value, &numElements))
         return -1;
-    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
     if (!varType)
         return -1;
     if (!Variable_InternalInit(self, numElements, varType,
@@ -198,7 +198,7 @@ static int Variable_InitWithScale(
 
     static char *keywordList[] = { "value", "scale", "numElements", NULL };
 
-    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
     if (!varType)
         return -1;
     value = NULL;
@@ -230,7 +230,7 @@ static int Variable_InitWithSize(
 
     static char *keywordList[] = { "value", "size", "numElements", NULL };
 
-    varType = Variable_TypeByPythonType((PyObject*) self->ob_type);
+    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
     if (!varType)
         return -1;
     value = NULL;
@@ -304,7 +304,7 @@ static udt_VariableType *Variable_TypeByValue(
         return &vt_BigInteger;
     if (PyFloat_Check(value))
         return &vt_Double;
-    if (value->ob_type == (PyTypeObject*) g_DecimalType)
+    if (Py_TYPE(value) == (PyTypeObject*) g_DecimalType)
         return &vt_Decimal;
     if (PyTime_Check(value))
         return &vt_Time;
@@ -315,7 +315,7 @@ static udt_VariableType *Variable_TypeByValue(
 
     PyErr_Format(g_NotSupportedErrorException,
             "Variable_TypeByValue(): unhandled data type %s",
-            value->ob_type->tp_name);
+            Py_TYPE(value)->tp_name);
     return NULL;
 }
 
@@ -490,19 +490,19 @@ static void Variable_Free(
 static int Variable_Check(
     PyObject *object)                   // Python object to check
 {
-    return (object->ob_type == &g_BigIntegerVarType ||
-            object->ob_type == &g_BinaryVarType ||
-            object->ob_type == &g_BitVarType ||
-            object->ob_type == &g_DateVarType ||
-            object->ob_type == &g_DecimalVarType ||
-            object->ob_type == &g_DoubleVarType ||
-            object->ob_type == &g_IntegerVarType ||
-            object->ob_type == &g_LongBinaryVarType ||
-            object->ob_type == &g_LongStringVarType ||
-            object->ob_type == &g_LongUnicodeVarType ||
-            object->ob_type == &g_TimestampVarType ||
-            object->ob_type == &g_StringVarType ||
-            object->ob_type == &g_UnicodeVarType);
+    return (Py_TYPE(object) == &g_BigIntegerVarType ||
+            Py_TYPE(object) == &g_BinaryVarType ||
+            Py_TYPE(object) == &g_BitVarType ||
+            Py_TYPE(object) == &g_DateVarType ||
+            Py_TYPE(object) == &g_DecimalVarType ||
+            Py_TYPE(object) == &g_DoubleVarType ||
+            Py_TYPE(object) == &g_IntegerVarType ||
+            Py_TYPE(object) == &g_LongBinaryVarType ||
+            Py_TYPE(object) == &g_LongStringVarType ||
+            Py_TYPE(object) == &g_LongUnicodeVarType ||
+            Py_TYPE(object) == &g_TimestampVarType ||
+            Py_TYPE(object) == &g_StringVarType ||
+            Py_TYPE(object) == &g_UnicodeVarType);
 }
 
 
@@ -843,7 +843,7 @@ static PyObject *Variable_Repr(
     Py_DECREF(value);
     if (!valueRepr)
         return NULL;
-    if (GetModuleAndName(self->ob_type, &module, &name) < 0) {
+    if (GetModuleAndName(Py_TYPE(self), &module, &name) < 0) {
         Py_DECREF(valueRepr);
         return NULL;
     }
