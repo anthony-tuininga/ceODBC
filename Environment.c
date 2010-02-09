@@ -19,8 +19,7 @@ static void Environment_Free(udt_Environment*);
 // declaration of Python type
 //-----------------------------------------------------------------------------
 static PyTypeObject g_EnvironmentType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Environment",               // tp_name
     sizeof(udt_Environment),            // tp_basicsize
     0,                                  // tp_itemsize
@@ -91,6 +90,6 @@ static void Environment_Free(
 {
     if (self->handle)
         SQLFreeHandle(self->handleType, self->handle);
-    self->ob_type->tp_free((PyObject*) self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 

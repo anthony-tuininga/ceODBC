@@ -24,8 +24,7 @@ static int BinaryVar_SetValue(udt_BinaryVar*, unsigned, PyObject*);
 // Declaration of Python types
 //-----------------------------------------------------------------------------
 static PyTypeObject g_BinaryVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BinaryVar",                 // tp_name
     sizeof(udt_BinaryVar),              // tp_basicsize
     0,                                  // tp_itemsize
@@ -71,8 +70,7 @@ static PyTypeObject g_BinaryVarType = {
 
 
 static PyTypeObject g_LongBinaryVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.LongBinaryVar",             // tp_name
     sizeof(udt_BinaryVar),              // tp_basicsize
     0,                                  // tp_itemsize

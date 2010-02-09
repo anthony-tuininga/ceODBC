@@ -99,8 +99,7 @@ static PyGetSetDef g_ConnectionCalcMembers[] = {
 // declaration of Python type "Connection"
 //-----------------------------------------------------------------------------
 static PyTypeObject g_ConnectionType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Connection",                // tp_name
     sizeof(udt_Connection),             // tp_basicsize
     0,                                  // tp_itemsize
@@ -282,7 +281,7 @@ static void Connection_Free(
         SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
     Py_XDECREF(self->environment);
     Py_XDECREF(self->dsn);
-    self->ob_type->tp_free((PyObject*) self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 
@@ -295,7 +294,7 @@ static PyObject *Connection_Repr(
 {
     PyObject *module, *name, *result;
 
-    if (GetModuleAndName(connection->ob_type, &module, &name) < 0)
+    if (GetModuleAndName(Py_TYPE(connection), &module, &name) < 0)
         return NULL;
     if (connection->dsn)
         result = PyString_FromFormat("<%s.%s to %s>",

@@ -46,8 +46,7 @@ static PyMemberDef g_ErrorMembers[] = {
 // declaration of Python type
 //-----------------------------------------------------------------------------
 static PyTypeObject g_ErrorType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC._Error",                    // tp_name
     sizeof(udt_Error),                  // tp_basicsize
     0,                                  // tp_itemsize
@@ -87,7 +86,7 @@ static PyTypeObject g_ErrorType = {
 static void Error_Free(
     udt_Error *self)                    // error object
 {
-    self->ob_type->tp_free((PyObject*) self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 

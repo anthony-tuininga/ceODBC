@@ -29,6 +29,12 @@ typedef int Py_ssize_t;
 #define PY_SSIZE_T_MIN INT_MIN
 #endif
 
+// define PyVarObject_HEAD_INIT for versions before Python 2.6
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) \
+    PyObject_HEAD_INIT(type) size,
+#endif
+
 // define Py_TYPE for versions before Python 2.6
 #ifndef Py_TYPE
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
@@ -43,21 +49,31 @@ typedef int Py_ssize_t;
 #define CREATE_API_TYPE(apiTypeObject, name) \
     apiTypeObject = ApiType_New(module, name); \
     if (!apiTypeObject) \
-        return;
+        return NULL;
 
 #define REGISTER_TYPE(apiTypeObject, type) \
     if (PyList_Append(apiTypeObject->types, (PyObject*) type) < 0) \
-        return;
+        return NULL;
 
 #define ADD_TYPE_OBJECT(name, type) \
     Py_INCREF(type); \
     if (PyModule_AddObject(module, name, (PyObject*) type) < 0) \
-        return;
+        return NULL;
 
 // define macro to get the build version as a string
 #define xstr(s)			str(s)
 #define str(s)			#s
 #define BUILD_VERSION_STRING	xstr(BUILD_VERSION)
+
+// define macros for building convenience
+#define MAKE_TYPE_READY(type) \
+    if (PyType_Ready(type) < 0) \
+        return NULL;
+#if PY_MAJOR_VERSION >= 3
+    #define CEODBC_BASE_EXCEPTION       NULL
+#else
+    #define CEODBC_BASE_EXCEPTION       PyExc_StandardError
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -195,11 +211,30 @@ static PyMethodDef g_ModuleMethods[] = {
     { NULL }
 };
 
+
+#if PY_MAJOR_VERSION >= 3
 //-----------------------------------------------------------------------------
-// initceODBC()
+//   Declaration of module definition for Python 3.x.
+//-----------------------------------------------------------------------------
+static struct PyModuleDef g_ModuleDef = {
+    PyModuleDef_HEAD_INIT,
+    "ceODBC",
+    NULL,
+    -1,
+    g_ModuleMethods,                       // methods
+    NULL,                                  // m_reload
+    NULL,                                  // traverse
+    NULL,                                  // clear
+    NULL                                   // free
+};
+#endif
+
+
+//-----------------------------------------------------------------------------
+// Module_Initialize()
 //   Initialization routine for the module.
 //-----------------------------------------------------------------------------
-void initceODBC(void)
+static PyObject *Module_Initialize(void)
 {
     PyObject *module;
 
@@ -208,93 +243,78 @@ void initceODBC(void)
     // import the datetime module
     PyDateTime_IMPORT;
     if (PyErr_Occurred())
-        return;
+        return NULL;
 
     // import the decimal module
     module = PyImport_ImportModule("decimal");
     if (!module)
-        return;
+        return NULL;
     g_DecimalType = PyObject_GetAttrString(module, "Decimal");
     Py_DECREF(module);
     if (!g_DecimalType)
-        return;
+        return NULL;
 
     // prepare the types for use by the module
-    if (PyType_Ready(&g_ConnectionType) < 0)
-        return;
-    if (PyType_Ready(&g_CursorType) < 0)
-        return;
-    if (PyType_Ready(&g_EnvironmentType) < 0)
-        return;
-    if (PyType_Ready(&g_ErrorType) < 0)
-        return;
-    if (PyType_Ready(&g_ApiTypeType) < 0)
-        return;
-    if (PyType_Ready(&g_BigIntegerVarType) < 0)
-        return;
-    if (PyType_Ready(&g_BinaryVarType) < 0)
-        return;
-    if (PyType_Ready(&g_BitVarType) < 0)
-        return;
-    if (PyType_Ready(&g_DateVarType) < 0)
-        return;
-    if (PyType_Ready(&g_DecimalVarType) < 0)
-        return;
-    if (PyType_Ready(&g_DoubleVarType) < 0)
-        return;
-    if (PyType_Ready(&g_IntegerVarType) < 0)
-        return;
-    if (PyType_Ready(&g_LongBinaryVarType) < 0)
-        return;
-    if (PyType_Ready(&g_LongStringVarType) < 0)
-        return;
-    if (PyType_Ready(&g_LongUnicodeVarType) < 0)
-        return;
-    if (PyType_Ready(&g_StringVarType) < 0)
-        return;
-    if (PyType_Ready(&g_TimeVarType) < 0)
-        return;
-    if (PyType_Ready(&g_TimestampVarType) < 0)
-        return;
-    if (PyType_Ready(&g_UnicodeVarType) < 0)
-        return;
+    MAKE_TYPE_READY(&g_ConnectionType)
+    MAKE_TYPE_READY(&g_CursorType)
+    MAKE_TYPE_READY(&g_EnvironmentType)
+    MAKE_TYPE_READY(&g_ErrorType)
+    MAKE_TYPE_READY(&g_ApiTypeType)
+    MAKE_TYPE_READY(&g_BigIntegerVarType)
+    MAKE_TYPE_READY(&g_BinaryVarType)
+    MAKE_TYPE_READY(&g_BitVarType)
+    MAKE_TYPE_READY(&g_DateVarType)
+    MAKE_TYPE_READY(&g_DecimalVarType)
+    MAKE_TYPE_READY(&g_DoubleVarType)
+    MAKE_TYPE_READY(&g_IntegerVarType)
+    MAKE_TYPE_READY(&g_LongBinaryVarType)
+    MAKE_TYPE_READY(&g_LongStringVarType)
+    MAKE_TYPE_READY(&g_LongUnicodeVarType)
+    MAKE_TYPE_READY(&g_StringVarType)
+    MAKE_TYPE_READY(&g_TimeVarType)
+    MAKE_TYPE_READY(&g_TimestampVarType)
+    MAKE_TYPE_READY(&g_UnicodeVarType)
 
     // initialize module
+#if PY_MAJOR_VERSION >= 3
+    module = PyModule_Create(&g_ModuleDef);
+#else
     module = Py_InitModule("ceODBC", g_ModuleMethods);
+#endif
     if (!module)
-        return;
+        return NULL;
 
     // add exceptions
     if (SetException(module, &g_WarningException,
-            "Warning", PyExc_StandardError) < 0)
-        return;
+            "Warning", CEODBC_BASE_EXCEPTION) < 0)
+        return NULL;
     if (SetException(module, &g_ErrorException,
-            "Error", PyExc_StandardError) < 0)
-        return;
+            "Error", CEODBC_BASE_EXCEPTION) < 0)
+        return NULL;
     if (SetException(module, &g_InterfaceErrorException,
             "InterfaceError", g_ErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_DatabaseErrorException,
             "DatabaseError", g_ErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_DataErrorException,
             "DataError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_OperationalErrorException,
             "OperationalError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_IntegrityErrorException,
             "IntegrityError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_InternalErrorException,
             "InternalError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_ProgrammingErrorException,
             "ProgrammingError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
     if (SetException(module, &g_NotSupportedErrorException,
             "NotSupportedError", g_DatabaseErrorException) < 0)
-        return;
+        return NULL;
 
     // add the base types
     ADD_TYPE_OBJECT("Connection", &g_ConnectionType)
@@ -346,20 +366,38 @@ void initceODBC(void)
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)
-        return;
+        return NULL;
     if (PyModule_AddIntConstant(module, "threadsafety", 2) < 0)
-        return;
+        return NULL;
     if (PyModule_AddStringConstant(module, "paramstyle", "qmark") < 0)
-        return;
+        return NULL;
 
     // add version and build time for easier support
     if (PyModule_AddStringConstant(module, "version",
             BUILD_VERSION_STRING) < 0)
-        return;
+        return NULL;
     if (PyModule_AddStringConstant(module, "buildtime",
             __DATE__ " " __TIME__) < 0)
-        return;
+        return NULL;
 
     LogMessage(LOG_LEVEL_DEBUG, "ceODBC initialization complete");
+
+    return module;
 }
+
+
+//-----------------------------------------------------------------------------
+// Start routine for the module.
+//-----------------------------------------------------------------------------
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_ceODBC(void)
+{
+    return Module_Initialize();
+}
+#else
+void initceODBC(void)
+{
+    Module_Initialize();
+}
+#endif
 

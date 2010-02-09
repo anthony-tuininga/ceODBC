@@ -24,8 +24,7 @@ static int UnicodeVar_SetValue(udt_UnicodeVar*, unsigned, PyObject*);
 // Declaration of Python types
 //-----------------------------------------------------------------------------
 static PyTypeObject g_UnicodeVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.UnicodeVar",                // tp_name
     sizeof(udt_UnicodeVar),             // tp_basicsize
     0,                                  // tp_itemsize
@@ -71,8 +70,7 @@ static PyTypeObject g_UnicodeVarType = {
 
  
 static PyTypeObject g_LongUnicodeVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.LongUnicodeVar",            // tp_name
     sizeof(udt_UnicodeVar),             // tp_basicsize
     0,                                  // tp_itemsize

@@ -23,8 +23,7 @@ static int BitVar_SetValue(udt_BitVar*, unsigned, PyObject*);
 // Python type declaration
 //-----------------------------------------------------------------------------
 static PyTypeObject g_BitVarType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                                  // ob_size
+    PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BitVar",                    // tp_name
     sizeof(udt_BitVar),                 // tp_basicsize
     0,                                  // tp_itemsize
