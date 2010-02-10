@@ -93,7 +93,7 @@ static udt_ApiType *ApiType_New(
     self = PyObject_NEW(udt_ApiType, &g_ApiTypeType);
     if (!self)
         return NULL;
-    self->name = PyString_FromString(name);
+    self->name = ceString_FromAscii(name);
     self->types = PyList_New(0);
     if (!self->types || !self->name) {
         Py_DECREF(self);
@@ -114,14 +114,26 @@ static udt_ApiType *ApiType_New(
 static PyObject *ApiType_Repr(
     udt_ApiType *self)                  // variable to return the string for
 {
-    PyObject *module, *name, *result;
+    PyObject *module, *name, *result, *format, *formatArgs = NULL;
 
     if (GetModuleAndName(Py_TYPE(self), &module, &name) < 0)
         return NULL;
-    result = PyString_FromFormat("<%s.%s %s>", PyString_AS_STRING(module),
-            PyString_AS_STRING(name), PyString_AS_STRING(self->name));
+    formatArgs = PyTuple_Pack(3, module, name, self->name);
     Py_DECREF(module);
     Py_DECREF(name);
+    if (!formatArgs)
+        return NULL;
+
+    format = ceString_FromAscii("<%s.%s %s>");
+    if (!format) {
+        Py_DECREF(formatArgs);
+        return NULL;
+    }
+
+    result = ceString_Format(format, formatArgs);
+    Py_DECREF(format);
+    Py_DECREF(formatArgs);
+
     return result;
 }
 
