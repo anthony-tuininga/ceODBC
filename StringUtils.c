@@ -16,9 +16,13 @@
     #ifdef Py_UNICODE_WIDE
         #define ceString_FromStringAndSize(buffer, size) \
             PyUnicode_DecodeUTF16(buffer, (size) * 2, NULL, NULL)
+        #define ceString_FromStringAndSizeInBytes(buffer, size) \
+            PyUnicode_DecodeUTF16(buffer, (size), NULL, NULL)
     #else
         #define ceString_FromStringAndSize(buffer, size) \
             PyUnicode_FromUnicode((Py_UNICODE*) (buffer), size)
+        #define ceString_FromStringAndSizeInBytes(buffer, size) \
+            PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) /  2)
     #endif
 #else
     #define CEODBC_CHAR                 SQLCHAR
@@ -30,6 +34,8 @@
     #define ceString_FromAscii(str) \
         PyBytes_FromString(str)
     #define ceString_FromStringAndSize(buffer, size) \
+        PyBytes_FromStringAndSize( (char*) (buffer), size)
+    #define ceString_FromStringAndSizeInBytes(buffer, size) \
         PyBytes_FromStringAndSize( (char*) (buffer), size)
 #endif
 
