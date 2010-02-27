@@ -20,6 +20,7 @@
 #else
 #define LogMessage(...)
 #define LogMessageV(...)
+#define WriteMessageForPython(...)
 #endif
 
 // define Py_ssize_t for versions before Python 2.5
@@ -40,10 +41,13 @@ typedef int Py_ssize_t;
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #endif
 
-
-// define simple construct for determining endianness of the platform
-// ODBC uses native encoding with OCI_UTF16
-#define IS_LITTLE_ENDIAN (int)*(unsigned char*) &one
+// define PyInt_* macros for Python 3.x
+#ifndef PyInt_Check
+#define PyInt_Check             PyLong_Check
+#define PyInt_FromLong          PyLong_FromLong
+#define PyInt_AsLong            PyLong_AsLong
+#define PyInt_Type              PyLong_Type
+#endif
 
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
@@ -73,6 +77,15 @@ typedef int Py_ssize_t;
     #define CEODBC_BASE_EXCEPTION       NULL
 #else
     #define CEODBC_BASE_EXCEPTION       PyExc_StandardError
+#endif
+
+// define simple construct for determining endianness of the platform
+#define IS_LITTLE_ENDIAN (int)*(unsigned char*) &one
+
+// use Unicode variants for Python 3.x
+#if PY_MAJOR_VERSION >= 3
+#define SQLDriverConnect            SQLDriverConnectW
+#define SQLGetDiagField             SQLGetDiagFieldW
 #endif
 
 
@@ -326,7 +339,7 @@ static PyObject *Module_Initialize(void)
     ADD_TYPE_OBJECT("connect", &g_ConnectionType)
 
     // add the constructors required by the DB API
-    ADD_TYPE_OBJECT("Binary", &PyBuffer_Type)
+    ADD_TYPE_OBJECT("Binary", &ceBinary_Type)
     ADD_TYPE_OBJECT("Date", PyDateTimeAPI->DateType)
     ADD_TYPE_OBJECT("Time", PyDateTimeAPI->TimeType)
     ADD_TYPE_OBJECT("Timestamp", PyDateTimeAPI->DateTimeType)

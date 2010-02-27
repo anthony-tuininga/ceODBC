@@ -20,7 +20,7 @@ typedef struct {
 //-----------------------------------------------------------------------------
 typedef struct {
     PyObject_HEAD
-    char errorText[1024];
+    PyObject *message;
     const char *context;
 } udt_Error;
 
@@ -36,7 +36,7 @@ static PyObject *Error_Str(udt_Error*);
 // declaration of members
 //-----------------------------------------------------------------------------
 static PyMemberDef g_ErrorMembers[] = {
-    { "message", T_STRING_INPLACE, offsetof(udt_Error, errorText), READONLY },
+    { "message", T_OBJECT, offsetof(udt_Error, message), READONLY },
     { "context", T_STRING, offsetof(udt_Error, context), READONLY },
     { NULL }
 };
@@ -86,6 +86,7 @@ static PyTypeObject g_ErrorType = {
 static void Error_Free(
     udt_Error *self)                    // error object
 {
+    Py_CLEAR(self->message);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
@@ -97,7 +98,11 @@ static void Error_Free(
 static PyObject *Error_Str(
     udt_Error *self)                    // variable to return the string for
 {
-    return PyString_FromString(self->errorText);
+    if (self->message) {
+        Py_INCREF(self->message);
+        return self->message;
+    }
+    return ceString_FromAscii("");
 }
 
 
@@ -111,12 +116,13 @@ static int Error_CheckForError(
     SQLRETURN rcToCheck,                // return code of last call
     const char *context)                // context
 {
+    PyObject *errorMessages, *temp, *separator;
+    CEODBC_CHAR buffer[1024];
     SQLINTEGER numRecords;
-    int i, sizeRemaining;
     SQLSMALLINT length;
     udt_Error *error;
     SQLRETURN rc;
-    char *ptr;
+    int i;
 
     // handle simple cases
     if (rcToCheck == SQL_SUCCESS || rcToCheck == SQL_SUCCESS_WITH_INFO)
@@ -136,27 +142,52 @@ static int Error_CheckForError(
     rc = SQLGetDiagField(obj->handleType, obj->handle, 0, SQL_DIAG_NUMBER,
             &numRecords, SQL_IS_INTEGER, NULL);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-        strcpy(error->errorText, "cannot get number of diagnostic records");
+        error->message = ceString_FromAscii("cannot get number of " \
+                "diagnostic records");
 
     // determine error text
     } else if (numRecords == 0) {
-        strcpy(error->errorText, "no diagnostic message text available");
+        error->message = ceString_FromAscii("no diagnostic message text " \
+                "available");
     } else {
-        ptr = error->errorText;
-        sizeRemaining = sizeof(error->errorText) - 1;
+        error->message = NULL;
+        errorMessages = PyList_New(numRecords);
+        if (!errorMessages) {
+            Py_DECREF(error);
+            return -1;
+        }
         for (i = 1; i <= numRecords; i++) {
             rc = SQLGetDiagField(obj->handleType, obj->handle, i,
-                    SQL_DIAG_MESSAGE_TEXT, ptr, sizeRemaining, &length);
+                    SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &length);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-                strcpy(error->errorText, "cannot get diagnostic message text"); 
+                error->message = ceString_FromAscii("cannot get " \
+                        "diagnostic message text");
                 break;
             }
-            if (i > 1)
-                *(ptr - 1) = '\n';
-            *(ptr + length) = '\0';
-            ptr += length + 1;
-            sizeRemaining -= length - 1;
+            temp = ceString_FromStringAndSize( (char*) buffer, length);
+            if (!temp) {
+                Py_DECREF(error);
+                Py_DECREF(errorMessages);
+                return -1;
+            }
+            PyList_SET_ITEM(errorMessages, i - 1, temp);
         }
+        if (!error->message) {
+            separator = ceString_FromAscii("\n");
+            if (!separator) {
+                Py_DECREF(error);
+                Py_DECREF(errorMessages);
+                return -1;
+            }
+            error->message = ceString_Join(separator, errorMessages);
+            Py_DECREF(separator);
+            Py_DECREF(errorMessages);
+        }
+    }
+
+    if (!error->message) {
+        Py_DECREF(error);
+        return -1;
     }
 
     PyErr_SetObject(g_DatabaseErrorException, (PyObject*) error);

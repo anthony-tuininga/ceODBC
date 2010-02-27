@@ -3,14 +3,35 @@
 //   Defines constants and routines specific to handling strings.
 //-----------------------------------------------------------------------------
 
-// define structure for abstracting string buffers
-typedef struct {
-    const void *ptr;
-    Py_ssize_t size;
-#ifdef Py_UNICODE_WIDE
-    PyObject *encodedString;
+#if PY_MAJOR_VERSION >= 3
+    #define CEODBC_CHAR                 SQLWCHAR
+    #define ceString_Type               &PyUnicode_Type
+    #define ceString_Format             PyUnicode_Format
+    #define ceString_Join               PyUnicode_Join
+    #define ceString_Check              PyUnicode_Check
+    #define ceString_GetSize            PyUnicode_GET_SIZE
+    #define ceString_FromObject         PyObject_Str
+    #define ceString_FromAscii(str) \
+        PyUnicode_DecodeASCII(str, strlen(str), NULL)
+    #ifdef Py_UNICODE_WIDE
+        #define ceString_FromStringAndSize(buffer, size) \
+            PyUnicode_DecodeUTF16(buffer, (size) * 2, NULL, NULL)
+    #else
+        #define ceString_FromStringAndSize(buffer, size) \
+            PyUnicode_FromUnicode((Py_UNICODE*) (buffer), size)
+    #endif
+#else
+    #define CEODBC_CHAR                 SQLCHAR
+    #define ceString_Type               &PyBytes_Type
+    #define ceString_Format             PyBytes_Format
+    #define ceString_Check              PyBytes_Check
+    #define ceString_GetSize            PyBytes_GET_SIZE
+    #define ceString_FromObject         PyObject_Str
+    #define ceString_FromAscii(str) \
+        PyBytes_FromString(str)
+    #define ceString_FromStringAndSize(buffer, size) \
+        PyBytes_FromStringAndSize( (char*) (buffer), size)
 #endif
-} udt_StringBuffer;
 
 
 // use the bytes methods in ceODBC and define them as the equivalent string
@@ -29,11 +50,20 @@ typedef struct {
 // define binary type and methods
 #if PY_MAJOR_VERSION >= 3
     #define ceBinary_Type               PyBytes_Type
-    #define ceBinary_Check              PyBytes_Check
+    #define ceBinary_Check(obj)         PyBytes_Check(obj)
 #else
     #define ceBinary_Type               PyBuffer_Type
-    #define ceBinary_Check              PyBuffer_Check
+    #define ceBinary_Check(obj) \
+        PyBuffer_Check(obj) || PyBytes_Check(obj)
 #endif
+
+
+// define structure for abstracting string buffers
+typedef struct {
+    const void *ptr;
+    Py_ssize_t size;
+    PyObject *encodedString;
+} udt_StringBuffer;
 
 
 //-----------------------------------------------------------------------------
@@ -46,18 +76,30 @@ static int StringBuffer_Init(
 {
     buf->ptr = NULL;
     buf->size = 0;
-#ifdef Py_UNICODE_WIDE
     buf->encodedString = NULL;
-#endif
     return 0;
 }
 
 
 //-----------------------------------------------------------------------------
-// StringBuffer_FromUnicode()
+// StringBuffer_Clear()
+//   Clear the string buffer, if applicable.
+//-----------------------------------------------------------------------------
+static void StringBuffer_Clear(
+    udt_StringBuffer *buf)              // buffer to fill
+{
+    Py_CLEAR(buf->encodedString);
+    buf->ptr = NULL;
+    buf->size = 0;
+}
+
+
+#if PY_MAJOR_VERSION >= 3
+//-----------------------------------------------------------------------------
+// StringBuffer_FromString()
 //   Populate the string buffer from a unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromUnicode(
+static int StringBuffer_FromString(
     udt_StringBuffer *buf,              // buffer to fill
     PyObject *obj)                      // unicode object expected
 {
@@ -71,7 +113,7 @@ static int StringBuffer_FromUnicode(
     if (!buf->encodedString)
         return -1;
     buf->ptr = PyBytes_AS_STRING(buf->encodedString);
-    buf->size = PyBytes_GET_SIZE(buf->encodedString);
+    buf->size = PyBytes_GET_SIZE(buf->encodedString) / 2;
 #else
     buf->ptr = (char*) PyUnicode_AS_UNICODE(obj);
     buf->size = PyUnicode_GET_DATA_SIZE(obj);
@@ -81,10 +123,10 @@ static int StringBuffer_FromUnicode(
 
 
 //-----------------------------------------------------------------------------
-// StringBuffer_FromBytes()
+// StringBuffer_FromBinary()
 //   Populate the string buffer from a bytes object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromBytes(
+static int StringBuffer_FromBinary(
     udt_StringBuffer *buf,              // buffer to fill
     PyObject *obj)                      // bytes object expected
 {
@@ -92,19 +134,34 @@ static int StringBuffer_FromBytes(
         return StringBuffer_Init(buf);
     buf->ptr = PyBytes_AS_STRING(obj);
     buf->size = PyBytes_GET_SIZE(obj);
-#ifdef Py_UNICODE_WIDE
     buf->encodedString = NULL;
-#endif
+    return 0;
+}
+
+#else
+
+//-----------------------------------------------------------------------------
+// StringBuffer_FromString()
+//   Populate the string buffer from a bytes object.
+//-----------------------------------------------------------------------------
+static int StringBuffer_FromString(
+    udt_StringBuffer *buf,              // buffer to fill
+    PyObject *obj)                      // bytes object expected
+{
+    if (!obj)
+        return StringBuffer_Init(buf);
+    buf->ptr = PyBytes_AS_STRING(obj);
+    buf->size = PyBytes_GET_SIZE(obj);
+    buf->encodedString = NULL;
     return 0;
 }
 
 
-#if PY_MAJOR_VERSION < 3
 //-----------------------------------------------------------------------------
-// StringBuffer_FromBuffer()
+// StringBuffer_FromBinary()
 //   Populate the string buffer from a buffer object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromBuffer(
+static int StringBuffer_FromBinary(
     udt_StringBuffer *buf,              // buffer to fill
     PyObject *obj)                      // bytes object expected
 {
@@ -112,51 +169,27 @@ static int StringBuffer_FromBuffer(
         return StringBuffer_Init(buf);
     if (PyObject_AsReadBuffer(obj, &buf->ptr, &buf->size) < 0)
         return -1;
-#ifdef Py_UNICODE_WIDE
     buf->encodedString = NULL;
-#endif
     return 0;
 }
-#endif
 
+//-----------------------------------------------------------------------------
+// ceString_Join()
+//   Populate the string buffer from a buffer object.
+//-----------------------------------------------------------------------------
+static PyObject* ceString_Join(
+    PyObject *separator,                // the separator
+    PyObject *list)                     // list of strings to join together
+{
+    PyObject *methodName, *result;
 
-#if PY_MAJOR_VERSION >= 3
-#define StringBuffer_FromBinary         StringBuffer_FromBytes
-#else
-#define StringBuffer_FromBinary         StringBuffer_FromBuffer
-#endif
+    methodName = PyString_FromString("join");
+    if (!methodName)
+        return NULL;
+    result = PyObject_CallMethodObjArgs(separator, methodName, list, NULL);
+    Py_DECREF(methodName);
+    return result;
+}
 
-
-#if PY_MAJOR_VERSION >= 3
-    #define ceString_Type               &PyUnicode_Type
-    #define ceString_Format             PyUnicode_Format
-    #define ceString_Check              PyUnicode_Check
-    #define ceString_GetSize            PyUnicode_GET_SIZE
-    #define ceString_FromObject         PyObject_Str
-    #define ceString_FromAscii(str) \
-        PyUnicode_DecodeASCII(str, strlen(str), NULL)
-    #ifdef Py_UNICODE_WIDE
-        #define StringBuffer_Clear(buffer) \
-            Py_XDECREF((buffer)->encodedString)
-        #define ceString_FromEncodedString(buffer, numBytes) \
-            PyUnicode_DecodeUTF16(buffer, numBytes, NULL, NULL)
-    #else
-        #define StringBuffer_Clear(buffer)
-        #define ceString_FromEncodedString(buffer, numBytes) \
-            PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (numBytes) / 2)
-    #endif
-    #define StringBuffer_Fill           StringBuffer_FromUnicode
-#else
-    #define ceString_Type               &PyBytes_Type
-    #define ceString_Format             PyBytes_Format
-    #define ceString_Check              PyBytes_Check
-    #define ceString_GetSize            PyBytes_GET_SIZE
-    #define ceString_FromObject         PyObject_Str
-    #define StringBuffer_Clear(buffer)
-    #define ceString_FromAscii(str) \
-        PyBytes_FromString(str)
-    #define ceString_FromEncodedString(buffer, numBytes) \
-        PyBytes_FromStringAndSize(buffer, numBytes)
-    #define StringBuffer_Fill           StringBuffer_FromBytes
 #endif
 
