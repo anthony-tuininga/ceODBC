@@ -12,7 +12,6 @@ typedef struct {
     int isConnected;
     PyObject *dsn;
     int logSql;
-    int unicode;
 } udt_Connection;
 
 
@@ -80,7 +79,6 @@ static PyMethodDef g_ConnectionMethods[] = {
 static PyMemberDef g_ConnectionMembers[] = {
     { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
     { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
-    { "unicode", T_INT, offsetof(udt_Connection, unicode), 0 },
     { NULL }
 };
 
@@ -184,7 +182,6 @@ static PyObject* Connection_New(
     self->dsn = NULL;
     self->isConnected = 0;
     self->logSql = 1;
-    self->unicode = 0;
 
     return (PyObject*) self;
 }
@@ -199,25 +196,23 @@ static int Connection_Init(
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
-    PyObject *autocommitObj, *unicodeObj;
-    int dsnLength, autocommit, unicode;
+    CEODBC_CHAR actualDsnBuffer[1024];
+    PyObject *autocommitObj, *dsnObj;
     SQLSMALLINT actualDsnLength;
-    char actualDsn[1024], *dsn;
+    udt_StringBuffer dsnBuffer;
+    int autocommit;
     SQLRETURN rc;
 
     // define keyword arguments
-    static char *keywordList[] = { "dsn", "autocommit", "unicode", NULL };
+    static char *keywordList[] = { "dsn", "autocommit", NULL };
 
     // parse arguments
-    autocommitObj = unicodeObj = Py_None;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "s#|OO", keywordList,
-            &dsn, &dsnLength, &autocommitObj, &unicodeObj))
+    autocommitObj = Py_None;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O!|O", keywordList,
+            ceString_Type, &dsnObj, &autocommitObj))
         return -1;
     autocommit = PyObject_IsTrue(autocommitObj);
     if (autocommit < 0)
-        return -1;
-    unicode = PyObject_IsTrue(unicodeObj);
-    if (unicode < 0)
         return -1;
 
     // set up the environment
@@ -233,9 +228,12 @@ static int Connection_Init(
         return -1;
 
     // connecting to driver
-    rc = SQLDriverConnect(self->handle, NULL, (SQLCHAR*) dsn, dsnLength,
-            (SQLCHAR*) actualDsn, sizeof(actualDsn), &actualDsnLength,
-            SQL_DRIVER_NOPROMPT);
+    if (StringBuffer_FromString(&dsnBuffer, dsnObj) < 0)
+        return -1;
+    rc = SQLDriverConnect(self->handle, NULL, (CEODBC_CHAR*) dsnBuffer.ptr,
+            dsnBuffer.size, (CEODBC_CHAR*) actualDsnBuffer,
+            sizeof(actualDsnBuffer), &actualDsnLength, SQL_DRIVER_NOPROMPT);
+    StringBuffer_Clear(&dsnBuffer);
     if (CheckForError(self, rc,
             "Connection_Init(): connecting to driver") < 0)
         return -1;
@@ -251,10 +249,10 @@ static int Connection_Init(
 
     // mark connection as connected
     self->isConnected = 1;
-    self->unicode = unicode;
 
     // save copy of constructed DSN
-    self->dsn = PyString_FromStringAndSize(actualDsn, actualDsnLength);
+    self->dsn = ceString_FromStringAndSize( (char*) actualDsnBuffer,
+            actualDsnLength);
     if (!self->dsn) {
         Py_DECREF(self);
         return -1;
@@ -279,8 +277,8 @@ static void Connection_Free(
     }
     if (self->handle)
         SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
-    Py_XDECREF(self->environment);
-    Py_XDECREF(self->dsn);
+    Py_CLEAR(self->environment);
+    Py_CLEAR(self->dsn);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
@@ -292,18 +290,28 @@ static void Connection_Free(
 static PyObject *Connection_Repr(
     udt_Connection *connection)         // connection to return the string for
 {
-    PyObject *module, *name, *result;
+    PyObject *module, *name, *result, *format, *formatArgs;
 
     if (GetModuleAndName(Py_TYPE(connection), &module, &name) < 0)
         return NULL;
     if (connection->dsn)
-        result = PyString_FromFormat("<%s.%s to %s>",
-                PyString_AS_STRING(module), PyString_AS_STRING(name),
-                PyString_AS_STRING(connection->dsn));
-    else result = PyString_FromFormat("<%s.%s to unknown DSN>",
-                PyString_AS_STRING(module), PyString_AS_STRING(name));
+        formatArgs = PyTuple_Pack(3, module, name, connection->dsn);
+    else formatArgs = PyTuple_Pack(2, module, name);
     Py_DECREF(module);
     Py_DECREF(name);
+    if (!formatArgs)
+        return NULL;
+
+    if (connection->dsn)
+        format = ceString_FromAscii("<%s.%s to %s>");
+    else format = ceString_FromAscii("<%s.%s to unknown DSN>");
+    if (!format) {
+        Py_DECREF(formatArgs);
+        return NULL;
+    }
+    result = ceString_Format(format, formatArgs);
+    Py_DECREF(format);
+    Py_DECREF(formatArgs);
     return result;
 }
 
