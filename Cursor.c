@@ -273,21 +273,32 @@ static int Cursor_Init(
 static PyObject *Cursor_Repr(
     udt_Cursor *cursor)                 // cursor to return the string for
 {
-    PyObject *connectionRepr, *module, *name, *result;
+    PyObject *connectionRepr, *module, *name, *result, *format, *formatArgs;
 
-    connectionRepr = PyObject_Repr((PyObject*) cursor->connection);
-    if (!connectionRepr)
+    format = ceString_FromAscii("<%s.%s on %s>");
+    if (!format)
         return NULL;
+    connectionRepr = PyObject_Repr((PyObject*) cursor->connection);
+    if (!connectionRepr) {
+        Py_DECREF(format);
+        return NULL;
+    }
     if (GetModuleAndName(Py_TYPE(cursor), &module, &name) < 0) {
+        Py_DECREF(format);
         Py_DECREF(connectionRepr);
         return NULL;
     }
-    result = PyString_FromFormat("<%s.%s on %s>",
-            PyString_AS_STRING(module), PyString_AS_STRING(name),
-            PyString_AS_STRING(connectionRepr));
-    Py_DECREF(connectionRepr);
+    formatArgs = PyTuple_Pack(3, module, name, connectionRepr);
     Py_DECREF(module);
     Py_DECREF(name);
+    Py_DECREF(connectionRepr);
+    if (!formatArgs) {
+        Py_DECREF(format);
+        return NULL;
+    }
+    result = ceString_Format(format, formatArgs);
+    Py_DECREF(format);
+    Py_DECREF(formatArgs);
     return result;
 }
 
@@ -488,15 +499,39 @@ static void Cursor_LogBindParameter(
     unsigned position,                  // position being bound
     PyObject *value)                    // value being bound
 {
-    PyObject *valueRepr;
-    char *valueReprStr;
+    PyObject *format, *formatArgs, *positionObj, *message;
 
-    valueRepr = PyObject_Repr(value);
-    if (!valueRepr)
-        valueReprStr = "unable to repr";
-    else valueReprStr = PyString_AS_STRING(valueRepr);
-    LogMessageV(LOG_LEVEL_DEBUG, "    %d => %s", position, valueReprStr);
-    Py_XDECREF(valueRepr);
+    positionObj = PyInt_FromLong(position);
+    if (!positionObj) {
+        LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build position obj",
+                position);
+        return;
+    }
+    formatArgs = PyTuple_Pack(2, positionObj, value);
+    Py_DECREF(positionObj);
+    if (!formatArgs) {
+        LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build format args",
+                position);
+        return;
+    }
+    format = ceString_FromAscii("    %s => %r");
+    if (!format) {
+        Py_DECREF(formatArgs);
+        LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build format",
+                position);
+        return;
+    }
+    message = ceString_Format(format, formatArgs);
+    Py_DECREF(format);
+    Py_DECREF(formatArgs);
+    if (!message) {
+        LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build repr",
+                position);
+        return;
+    }
+
+    WriteMessageForPython(LOG_LEVEL_DEBUG, message);
+    Py_DECREF(message);
 }
 
 
@@ -700,7 +735,7 @@ static PyObject *Cursor_ItemDescription(
     // set each of the items in the tuple
     Py_INCREF(varType->pythonType);
     PyTuple_SET_ITEM(tuple, 0,
-            PyString_FromStringAndSize( (char*) name, nameLength));
+            ceString_FromStringAndSize( (char*) name, nameLength));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
     PyTuple_SET_ITEM(tuple, 2, PyInt_FromLong(displaySize));
     PyTuple_SET_ITEM(tuple, 3, PyInt_FromLong(size));
@@ -778,7 +813,7 @@ static PyObject *Cursor_GetName(
             &nameLength);
     if (CheckForError(self, rc, "Cursor_GetName()") < 0)
         return NULL;
-    return PyString_FromStringAndSize(name, nameLength);
+    return ceString_FromStringAndSize(name, nameLength);
 }
 
 
@@ -791,15 +826,18 @@ static int Cursor_SetName(
     PyObject *value,                    // value to set
     void *arg)                          // optional argument (ignored)
 {
+    udt_StringBuffer buffer;
     SQLRETURN rc;
 
-    if (!PyString_Check(value)) {
+    if (!ceString_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "expecting string");
         return -1;
     }
 
-    rc = SQLSetCursorName(self->handle, (SQLCHAR*) PyString_AS_STRING(value),
-            PyString_GET_SIZE(value));
+    if (StringBuffer_FromString(&buffer, value) < 0)
+        return -1;
+    rc = SQLSetCursorName(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
+    StringBuffer_Clear(&buffer);
     if (CheckForError(self, rc, "Cursor_SetName()") < 0)
         return -1;
 
@@ -919,6 +957,7 @@ static int Cursor_InternalPrepare(
     udt_Cursor *self,                   // cursor to perform prepare on
     PyObject *statement)                // statement to prepare
 {
+    udt_StringBuffer buffer;
     SQLRETURN rc;
 
     // make sure we don't get a situation where nothing is to be executed
@@ -955,10 +994,12 @@ static int Cursor_InternalPrepare(
     self->rowFactory = NULL;
 
     // prepare statement
+    if (StringBuffer_FromString(&buffer, statement) < 0)
+        return -1;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepare(self->handle, (SQLCHAR*) PyString_AS_STRING(statement),
-            PyString_GET_SIZE(statement));
+    rc = SQLPrepare(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
+    StringBuffer_Clear(&buffer);
     if (CheckForError(self, rc, "Cursor_InternalPrepare()") < 0)
         return -1;
 
@@ -1002,6 +1043,7 @@ static PyObject *Cursor_ExecDirect(
     udt_Cursor *self,                   // cursor to execute
     PyObject *args)                     // arguments
 {
+    udt_StringBuffer buffer;
     PyObject *statement;
     SQLRETURN rc;
 
@@ -1028,10 +1070,12 @@ static PyObject *Cursor_ExecDirect(
     self->parameterVars = NULL;
 
     // execute the statement
+    if (StringBuffer_FromString(&buffer, statement) < 0)
+        return NULL;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecDirect(self->handle, (SQLCHAR*) PyString_AS_STRING(statement),
-            PyString_GET_SIZE(statement));
+    rc = SQLExecDirect(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
+    StringBuffer_Clear(&buffer);
     if (Cursor_InternalExecuteHelper(self, rc) < 0)
         return NULL;
 
@@ -1064,7 +1108,7 @@ static PyObject *Cursor_Execute(
         return NULL;
     }
     statement = PyTuple_GET_ITEM(args, 0);
-    if (statement != Py_None && !PyString_Check(statement)) {
+    if (statement != Py_None && !ceString_Check(statement)) {
         PyErr_SetString(PyExc_TypeError, "expecting None or a string");
         return NULL;
     }
@@ -1117,7 +1161,7 @@ static PyObject *Cursor_ExecuteMany(
     if (!PyArg_ParseTuple(args, "OO!", &statement, &PyList_Type,
             &listOfArguments))
         return NULL;
-    if (statement != Py_None && !PyString_Check(statement)) {
+    if (statement != Py_None && !ceString_Check(statement)) {
         PyErr_SetString(PyExc_TypeError, "expecting None or a string");
         return NULL;
     }
@@ -1160,58 +1204,33 @@ static PyObject *Cursor_ExecuteMany(
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Call()
+// Cursor_CallBuildStatement()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int Cursor_Call(
-    udt_Cursor *self,                   // cursor to call procedure/function on
-    udt_Variable *returnValueVar,       // return value (optional)
-    PyObject *procedureName,            // name of procedure/function
-    PyObject *args,                     // method args
-    int argsOffset)                     // offset into method args
+static int Cursor_CallBuildStatement(
+    PyObject *name,                     // name of procedure/function to call
+    udt_Variable *returnValue,          // return value variable (optional)
+    PyObject *args,                     // arguments to procedure/function
+    PyObject **statementObj)            // statement object (OUT)
 {
-    int i, numArgs, statementBufferSize;
+    PyObject *format, *formatArgs;
+    int numArgs, statementSize, i;
     char *statement, *ptr;
-    PyObject *temp;
 
-    // determine the arguments to the procedure
-    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
-        return -1;
-    if (argsOffset > 0) {
-        temp = PyTuple_GetSlice(args, argsOffset, PyTuple_GET_SIZE(args));
-        Py_DECREF(args);
-        if (!temp)
-            return -1;
-        args = temp;
-    }
+    // allocate memory for statement
     numArgs = PyTuple_GET_SIZE(args);
-
-    // include the return value, if necessary
-    if (returnValueVar) {
-        temp = PySequence_List(args);
-        Py_DECREF(args);
-        if (!temp)
-            return -1;
-        if (PyList_Insert(temp, 0, (PyObject*) returnValueVar) < 0) {
-            Py_DECREF(temp);
-            return -1;
-        }
-        args = temp;
-    }
-
-    // calculate the statement to execute
-    statementBufferSize = PyString_GET_SIZE(procedureName) + numArgs * 2 + 14;
-    statement = PyMem_Malloc(statementBufferSize);
+    statementSize = numArgs * 2 + 16;
+    statement = PyMem_Malloc(statementSize);
     if (!statement) {
-        Py_DECREF(args);
         PyErr_NoMemory();
         return -1;
     }
+
+    // build the statement
     strcpy(statement, "{");
-    if (returnValueVar)
+    if (returnValue)
         strcat(statement, "? = ");
-    strcat(statement, "CALL ");
-    strcat(statement, PyString_AS_STRING(procedureName));
+    strcat(statement, "CALL %s");
     ptr = statement + strlen(statement);
     if (numArgs > 0) {
         *ptr++ = '(';
@@ -1225,10 +1244,71 @@ static int Cursor_Call(
     *ptr++ = '}';
     *ptr = '\0';
 
-    // execute the statement on the cursor
-    temp = PyObject_CallMethod( (PyObject*) self, "execute", "sO", statement,
-            args);
+    // create statement object
+    format = ceString_FromAscii(statement);
     PyMem_Free(statement);
+    if (!format)
+        return -1;
+    formatArgs = PyTuple_Pack(1, name);
+    if (!formatArgs) {
+        Py_DECREF(format);
+        return -1;
+    }
+    *statementObj = ceString_Format(format, formatArgs);
+    Py_DECREF(format);
+    Py_DECREF(formatArgs);
+    if (!*statementObj)
+        return -1;
+
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Cursor_Call()
+//   Call procedure or function.
+//-----------------------------------------------------------------------------
+static int Cursor_Call(
+    udt_Cursor *self,                   // cursor to call procedure/function on
+    udt_Variable *returnValueVar,       // return value (optional)
+    PyObject *procedureName,            // name of procedure/function
+    PyObject *args,                     // method args
+    int argsOffset)                     // offset into method args
+{
+    PyObject *statement, *temp;
+
+    // determine the arguments to the procedure
+    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+        return -1;
+    if (argsOffset > 0) {
+        temp = PyTuple_GetSlice(args, argsOffset, PyTuple_GET_SIZE(args));
+        Py_DECREF(args);
+        if (!temp)
+            return -1;
+        args = temp;
+    }
+
+    // build up the statement
+    if (Cursor_CallBuildStatement(procedureName, returnValueVar, args,
+            &statement) < 0)
+        return -1;
+
+    // add the return value, if necessary, to the arguments
+    if (returnValueVar) {
+        temp = PySequence_List(args);
+        Py_DECREF(args);
+        if (!temp)
+            return -1;
+        if (PyList_Insert(temp, 0, (PyObject*) returnValueVar) < 0) {
+            Py_DECREF(temp);
+            return -1;
+        }
+        args = temp;
+    }
+
+    // execute the statement on the cursor
+    temp = PyObject_CallMethod( (PyObject*) self, "execute", "OO", statement,
+            args);
     Py_DECREF(args);
     if (!temp)
         return -1;
@@ -1259,7 +1339,7 @@ static PyObject *Cursor_CallFunc(
     }
     functionName = PyTuple_GET_ITEM(args, 0);
     returnType = PyTuple_GET_ITEM(args, 1);
-    if (!PyString_Check(functionName)) {
+    if (!ceString_Check(functionName)) {
         PyErr_SetString(PyExc_TypeError, "expecting a string");
         return NULL;
     }
@@ -1300,7 +1380,7 @@ static PyObject *Cursor_CallProc(
         return NULL;
     }
     procedureName = PyTuple_GET_ITEM(args, 0);
-    if (!PyString_Check(procedureName)) {
+    if (!ceString_Check(procedureName)) {
         PyErr_SetString(PyExc_TypeError, "expecting a string");
         return NULL;
     }

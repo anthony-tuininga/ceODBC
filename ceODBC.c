@@ -86,6 +86,7 @@ typedef int Py_ssize_t;
 #if PY_MAJOR_VERSION >= 3
 #define SQLDriverConnect            SQLDriverConnectW
 #define SQLGetDiagField             SQLGetDiagFieldW
+#define SQLPrepare                  SQLPrepareW
 #endif
 
 
