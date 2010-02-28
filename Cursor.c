@@ -312,11 +312,11 @@ static void Cursor_Free(
 {
     if (self->handle && self->connection->isConnected)
         SQLFreeHandle(self->handleType, self->handle);
-    Py_XDECREF(self->connection);
-    Py_XDECREF(self->resultSetVars);
-    Py_XDECREF(self->parameterVars);
-    Py_XDECREF(self->statement);
-    Py_XDECREF(self->rowFactory);
+    Py_CLEAR(self->connection);
+    Py_CLEAR(self->resultSetVars);
+    Py_CLEAR(self->parameterVars);
+    Py_CLEAR(self->statement);
+    Py_CLEAR(self->rowFactory);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
