@@ -310,9 +310,11 @@ static int BigIntegerVar_SetValue(
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    if (PyInt_Check(value))
-        var->data[pos] = PyInt_AS_LONG(value);
-    else if (PyLong_Check(value)) {
+    if (PyInt_Check(value)) {
+        var->data[pos] = PyInt_AsLong(value);
+        if (PyErr_Occurred())
+            return -1;
+    } else if (PyLong_Check(value)) {
         var->data[pos] = PyLong_AsLongLong(value);
         if (PyErr_Occurred())
             return -1;
@@ -341,9 +343,13 @@ static int DecimalVar_GetStringRepOfDecimal(
     PyObject *digits;
 
     // acquire basic information from the value tuple
-    sign = PyInt_AS_LONG(PyTuple_GET_ITEM(tupleValue, 0));
+    sign = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 0));
+    if (PyErr_Occurred())
+        return -1;
     digits = PyTuple_GET_ITEM(tupleValue, 1);
-    scale = PyInt_AS_LONG(PyTuple_GET_ITEM(tupleValue, 2));
+    scale = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 2));
+    if (PyErr_Occurred())
+        return -1;
     numDigits = PyTuple_GET_SIZE(digits);
 
     // resize the variable if needed
@@ -358,9 +364,11 @@ static int DecimalVar_GetStringRepOfDecimal(
     if (sign)
         *valuePtr++ = '-';
     for (i = 0; i < numDigits + scale; i++) {
-        if (i < numDigits)
-            digit = PyInt_AS_LONG(PyTuple_GetItem(digits, i));
-        else digit = 0;
+        if (i < numDigits) {
+            digit = PyInt_AsLong(PyTuple_GetItem(digits, i));
+            if (PyErr_Occurred())
+                return -1;
+        } else digit = 0;
         *valuePtr++ = '0' + (char) digit;
     }
     if (scale < 0) {
@@ -368,7 +376,11 @@ static int DecimalVar_GetStringRepOfDecimal(
         for (i = scale; i < 0; i++) {
             if (numDigits + i < 0)
                 digit = 0;
-            else digit = PyInt_AS_LONG(PyTuple_GetItem(digits, numDigits + i));
+            else {
+                digit = PyInt_AsLong(PyTuple_GetItem(digits, numDigits + i));
+                if (PyErr_Occurred())
+                    return -1;
+            }
             *valuePtr++ = '0' + (char) digit;
         }
     }
@@ -401,14 +413,14 @@ static PyObject *DecimalVar_GetValue(
     udt_DecimalVar *var,                // variable to determine value for
     unsigned pos)                       // array position
 {
-    PyObject *str, *result;
+    PyObject *obj, *result;
 
-    str = PyString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
+    obj = ceString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
             var->lengthOrIndicator[pos]);
-    if (!str)
+    if (!obj)
         return NULL;
-    result = PyObject_CallFunctionObjArgs(g_DecimalType, str, NULL);
-    Py_DECREF(str);
+    result = PyObject_CallFunctionObjArgs(g_DecimalType, obj, NULL);
+    Py_DECREF(obj);
     return result;
 }
 
@@ -464,9 +476,11 @@ static int DoubleVar_SetValue(
 {
     if (PyFloat_Check(value))
         var->data[pos] = PyFloat_AS_DOUBLE(value);
-    else if (PyInt_Check(value))
-        var->data[pos] = PyInt_AS_LONG(value);
-    else {
+    else if (PyInt_Check(value)) {
+        var->data[pos] = PyInt_AsLong(value);
+        if (PyErr_Occurred())
+            return -1;
+    } else {
         PyErr_Format(PyExc_TypeError,
                 "expecting floating point data, got value of type %s instead",
                 Py_TYPE(value)->tp_name);
@@ -499,7 +513,9 @@ static int IntegerVar_SetValue(
     PyObject *value)                    // value to set
 {
     if (PyInt_Check(value)) {
-        var->data[pos] = PyInt_AS_LONG(value);
+        var->data[pos] = PyInt_AsLong(value);
+        if (PyErr_Occurred())
+            return -1;
         return 0;
     }
     PyErr_Format(PyExc_TypeError,
