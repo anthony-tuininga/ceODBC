@@ -687,13 +687,13 @@ static PyObject *Cursor_ItemDescription(
     SQLSMALLINT dataType, nameLength, scale, nullable;
     SQLULEN precision, size, displaySize;
     udt_VariableType *varType;
-    int i;
+    CEODBC_CHAR name[256];
     PyObject *tuple;
-    char name[256];
     SQLRETURN rc;
+    int i;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(self->handle, position, (SQLCHAR*) name, sizeof(name),
+    rc = SQLDescribeCol(self->handle, position, name, sizeof(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
     if (CheckForError(self, rc,
             "Cursor_ItemDescription(): get column info") < 0)
