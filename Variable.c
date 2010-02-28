@@ -601,15 +601,14 @@ static udt_Variable *Variable_NewForResultSet(
 {
     SQLSMALLINT dataType, length, scale, nullable;
     udt_VariableType *varType;
+    CEODBC_CHAR name[1];
     udt_Variable *var;
     SQLULEN size;
     SQLRETURN rc;
-    char name[1];
 
     // retrieve information about the column
-    rc = SQLDescribeCol(cursor->handle, position, (SQLCHAR*) name,
-            sizeof(name), &length, &dataType, &size, &scale,
-            &nullable);
+    rc = SQLDescribeCol(cursor->handle, position, name, sizeof(name), &length,
+            &dataType, &size, &scale, &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
         return NULL;

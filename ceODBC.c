@@ -84,6 +84,7 @@ typedef int Py_ssize_t;
 
 // use Unicode variants for Python 3.x
 #if PY_MAJOR_VERSION >= 3
+#define SQLDescribeCol              SQLDescribeColW
 #define SQLDriverConnect            SQLDriverConnectW
 #define SQLGetDiagField             SQLGetDiagFieldW
 #define SQLPrepare                  SQLPrepareW
