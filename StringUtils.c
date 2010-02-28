@@ -6,6 +6,8 @@
 #if PY_MAJOR_VERSION >= 3
     #define CEODBC_CHAR                 SQLWCHAR
     #define ceString_Type               &PyUnicode_Type
+    #define ceString_VariableType       vt_Unicode
+    #define ceLongString_VariableType   vt_LongUnicode
     #define ceString_Format             PyUnicode_Format
     #define ceString_Join               PyUnicode_Join
     #define ceString_Check              PyUnicode_Check
@@ -26,6 +28,8 @@
     #endif
 #else
     #define CEODBC_CHAR                 SQLCHAR
+    #define ceString_VariableType       vt_String
+    #define ceLongString_VariableType   vt_LongString
     #define ceString_Type               &PyBytes_Type
     #define ceString_Format             PyBytes_Format
     #define ceString_Check              PyBytes_Check
@@ -68,6 +72,7 @@
 typedef struct {
     const void *ptr;
     Py_ssize_t size;
+    Py_ssize_t sizeInBytes;
     PyObject *encodedString;
 } udt_StringBuffer;
 
@@ -82,6 +87,7 @@ static int StringBuffer_Init(
 {
     buf->ptr = NULL;
     buf->size = 0;
+    buf->sizeInBytes = 0;
     buf->encodedString = NULL;
     return 0;
 }
@@ -97,15 +103,15 @@ static void StringBuffer_Clear(
     Py_CLEAR(buf->encodedString);
     buf->ptr = NULL;
     buf->size = 0;
+    buf->sizeInBytes = 0;
 }
 
 
-#if PY_MAJOR_VERSION >= 3
 //-----------------------------------------------------------------------------
-// StringBuffer_FromString()
+// StringBuffer_FromUnicode()
 //   Populate the string buffer from a unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromString(
+static int StringBuffer_FromUnicode(
     udt_StringBuffer *buf,              // buffer to fill
     PyObject *obj)                      // unicode object expected
 {
@@ -119,14 +125,20 @@ static int StringBuffer_FromString(
     if (!buf->encodedString)
         return -1;
     buf->ptr = PyBytes_AS_STRING(buf->encodedString);
-    buf->size = PyBytes_GET_SIZE(buf->encodedString) / 2;
+    buf->sizeInBytes = PyBytes_GET_SIZE(buf->encodedString);
+    buf->size = buf->sizeInBytes / 2;
 #else
     buf->ptr = (char*) PyUnicode_AS_UNICODE(obj);
-    buf->size = PyUnicode_GET_DATA_SIZE(obj);
+    buf->sizeInBytes = PyUnicode_GET_DATA_SIZE(obj);
+    buf->size = PyUnicode_GET_SIZE(obj);
 #endif
     return 0;
 }
 
+
+#if PY_MAJOR_VERSION >= 3
+
+#define StringBuffer_FromString         StringBuffer_FromUnicode
 
 //-----------------------------------------------------------------------------
 // StringBuffer_FromBinary()
@@ -139,7 +151,7 @@ static int StringBuffer_FromBinary(
     if (!obj)
         return StringBuffer_Init(buf);
     buf->ptr = PyBytes_AS_STRING(obj);
-    buf->size = PyBytes_GET_SIZE(obj);
+    buf->size = buf->sizeInBytes = PyBytes_GET_SIZE(obj);
     buf->encodedString = NULL;
     return 0;
 }
@@ -157,7 +169,7 @@ static int StringBuffer_FromString(
     if (!obj)
         return StringBuffer_Init(buf);
     buf->ptr = PyBytes_AS_STRING(obj);
-    buf->size = PyBytes_GET_SIZE(obj);
+    buf->size = buf->sizeInBytes = PyBytes_GET_SIZE(obj);
     buf->encodedString = NULL;
     return 0;
 }
@@ -175,6 +187,7 @@ static int StringBuffer_FromBinary(
         return StringBuffer_Init(buf);
     if (PyObject_AsReadBuffer(obj, &buf->ptr, &buf->size) < 0)
         return -1;
+    buf->sizeInBytes = buf->size;
     buf->encodedString = NULL;
     return 0;
 }

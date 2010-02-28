@@ -164,15 +164,8 @@ static PyObject *BinaryVar_GetValue(
     udt_BinaryVar *var,                 // variable to determine value for
     unsigned pos)                       // array position
 {
-    PyObject *str, *buffer;
-
-    str = PyString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
+    return PyBytes_FromStringAndSize((char*) var->data + pos * var->bufferSize,
             var->lengthOrIndicator[pos]);
-    if (!str)
-        return NULL;
-    buffer = PyBuffer_FromObject(str, 0, Py_END_OF_BUFFER);
-    Py_DECREF(str);
-    return buffer;
 }
 
 
@@ -185,18 +178,28 @@ static int BinaryVar_SetValue(
     unsigned pos,                       // array position to set
     PyObject *value)                    // value to set
 {
-    const void *buffer;
-    Py_ssize_t size;
+    udt_StringBuffer buffer;
 
-    if (PyObject_AsReadBuffer(value, &buffer, &size) < 0)
+    // get the buffer for binding
+    if (ceBinary_Check(value)) {
+        if (StringBuffer_FromBinary(&buffer, value) < 0)
+            return -1;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "expecting string or buffer data");
         return -1;
-    if (size > var->size) {
-        if (Variable_Resize( (udt_Variable*) var, size) < 0)
+    }
+
+    // verify there is enough space to store the value
+    if (buffer.size > var->size) {
+        if (Variable_Resize( (udt_Variable*) var, buffer.size) < 0)
             return -1;
     }
-    var->lengthOrIndicator[pos] = (SQLINTEGER) size;
-    if (size)
-        memcpy(var->data + var->bufferSize * pos, buffer, size);
+
+    // copy the value to the Oracle buffers
+    var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.size;
+    if (buffer.size)
+        memcpy(var->data + var->bufferSize * pos, buffer.ptr, buffer.size);
+    StringBuffer_Clear(&buffer);
 
     return 0;
 }
