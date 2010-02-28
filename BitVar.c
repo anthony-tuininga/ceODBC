@@ -106,7 +106,9 @@ static int BitVar_SetValue(
     PyObject *value)                    // value to set
 {
     if (PyBool_Check(value)) {
-        var->data[pos] = (unsigned char) PyInt_AS_LONG(value);
+        var->data[pos] = (unsigned char) PyInt_AsLong(value);
+        if (PyErr_Occurred())
+            return -1;
         return 0;
     }
     PyErr_SetString(PyExc_TypeError, "expecting boolean data");
