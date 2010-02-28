@@ -74,8 +74,8 @@ static PyTypeObject g_ApiTypeType = {
 static void ApiType_Free(
     udt_ApiType *self)                  // error object
 {
-    Py_XDECREF(self->name);
-    Py_XDECREF(self->types);
+    Py_CLEAR(self->name);
+    Py_CLEAR(self->types);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
