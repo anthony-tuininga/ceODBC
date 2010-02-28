@@ -204,10 +204,10 @@ static int UnicodeVar_SetValue(
     }
 
     // keep a copy of the string
-    var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.size;
-    if (buffer.size)
+    var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
+    if (buffer.sizeInBytes)
         memcpy( ((char*) var->data) + var->bufferSize * pos, buffer.ptr,
-                buffer.size);
+                buffer.sizeInBytes);
     StringBuffer_Clear(&buffer);
 
     return 0;

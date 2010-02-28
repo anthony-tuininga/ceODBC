@@ -282,9 +282,11 @@ static PyObject *Module_Initialize(void)
     MAKE_TYPE_READY(&g_DoubleVarType)
     MAKE_TYPE_READY(&g_IntegerVarType)
     MAKE_TYPE_READY(&g_LongBinaryVarType)
+#if PY_MAJOR_VERSION < 3
     MAKE_TYPE_READY(&g_LongStringVarType)
-    MAKE_TYPE_READY(&g_LongUnicodeVarType)
     MAKE_TYPE_READY(&g_StringVarType)
+#endif
+    MAKE_TYPE_READY(&g_LongUnicodeVarType)
     MAKE_TYPE_READY(&g_TimeVarType)
     MAKE_TYPE_READY(&g_TimestampVarType)
     MAKE_TYPE_READY(&g_UnicodeVarType)
@@ -354,8 +356,15 @@ static PyObject *Module_Initialize(void)
     ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
     ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
     ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
+#if PY_MAJOR_VERSION < 3
     ADD_TYPE_OBJECT("LongStringVar", &g_LongStringVarType)
     ADD_TYPE_OBJECT("StringVar", &g_StringVarType)
+    ADD_TYPE_OBJECT("LongUnicodeVar", &g_LongUnicodeVarType)
+    ADD_TYPE_OBJECT("UnicodeVar", &g_UnicodeVarType)
+#else
+    ADD_TYPE_OBJECT("LongStringVar", &g_LongUnicodeVarType)
+    ADD_TYPE_OBJECT("StringVar", &g_UnicodeVarType)
+#endif
     ADD_TYPE_OBJECT("TimeVar", &g_TimeVarType)
     ADD_TYPE_OBJECT("TimestampVar", &g_TimestampVarType)
 
@@ -375,8 +384,13 @@ static PyObject *Module_Initialize(void)
     REGISTER_TYPE(g_NumberApiType, &g_DecimalVarType)
     REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
     REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)
+#if PY_MAJOR_VERSION < 3
     REGISTER_TYPE(g_StringApiType, &g_StringVarType)
     REGISTER_TYPE(g_StringApiType, &g_LongStringVarType)
+#else
+    REGISTER_TYPE(g_StringApiType, &g_UnicodeVarType)
+    REGISTER_TYPE(g_StringApiType, &g_LongUnicodeVarType)
+#endif
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)
