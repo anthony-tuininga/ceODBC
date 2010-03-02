@@ -316,7 +316,11 @@ static int BigIntegerVar_SetValue(
     PyObject *value)                    // value to set
 {
     if (PyInt_Check(value)) {
+#if PY_MAJOR_VERSION >= 3
+        var->data[pos] = PyLong_AsLongLong(value);
+#else
         var->data[pos] = PyInt_AsLong(value);
+#endif
         if (PyErr_Occurred())
             return -1;
     } else if (PyLong_Check(value)) {

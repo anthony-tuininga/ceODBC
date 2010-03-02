@@ -2,6 +2,7 @@
 
 import ceODBC
 import decimal
+import sys
 
 class TestNumberVar(BaseTestCase):
 
@@ -106,7 +107,11 @@ class TestNumberVar(BaseTestCase):
                 from TestNumbers
                 where IntCol = 2""")
         col, = self.cursor.fetchone()
-        self.failUnless(isinstance(col, long), "long integer not returned")
+        if sys.version_info[0] < 3:
+            intType = long
+        else:
+            intType = int
+        self.failUnless(isinstance(col, intType), "integer not returned")
 
     def testReturnAsDecimal(self):
         "test that fetching a decimal returns such in Python"
