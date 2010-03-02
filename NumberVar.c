@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
     Variable_HEAD
-    SQLCHAR *data;
+    CEODBC_CHAR *data;
 } udt_DecimalVar;
 
 
@@ -255,8 +255,13 @@ static udt_VariableType vt_Decimal = {
     (GetValueProc) DecimalVar_GetValue,
     (GetBufferSizeProc) DecimalVar_GetBufferSize,
     &g_DecimalVarType,                  // Python type
+#if PY_MAJOR_VERSION >= 3
+    SQL_WCHAR,                          // SQL type
+    SQL_C_WCHAR,                        // C data type
+#else
     SQL_CHAR,                           // SQL type
     SQL_C_CHAR,                         // C data type
+#endif
     0,                                  // buffer size
     18,                                 // default size
     0                                   // default scale
@@ -341,6 +346,10 @@ static int DecimalVar_GetStringRepOfDecimal(
     long numDigits, scale, i, sign, size, digit;
     char *valuePtr, *value;
     PyObject *digits;
+#if PY_MAJOR_VERSION >= 3
+    udt_StringBuffer buffer;
+    PyObject *temp;
+#endif
 
     // acquire basic information from the value tuple
     sign = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 0));
@@ -385,7 +394,21 @@ static int DecimalVar_GetStringRepOfDecimal(
         }
     }
     *valuePtr = '\0';
+#if PY_MAJOR_VERSION >= 3
+    temp = ceString_FromAscii(value);
+    if (!temp)
+        return -1;
+    if (StringBuffer_FromString(&buffer, temp) < 0) {
+        Py_DECREF(temp);
+        return -1;
+    }
+    Py_DECREF(temp);
+    var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
+    memcpy(value, buffer.ptr, buffer.sizeInBytes);
+    StringBuffer_Clear(&buffer);
+#else
     var->lengthOrIndicator[pos] = strlen(value);
+#endif
 
     return 0;
 }
@@ -401,7 +424,7 @@ static SQLUINTEGER DecimalVar_GetBufferSize(
     udt_DecimalVar *var,                // variable to determine value for
     SQLUINTEGER size)                   // size to allocate
 {
-    return size + 3;
+    return (size + 3) * sizeof(CEODBC_CHAR);
 }
 
 
@@ -415,8 +438,8 @@ static PyObject *DecimalVar_GetValue(
 {
     PyObject *obj, *result;
 
-    obj = ceString_FromStringAndSize((char*) var->data + pos * var->bufferSize,
-            var->lengthOrIndicator[pos]);
+    obj = ceString_FromStringAndSizeInBytes((char*) var->data + pos *
+            var->bufferSize, var->lengthOrIndicator[pos]);
     if (!obj)
         return NULL;
     result = PyObject_CallFunctionObjArgs(g_DecimalType, obj, NULL);
