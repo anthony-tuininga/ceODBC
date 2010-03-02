@@ -31,7 +31,7 @@ class TestNumberVar(BaseTestCase):
         "test binding in a float"
         self.cursor.execute("""
                 select * from TestNumbers
-                where BigIntCol - ? = FloatCol""", 100.25)
+                where abs(BigIntCol - ? - DoubleCol) < .001""", 17.7)
         self.failUnlessEqual(self.cursor.fetchall(), [self.dataByKey[1]])
 
     def testBindInteger(self):
