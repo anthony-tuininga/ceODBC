@@ -16,7 +16,7 @@ from distutils.errors import DistutilsSetupError
 from distutils.extension import Extension
 
 # define build version
-BUILD_VERSION = "1.3b1"
+BUILD_VERSION = "2.0b1"
 
 # define class to allow building the module with or without cx_Logging
 class build_ext(distutils.command.build_ext.build_ext):
@@ -85,8 +85,7 @@ class build_ext(distutils.command.build_ext.build_ext):
         self.cx_logging = None
 
 
-class test_mysql(distutils.core.Command):
-    description = "run the test suite for the extension"
+class test(distutils.core.Command):
     user_options = []
 
     def finalize_options(self):
@@ -98,13 +97,22 @@ class test_mysql(distutils.core.Command):
     def run(self):
         self.run_command("build")
         buildCommand = self.distribution.get_command_obj("build")
-        sys.path.insert(0, os.path.abspath(os.path.join("test", "mysql")))
+        sys.path.insert(0, os.path.abspath(os.path.join("test", self.subdir)))
         sys.path.insert(0, os.path.abspath(buildCommand.build_lib))
         if sys.version_info[0] < 3:
-            execfile(os.path.join("test", "mysql", "test.py"))
+            execfile(os.path.join("test", self.subdir, "test.py"))
         else:
-            fileName = os.path.join("test", "mysql", "test3k.py")
+            fileName = os.path.join("test", self.subdir, "test3k.py")
             exec(open(fileName).read())
+
+class test_mysql(test):
+    description = "run the test suite for MySQL"
+    subdir = "mysql"
+
+
+class test_sqlserver(test):
+    description = "run the test suite for SQL Server"
+    subdir = "sqlserver"
 
 
 # define the list of files to be included as documentation
@@ -124,6 +132,12 @@ if sys.platform == "win32":
 else:
     libs = ["odbc"]
     defineMacros.append(("BUILD_LEGACY_64_BIT_MODE", None))
+
+# define command classes
+commandClasses = dict(
+        build_ext = build_ext,
+        test_mysql = test_mysql,
+        test_sqlserver = test_sqlserver)
 
 # define the classifiers for the package index
 classifiers = [
@@ -166,6 +180,6 @@ setup(
         ext_modules = [extension],
         data_files = dataFiles,
         classifiers = classifiers,
-        cmdclass = dict(build_ext = build_ext, test_mysql = test_mysql),
+        cmdclass = commandClasses,
         options = dict(bdist_rpm = dict(doc_files = docFiles)))
 
