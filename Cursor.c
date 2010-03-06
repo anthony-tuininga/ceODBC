@@ -566,7 +566,9 @@ static int Cursor_BindParameters(
     if (self->logSql)
         LogMessageV(LOG_LEVEL_DEBUG, "BIND VARIABLES (%u)", arrayPos);
     for (i = 0; i < numParams; i++) {
-        value = PyTuple_GET_ITEM(parameters, i + parametersOffset);
+        value = PySequence_GetItem(parameters, i + parametersOffset);
+        if (!value)
+            return -1;
         if (i < origNumParams) {
             origVar = (udt_Variable*) PyList_GET_ITEM(self->parameterVars, i);
             if ( (PyObject*) origVar == Py_None)
