@@ -181,7 +181,11 @@ static PyObject* Connection_New(
     self->environment = NULL;
     self->dsn = NULL;
     self->isConnected = 0;
+#ifdef WITH_CX_LOGGING
     self->logSql = 1;
+#else
+    self->logSql = 0;
+#endif
 
     return (PyObject*) self;
 }
