@@ -9,13 +9,21 @@ create table TestNumbers (
     FloatCol            float(5, 2),
     DoubleCol           double(7, 2),
     DecimalCol          decimal(6, 2)
-);
+) engine=InnoDB;
 
 create table TestStrings (
     IntCol              integer not null,
     StringCol           varchar(20) not null,
     NullableCol         varchar(50)
-);
+) engine=InnoDB;
+
+create table TestExecuteMany (
+    IntCol              integer not null,
+    StringCol           varchar(50)
+) engine=InnoDB;
+
+alter table TestExecuteMany add constraint TestExecuteMany_pk
+primary key (IntCol);
 
 delete from TestNumbers;
 

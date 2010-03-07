@@ -16,6 +16,8 @@ if len(sys.argv) > 1 and not inSetup:
     moduleNames = [os.path.splitext(v)[0] for v in sys.argv[1:]]
 else:
     moduleNames = [
+            "Connection",
+            "Cursor",
             "NumberVar",
             "StringVar"
     ]
