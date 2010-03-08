@@ -131,6 +131,7 @@ static int StringBuffer_FromUnicode(
     buf->ptr = (char*) PyUnicode_AS_UNICODE(obj);
     buf->sizeInBytes = PyUnicode_GET_DATA_SIZE(obj);
     buf->size = PyUnicode_GET_SIZE(obj);
+    buf->encodedString = NULL;
 #endif
     return 0;
 }
