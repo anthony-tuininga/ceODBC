@@ -1023,7 +1023,7 @@ static PyObject *Cursor_Prepare(
 {
     PyObject *statement;
 
-    if (!PyArg_ParseTuple(args, "S", &statement))
+    if (!PyArg_ParseTuple(args, "O!", ceString_Type, &statement))
         return NULL;
     if (Cursor_IsOpen(self) < 0)
         return NULL;
@@ -1048,7 +1048,7 @@ static PyObject *Cursor_ExecDirect(
     SQLRETURN rc;
 
     // parse arguments
-    if (!PyArg_ParseTuple(args, "S", &statement))
+    if (!PyArg_ParseTuple(args, "O!", ceString_Type, &statement))
         return NULL;
     if (Cursor_IsOpen(self) < 0)
         return NULL;
