@@ -980,14 +980,12 @@ static int Cursor_InternalPrepare(
     if (self->statement)
         SQLCloseCursor(self->handle);
 
-    // nothing to do if the statement is identical to the one already stored
-    if (statement == Py_None || statement == self->statement)
-        return 0;
-
     // keep track of statement
-    Py_XDECREF(self->statement);
-    Py_INCREF(statement);
-    self->statement = statement;
+    if (statement != Py_None && statement != self->statement) {
+        Py_INCREF(statement);
+        Py_XDECREF(self->statement);
+        self->statement = statement;
+    }
 
     // clear previous result set parameters
     Py_XDECREF(self->resultSetVars);
@@ -996,7 +994,7 @@ static int Cursor_InternalPrepare(
     self->rowFactory = NULL;
 
     // prepare statement
-    if (StringBuffer_FromString(&buffer, statement) < 0)
+    if (StringBuffer_FromString(&buffer, self->statement) < 0)
         return -1;
     Py_BEGIN_ALLOW_THREADS
     rc = SQLPrepare(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
