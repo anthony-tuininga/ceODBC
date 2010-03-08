@@ -170,7 +170,7 @@ static PyObject *UnicodeVar_GetValue(
             var->lengthOrIndicator[pos], NULL, NULL);
 #else
     return PyUnicode_FromUnicode(
-            (Py_UNICODE*) (var->data + pos * var->bufferSize),
+            (Py_UNICODE*) ( (char*) var->data + pos * var->bufferSize),
             var->lengthOrIndicator[pos] / 2);
 #endif
 }
