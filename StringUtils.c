@@ -24,7 +24,7 @@
         #define ceString_FromStringAndSize(buffer, size) \
             PyUnicode_FromUnicode((Py_UNICODE*) (buffer), size)
         #define ceString_FromStringAndSizeInBytes(buffer, size) \
-            PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) /  2)
+            PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) / 2)
     #endif
 #else
     #define CEODBC_CHAR                 SQLCHAR
