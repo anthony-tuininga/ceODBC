@@ -91,15 +91,16 @@ class TestCursor(BaseTestCase):
         self.failUnlessEqual(self.cursor.statement, None)
         statement = "select ? + 5"
         self.cursor.prepare(statement)
-        var = self.cursor.var(ceODBC.NUMBER)
         self.failUnlessEqual(self.cursor.statement, statement)
-        var.setvalue(0, 2)
-        self.cursor.execute(None, var)
-        self.failUnlessEqual(var.getvalue(), 7)
-        self.cursor.execute(None, var)
-        self.failUnlessEqual(var.getvalue(), 12)
-        self.cursor.execute("select ? + 3;", var)
-        self.failUnlessEqual(var.getvalue(), 15)
+        self.cursor.execute(None, 2)
+        result, = self.cursor.fetchone()
+        self.failUnlessEqual(result, 7)
+        self.cursor.execute(None, 7)
+        result, = self.cursor.fetchone()
+        self.failUnlessEqual(result, 12)
+        self.cursor.execute("select ? + 3;", 12)
+        result, = self.cursor.fetchone()
+        self.failUnlessEqual(result, 15)
 
     def testExceptionOnClose(self):
         "confirm an exception is raised after closing a cursor"
@@ -150,12 +151,4 @@ class TestCursor(BaseTestCase):
                 self.cursor.execute, "select y")
         self.failUnlessRaises(ceODBC.InterfaceError,
                 self.cursor.fetchall)
-
-    def testSetInputSizesByPosition(self):
-        """test setting input sizes with positional args"""
-        var = self.cursor.var(ceODBC.STRING, 100)
-        self.cursor.setinputsizes(None, 5, None, 10, None, ceODBC.NUMBER)
-        self.cursor.execute("select ? || ? || ? || ? || ?"
-                [var, 'test_', 5, '_second_', 3, 7])
-        self.failUnlessEqual(var.getvalue(), "test_5_second_37")
 
