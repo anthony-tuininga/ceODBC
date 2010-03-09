@@ -117,13 +117,17 @@ class test_sqlserver(test):
 
 # define the list of files to be included as documentation
 dataFiles = None
-docFiles = "HISTORY.txt LICENSE.txt README.txt html"
+docFiles = "HISTORY.txt LICENSE.txt README.txt html test"
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
     dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
-    htmlFiles = [os.path.join("html", n) for n in os.listdir("html") \
-            if not n.startswith(".")]
-    dataFiles.append(("%s/%s" % (baseName, "html"), htmlFiles))
+    for subDir in ("html", "test"):
+        for path, dirNames, fileNames in os.walk(subDir):
+            if ".svn" in dirNames:
+                dirNames.remove(".svn")
+            qualifiedFileNames = [os.path.join(path, n) for n in fileNames]
+            qualifiedPath = os.path.join(baseName, path)
+            dataFiles.append((qualifiedPath, qualifiedFileNames))
 
 # setup link and compile args
 defineMacros = [("BUILD_VERSION", BUILD_VERSION)]
