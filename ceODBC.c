@@ -88,6 +88,7 @@ typedef int Py_ssize_t;
 #define SQLDriverConnect            SQLDriverConnectW
 #define SQLGetDiagField             SQLGetDiagFieldW
 #define SQLPrepare                  SQLPrepareW
+#define SQLSetCursorName            SQLSetCursorNameW
 #endif
 
 

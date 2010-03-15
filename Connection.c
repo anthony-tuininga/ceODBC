@@ -212,8 +212,8 @@ static int Connection_Init(
 
     // parse arguments
     autocommitObj = Py_None;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O!|O", keywordList,
-            ceString_Type, &dsnObj, &autocommitObj))
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O|O", keywordList,
+            &dsnObj, &autocommitObj))
         return -1;
     autocommit = PyObject_IsTrue(autocommitObj);
     if (autocommit < 0)
@@ -232,7 +232,8 @@ static int Connection_Init(
         return -1;
 
     // connecting to driver
-    if (StringBuffer_FromString(&dsnBuffer, dsnObj) < 0)
+    if (StringBuffer_FromString(&dsnBuffer, dsnObj,
+                "DSN must be a string") < 0)
         return -1;
     rc = SQLDriverConnect(self->handle, NULL, (CEODBC_CHAR*) dsnBuffer.ptr,
             dsnBuffer.size, (CEODBC_CHAR*) actualDsnBuffer,

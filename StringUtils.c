@@ -115,8 +115,6 @@ static int StringBuffer_FromUnicode(
     udt_StringBuffer *buf,              // buffer to fill
     PyObject *obj)                      // unicode object expected
 {
-    if (!obj)
-        return StringBuffer_Init(buf);
 #ifdef Py_UNICODE_WIDE
     int one = 1;
     int byteOrder = (IS_LITTLE_ENDIAN) ? -1 : 1;
@@ -139,7 +137,21 @@ static int StringBuffer_FromUnicode(
 
 #if PY_MAJOR_VERSION >= 3
 
-#define StringBuffer_FromString         StringBuffer_FromUnicode
+//-----------------------------------------------------------------------------
+// StringBuffer_FromString()
+//   Populate the string buffer from a Unicode object.
+//-----------------------------------------------------------------------------
+static int StringBuffer_FromString(
+    udt_StringBuffer *buf,              // buffer to fill
+    PyObject *obj,                      // bytes object expected
+    const char *message)                // message to raise on error
+{
+    if (PyUnicode_Check(obj))
+        return StringBuffer_FromUnicode(buf, obj);
+    PyErr_SetString(PyExc_TypeError, message);
+    return -1;
+}
+
 
 //-----------------------------------------------------------------------------
 // StringBuffer_FromBinary()
@@ -165,10 +177,18 @@ static int StringBuffer_FromBinary(
 //-----------------------------------------------------------------------------
 static int StringBuffer_FromString(
     udt_StringBuffer *buf,              // buffer to fill
-    PyObject *obj)                      // bytes object expected
+    PyObject *obj,                      // bytes object expected
+    const char *message)                // message to raise on error
 {
-    if (!obj)
-        return StringBuffer_Init(buf);
+    if (PyUnicode_Check(obj)) {
+        buf->encodedString = PyUnicode_AsEncodedString(obj, NULL, NULL);
+        if (!buf->encodedString)
+            return -1;
+        obj = buf->encodedString;
+    } else if (!PyString_Check(obj)) {
+        PyErr_SetString(PyExc_TypeError, message);
+        return -1;
+    }
     buf->ptr = PyBytes_AS_STRING(obj);
     buf->size = buf->sizeInBytes = PyBytes_GET_SIZE(obj);
     buf->encodedString = NULL;

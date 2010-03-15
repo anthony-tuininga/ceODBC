@@ -19,7 +19,8 @@ else:
             "Connection",
             "Cursor",
             "NumberVar",
-            "StringVar"
+            "StringVar",
+            "UnicodeParameters"
     ]
 
 class BaseTestCase(unittest.TestCase):

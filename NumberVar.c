@@ -402,7 +402,7 @@ static int DecimalVar_GetStringRepOfDecimal(
     temp = ceString_FromAscii(value);
     if (!temp)
         return -1;
-    if (StringBuffer_FromString(&buffer, temp) < 0) {
+    if (StringBuffer_FromString(&buffer, temp, "unexpected error!") < 0) {
         Py_DECREF(temp);
         return -1;
     }
