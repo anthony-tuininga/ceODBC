@@ -831,14 +831,11 @@ static int Cursor_SetName(
     udt_StringBuffer buffer;
     SQLRETURN rc;
 
-    if (!ceString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expecting string");
+    if (StringBuffer_FromString(&buffer, value,
+                "cursor name must be a string") < 0)
         return -1;
-    }
-
-    if (StringBuffer_FromString(&buffer, value) < 0)
-        return -1;
-    rc = SQLSetCursorName(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
+    rc = SQLSetCursorName(self->handle, (CEODBC_CHAR*) buffer.ptr,
+            buffer.size);
     StringBuffer_Clear(&buffer);
     if (CheckForError(self, rc, "Cursor_SetName()") < 0)
         return -1;
@@ -994,7 +991,8 @@ static int Cursor_InternalPrepare(
     self->rowFactory = NULL;
 
     // prepare statement
-    if (StringBuffer_FromString(&buffer, self->statement) < 0)
+    if (StringBuffer_FromString(&buffer, self->statement,
+                "statement must be a string or None") < 0)
         return -1;
     Py_BEGIN_ALLOW_THREADS
     rc = SQLPrepare(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
@@ -1023,7 +1021,7 @@ static PyObject *Cursor_Prepare(
 {
     PyObject *statement;
 
-    if (!PyArg_ParseTuple(args, "O!", ceString_Type, &statement))
+    if (!PyArg_ParseTuple(args, "O", &statement))
         return NULL;
     if (Cursor_IsOpen(self) < 0)
         return NULL;
@@ -1048,7 +1046,7 @@ static PyObject *Cursor_ExecDirect(
     SQLRETURN rc;
 
     // parse arguments
-    if (!PyArg_ParseTuple(args, "O!", ceString_Type, &statement))
+    if (!PyArg_ParseTuple(args, "O", &statement))
         return NULL;
     if (Cursor_IsOpen(self) < 0)
         return NULL;
@@ -1070,7 +1068,8 @@ static PyObject *Cursor_ExecDirect(
     self->parameterVars = NULL;
 
     // execute the statement
-    if (StringBuffer_FromString(&buffer, statement) < 0)
+    if (StringBuffer_FromString(&buffer, statement,
+                "statement must be a string") < 0)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
     rc = SQLExecDirect(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
@@ -1108,10 +1107,6 @@ static PyObject *Cursor_Execute(
         return NULL;
     }
     statement = PyTuple_GET_ITEM(args, 0);
-    if (statement != Py_None && !ceString_Check(statement)) {
-        PyErr_SetString(PyExc_TypeError, "expecting None or a string");
-        return NULL;
-    }
 
     // prepare the statement for execution
     if (Cursor_IsOpen(self) < 0)
@@ -1161,10 +1156,6 @@ static PyObject *Cursor_ExecuteMany(
     if (!PyArg_ParseTuple(args, "OO!", &statement, &PyList_Type,
             &listOfArguments))
         return NULL;
-    if (statement != Py_None && !ceString_Check(statement)) {
-        PyErr_SetString(PyExc_TypeError, "expecting None or a string");
-        return NULL;
-    }
 
     // make sure the cursor is open
     if (Cursor_IsOpen(self) < 0)
