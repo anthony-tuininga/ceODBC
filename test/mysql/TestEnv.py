@@ -9,6 +9,6 @@ def GetValue(name, label):
         value = raw_input(label + ": ")
     return value
 
-DSN = GetValue("DSN", "DSN")
+DSN = GetValue("MYSQL_DSN", "DSN")
 ARRAY_SIZE = int(GetValue("ARRAY_SIZE", "array size"))
 
