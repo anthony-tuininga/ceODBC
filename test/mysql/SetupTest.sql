@@ -25,6 +25,24 @@ create table TestExecuteMany (
 alter table TestExecuteMany add constraint TestExecuteMany_pk
 primary key (IntCol);
 
+DELIMITER //
+create procedure sp_Test (
+    a_InValue varchar(50),
+    inout a_InOutValue bigint,
+    out a_OutValue decimal(6, 2)
+)
+begin
+    set a_InOutValue = a_InOutValue * 2;
+    set a_OutValue = len(a_InValue) * 1.25;
+end //
+
+create procedure sp_TestNoArgs()
+begin
+    select 1;
+end //
+
+DELIMITER ;
+
 delete from TestNumbers;
 
 insert into TestNumbers
