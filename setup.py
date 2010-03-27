@@ -8,6 +8,7 @@ Unix platforms
 """
 
 import distutils.command.build_ext
+import distutils.command.bdist_rpm
 import os
 import sys
 
@@ -85,6 +86,22 @@ class build_ext(distutils.command.build_ext.build_ext):
         self.cx_logging = None
 
 
+class bdist_rpm(distutils.command.bdist_rpm.bdist_rpm):
+
+    def run(self):
+        distutils.command.bdist_rpm.bdist_rpm.run(self)
+        specFile = os.path.join(self.rpm_base, "SPECS",
+                "%s.spec" % self.distribution.get_name())
+        queryFormat = "%{name}-%{version}-%{release}.%{arch}.rpm"
+        command = "rpm -q --qf '%s' --specfile %s" % (queryFormat, specFile)
+        origFileName = os.popen(command).read()
+        parts = origFileName.split("-")
+        parts.insert(2, "py%s%s" % sys.version_info[:2])
+        newFileName = "-".join(parts)
+        self.move_file(os.path.join("dist", origFileName),
+        os.path.join("dist", newFileName))
+
+
 class test(distutils.core.Command):
     user_options = []
 
@@ -139,6 +156,7 @@ else:
 
 # define command classes
 commandClasses = dict(
+        bdist_rpm = bdist_rpm,
         build_ext = build_ext,
         test_mysql = test_mysql,
         test_sqlserver = test_sqlserver)
