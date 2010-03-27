@@ -122,6 +122,11 @@ class test(distutils.core.Command):
             fileName = os.path.join("test", self.subdir, "test3k.py")
             exec(open(fileName).read())
 
+class test_pgsql(test):
+    description = "run the test suite for PostgreSQL"
+    subdir = "pgsql"
+
+
 class test_mysql(test):
     description = "run the test suite for MySQL"
     subdir = "mysql"
@@ -158,6 +163,7 @@ else:
 commandClasses = dict(
         bdist_rpm = bdist_rpm,
         build_ext = build_ext,
+        test_pgsql = test_pgsql,
         test_mysql = test_mysql,
         test_sqlserver = test_sqlserver)
 
