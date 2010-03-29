@@ -21,6 +21,21 @@ create table TestExecuteMany (
     primary key (IntCol)
 );
 
+create procedure sp_Test (
+    @a_InValue           varchar(50),
+    @a_InOutValue        bigint output,
+    @a_OutValue          float output
+) as
+begin
+    set @a_InOutValue = @a_InOutValue * 2;
+    set @a_OutValue = len(@a_InValue) * 1.25;
+end
+
+create procedure sp_TestNoArgs as
+begin
+    select 1;
+end
+
 delete from TestNumbers;
 
 insert into TestNumbers
