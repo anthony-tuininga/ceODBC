@@ -4,6 +4,13 @@ import sys
 
 class TestCursor(BaseTestCase):
 
+    def testCallFunc(self):
+        """test executing a function"""
+        result = self.cursor.callfunc("ufn_StringLength", int, ("fred",))
+        self.failUnlessEqual(result, 4)
+        result = self.cursor.callfunc("ufn_StringLength", int, ("george",))
+        self.failUnlessEqual(result, 6)
+
     def testCallProc(self):
         """test executing a stored procedure"""
         outVar = self.cursor.var(ceODBC.NUMBER)

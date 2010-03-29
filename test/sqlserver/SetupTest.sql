@@ -27,13 +27,20 @@ create procedure sp_Test (
     @a_OutValue          float output
 ) as
 begin
-    set @a_InOutValue = @a_InOutValue * 2;
-    set @a_OutValue = len(@a_InValue) * 1.25;
+    set @a_InOutValue = @a_InOutValue * 2
+    set @a_OutValue = len(@a_InValue) * 1.25
 end
 
 create procedure sp_TestNoArgs as
 begin
-    select 1;
+    select 1
+end
+
+create function ufn_StringLength (
+    @a_InValue          varchar(50)
+) returns bigint as
+begin
+    return len(@a_InValue)
 end
 
 delete from TestNumbers;
