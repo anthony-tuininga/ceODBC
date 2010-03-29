@@ -18,6 +18,7 @@ else:
     moduleNames = [
             "Connection",
             "Cursor",
+            "DateTimeVar",
             "NumberVar",
             "StringVar",
             "UnicodeParameters"
