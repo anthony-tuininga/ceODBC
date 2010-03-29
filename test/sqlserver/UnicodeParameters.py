@@ -5,6 +5,11 @@ import threading
 
 class TestConnection(BaseTestCase):
 
+    def testBindUnicode(self):
+        """test binding a Unicode value to a function"""
+        result = self.cursor.callfunc("ufn_StringLength", int, (u"freddie",))
+        self.failUnlessEqual(result, 7)
+
     def testConnect(self):
         "test connecting with a Unicode connect string"
         self.connection.close()
