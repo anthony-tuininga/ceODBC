@@ -4,6 +4,25 @@ import sys
 
 class TestCursor(BaseTestCase):
 
+    def testCallProc(self):
+        """test executing a stored procedure"""
+        outVar = self.cursor.var(ceODBC.NUMBER)
+        outVar.input = False
+        outVar.output = True
+        inOutVar = self.cursor.var(ceODBC.NUMBER)
+        inOutVar.output = True
+        inOutVar.setvalue(0, 5)
+        self.cursor.callproc("sp_Test", ("hello there", inOutVar, outVar))
+        while self.cursor.nextset():
+            pass
+        self.failUnlessEqual(inOutVar.getvalue(), 10)
+        self.failUnlessEqual(outVar.getvalue(), 13.75)
+
+    def testCallProcNoArgs(self):
+        """test executing a stored procedure without any arguments"""
+        results = self.cursor.callproc("sp_TestNoArgs")
+        self.failUnlessEqual(results, [])
+
     def testExecuteNoArgs(self):
         """test executing a statement without any arguments"""
         self.cursor.execute("select null")
