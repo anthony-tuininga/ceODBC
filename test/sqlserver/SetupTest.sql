@@ -3,6 +3,12 @@
  *   Creates the objects used for testing ceODBC with a MySQL database.
  /---------------------------------------------------------------------------*/
 
+create table TestDates (
+    IntCol              integer not null,
+    DateCol             datetime not null,
+    NullableCol         datetime
+);
+
 create table TestNumbers (
     IntCol              integer not null,
     BigIntCol           bigint,
@@ -42,6 +48,20 @@ create function ufn_StringLength (
 begin
     return len(@a_InValue)
 end
+
+delete from TestDates;
+
+insert into TestDates
+values (1, '2010-03-01 00:00:00', '2010-03-02 08:00:00');
+
+insert into TestDates
+values (2, '2010-03-02 08:00:00', '2010-03-03 16:00:00');
+
+insert into TestDates
+values (3, '2010-03-03 16:00:00', '2010-03-04 07:30:00');
+
+insert into TestDates
+values (4, '2010-03-04 07:30:00', '2010-03-05 09:28:16');
 
 delete from TestNumbers;
 
