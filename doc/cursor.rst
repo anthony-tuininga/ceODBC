@@ -88,7 +88,7 @@ Cursor Object
 
    .. note::
 
-      ::The DB API definition does not define this method.
+      The DB API definition does not define this method.
 
 
 .. method:: Cursor.execute(statement, \*args)
@@ -114,7 +114,7 @@ Cursor Object
 
    .. note::
 
-      ::The DB API definition does not define the return value of this method.
+      The DB API definition does not define the return value of this method.
 
 
 .. method:: Cursor.executemany(statement, parameters)
