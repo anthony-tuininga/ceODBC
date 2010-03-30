@@ -1,48 +1,58 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Cursor Object &mdash; ceODBC v4.4a1 documentation</title>
+    
+    <title>Cursor Object &mdash; ceODBC v2.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:   '',
-        VERSION:    '4.4a1'
+        URL_ROOT:    '#',
+        VERSION:     '2.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/interface.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="contents" title="Global table of contents" href="contents.html" />
-    <link rel="index" title="Global index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="top" title="ceODBC v4.4a1 documentation" href="index.html" />
+    <link rel="top" title="ceODBC v2.0 documentation" href="index.html" />
     <link rel="next" title="Variable Objects" href="variable.html" />
-    <link rel="prev" title="Connection Object" href="connection.html" />
+    <link rel="prev" title="Connection Object" href="connection.html" /> 
   </head>
   <body>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li class="right" style="margin-right: 10px"><a href="genindex.html" title="General Index" accesskey="I">index</a></li>
-        <li class="right"><a href="modindex.html" title="Global Module Index" accesskey="M">modules</a> |</li>
-          <li class="right"><a href="variable.html" title="Variable Objects" accesskey="N">next</a> |</li>
-          <li class="right"><a href="connection.html" title="Connection Object" accesskey="P">previous</a> |</li>
-        <li><a href="index.html">ceODBC v4.4a1 documentation</a> &raquo;</li>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="variable.html" title="Variable Objects"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="connection.html" title="Connection Object"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
       </ul>
-    </div>
+    </div>  
+
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body">
             
-  
   <div class="section" id="cursor-object">
-<span id="cursorobj"></span><h1 id="cursor-object"><span id="cursorobj"></span>Cursor Object<a class="headerlink" href="#cursor-object" title="Permalink to this headline">¶</a></h1>
+<span id="cursorobj"></span><h1>Cursor Object<a class="headerlink" href="#cursor-object" title="Permalink to this headline">¶</a></h1>
 <dl class="attribute">
 <dt id="Cursor.arraysize">
-<!--#Cursor.arraysize#--><tt class="descclassname">Cursor.</tt><tt class="descname">arraysize</tt><a class="headerlink" href="#Cursor.arraysize" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">arraysize</tt><a class="headerlink" href="#Cursor.arraysize" title="Permalink to this definition">¶</a></dt>
 <dd>This read-write attribute specifies the number of rows to fetch at a time
 internally and is the default number of rows to fetch with the
 <a title="Cursor.fetchmany" class="reference internal" href="#Cursor.fetchmany"><tt class="xref docutils literal"><span class="pre">fetchmany()</span></tt></a> call.  It defaults to 1 meaning to fetch a
@@ -52,7 +62,7 @@ trips that need to be performed.</dd></dl>
 
 <dl class="attribute">
 <dt id="Cursor.bindarraysize">
-<!--#Cursor.bindarraysize#--><tt class="descclassname">Cursor.</tt><tt class="descname">bindarraysize</tt><a class="headerlink" href="#Cursor.bindarraysize" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">bindarraysize</tt><a class="headerlink" href="#Cursor.bindarraysize" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-write attribute specifies the number of rows to bind at a time and
 is used when creating variables via <a title="Cursor.setinputsizes" class="reference internal" href="#Cursor.setinputsizes"><tt class="xref docutils literal"><span class="pre">setinputsizes()</span></tt></a>. It
 defaults to 1 meaning to bind a single row at a time.</p>
@@ -64,7 +74,7 @@ defaults to 1 meaning to bind a single row at a time.</p>
 
 <dl class="method">
 <dt id="Cursor.callfunc">
-<!--#Cursor.callfunc#--><tt class="descclassname">Cursor.</tt><tt class="descname">callfunc</tt><big>(</big><em>name</em>, <em>returnType</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.callfunc" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">callfunc</tt><big>(</big><em>name</em>, <em>returnType</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.callfunc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Call a function with the given name. Parameters may also be passed as a
 single list or tuple to conform to the DB API. The return type is specified
 in the same notation as is required by <a title="Cursor.setinputsizes" class="reference internal" href="#Cursor.setinputsizes"><tt class="xref docutils literal"><span class="pre">setinputsizes()</span></tt></a>. The
@@ -77,7 +87,7 @@ result of the call is the return value of the function.</p>
 
 <dl class="method">
 <dt id="Cursor.callproc">
-<!--#Cursor.callproc#--><tt class="descclassname">Cursor.</tt><tt class="descname">callproc</tt><big>(</big><em>name</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.callproc" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">callproc</tt><big>(</big><em>name</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.callproc" title="Permalink to this definition">¶</a></dt>
 <dd>Call a procedure with the given name. Parameters may also be passed as a
 single list or tuple to conform to the DB API. The result of the call is a
 modified copy of the input sequence. Input parameters are left untouched;
@@ -85,14 +95,14 @@ output and input/output parameters are replaced with possibly new values.</dd></
 
 <dl class="method">
 <dt id="Cursor.close">
-<!--#Cursor.close#--><tt class="descclassname">Cursor.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.close" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.close" title="Permalink to this definition">¶</a></dt>
 <dd>Close the cursor now, rather than whenever __del__ is called. The cursor
 will be unusable from this point forward; an Error exception will be raised
 if any operation is attempted with the cursor.</dd></dl>
 
-<dl class="method">
+<dl class="attribute">
 <dt id="Cursor.connection">
-<!--#Cursor.connection#--><tt class="descclassname">Cursor.</tt><tt class="descname">connection</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.connection" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">connection</tt><a class="headerlink" href="#Cursor.connection" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-only attribute returns a reference to the connection object on
 which the cursor was created.</p>
 <div class="admonition note">
@@ -104,7 +114,7 @@ mentioned in PEP 249 as an optional extension.</p>
 
 <dl class="data">
 <dt id="Cursor.description">
-<!--#Cursor.description#--><tt class="descclassname">Cursor.</tt><tt class="descname">description</tt><a class="headerlink" href="#Cursor.description" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">description</tt><a class="headerlink" href="#Cursor.description" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-only attribute is a sequence of 7-item sequences. Each of these
 sequences contains information describing one result column: (name, type,
 display_size, internal_size, precision, scale, null_ok). This attribute will
@@ -115,8 +125,24 @@ comparable to the type objects defined by the DB API.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="Cursor.execdirect">
+<tt class="descclassname">Cursor.</tt><tt class="descname">execdirect</tt><big>(</big><em>statement</em><big>)</big><a class="headerlink" href="#Cursor.execdirect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a statement against the database using SQLExecDirect instead of
+SQLExecute. This is necessary in some situations due to bugs in ODBC drivers
+such as exhibited by the SQL Server ODBC driver when calling certain stored
+procedures.</p>
+<p>If the statement is a query, the cursor is returned as a convenience since
+cursors implement the iterator protocol and there is thus no need to call
+one of the appropriate fetch methods; otherwise None is returned.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The DB API definition does not define this method.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
 <dt id="Cursor.execute">
-<!--#Cursor.execute#--><tt class="descclassname">Cursor.</tt><tt class="descname">execute</tt><big>(</big><em>statement</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.execute" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">execute</tt><big>(</big><em>statement</em>, <em>*args</em><big>)</big><a class="headerlink" href="#Cursor.execute" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute a statement against the database. Paramters may also be passed as a
 single list or tuple to conform to the DB API.</p>
 <p>A reference to the statement will be retained by the cursor. If None or the
@@ -134,13 +160,13 @@ cursors implement the iterator protocol and there is thus no need to call
 one of the appropriate fetch methods; otherwise None is returned.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">::The DB API definition does not define the return value of this method.</p>
+<p class="last">The DB API definition does not define the return value of this method.</p>
 </div>
 </dd></dl>
 
 <dl class="method">
 <dt id="Cursor.executemany">
-<!--#Cursor.executemany#--><tt class="descclassname">Cursor.</tt><tt class="descname">executemany</tt><big>(</big><em>statement</em>, <em>parameters</em><big>)</big><a class="headerlink" href="#Cursor.executemany" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">executemany</tt><big>(</big><em>statement</em>, <em>parameters</em><big>)</big><a class="headerlink" href="#Cursor.executemany" title="Permalink to this definition">¶</a></dt>
 <dd>Prepare a statement for execution against a database and then execute it
 against all parameter sequences found in the sequence parameters. The
 statement is managed in the same way as the <a title="Cursor.execute" class="reference internal" href="#Cursor.execute"><tt class="xref docutils literal"><span class="pre">execute()</span></tt></a> method
@@ -148,7 +174,7 @@ manages it.</dd></dl>
 
 <dl class="method">
 <dt id="Cursor.fetchall">
-<!--#Cursor.fetchall#--><tt class="descclassname">Cursor.</tt><tt class="descname">fetchall</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.fetchall" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">fetchall</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.fetchall" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch all (remaining) rows of a query result, returning them as a list of
 tuples. An empty list is returned if no more rows are available. Note that
 the cursor&#8217;s arraysize attribute can affect the performance of this
@@ -160,7 +186,7 @@ result set or no call was issued yet.</p>
 
 <dl class="method">
 <dt id="Cursor.fetchmany">
-<!--#Cursor.fetchmany#--><tt class="descclassname">Cursor.</tt><tt class="descname">fetchmany</tt><big>(</big><span class="optional">[</span><em>numRows=cursor.arraysize</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Cursor.fetchmany" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">fetchmany</tt><big>(</big><span class="optional">[</span><em>numRows=cursor.arraysize</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Cursor.fetchmany" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch the next set of rows of a query result, returning a list of tuples. An
 empty list is returned if no more rows are available. Note that the cursor&#8217;s
 arraysize attribute can affect the performance of this operation.</p>
@@ -174,7 +200,7 @@ result set or no call was issued yet.</p>
 
 <dl class="method">
 <dt id="Cursor.fetchone">
-<!--#Cursor.fetchone#--><tt class="descclassname">Cursor.</tt><tt class="descname">fetchone</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.fetchone" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">fetchone</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.fetchone" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch the next row of a query result set, returning a single tuple or None
 when no more data is available.</p>
 <p>An exception is raised if the previous call to execute() did not produce any
@@ -183,7 +209,7 @@ result set or no call was issued yet.</p>
 
 <dl class="method">
 <dt id="Cursor.__iter__">
-<!--#Cursor.__iter__#--><tt class="descclassname">Cursor.</tt><tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.__iter__" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">__iter__</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.__iter__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the cursor itself to be used as an iterator.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -194,7 +220,7 @@ mentioned in PEP 249 as an optional extension.</p>
 
 <dl class="data">
 <dt id="Cursor.name">
-<!--#Cursor.name#--><tt class="descclassname">Cursor.</tt><tt class="descname">name</tt><a class="headerlink" href="#Cursor.name" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">name</tt><a class="headerlink" href="#Cursor.name" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-write attribute returns the name associated with the cursor. This
 name is used in positioned update or delete statements (as in delete from X
 where current of &lt;NAME&gt;).</p>
@@ -206,7 +232,7 @@ where current of &lt;NAME&gt;).</p>
 
 <dl class="method">
 <dt id="Cursor.next">
-<!--#Cursor.next#--><tt class="descclassname">Cursor.</tt><tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.next" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.next" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch the next row of a query result set, using the same semantics as the
 method fetchone().</p>
 <div class="admonition note">
@@ -217,8 +243,17 @@ mentioned in PEP 249 as an optional extension.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="Cursor.nextset">
+<tt class="descclassname">Cursor.</tt><tt class="descname">nextset</tt><big>(</big><big>)</big><a class="headerlink" href="#Cursor.nextset" title="Permalink to this definition">¶</a></dt>
+<dd>Make the cursor skip to the next available set, discarding any remaining
+row from the current set. If there are no more sets, None is returned;
+otherwise, the cursor ifself is returned as a convenience for fetching data
+from it. Note that not all databases support the concept of multiple result
+sets.</dd></dl>
+
+<dl class="method">
 <dt id="Cursor.prepare">
-<!--#Cursor.prepare#--><tt class="descclassname">Cursor.</tt><tt class="descname">prepare</tt><big>(</big><em>statement</em><big>)</big><a class="headerlink" href="#Cursor.prepare" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">prepare</tt><big>(</big><em>statement</em><big>)</big><a class="headerlink" href="#Cursor.prepare" title="Permalink to this definition">¶</a></dt>
 <dd><p>This can be used before a call to execute() to define the statement that
 will be executed. When this is done, the prepare phase will not be performed
 when the call to execute() is made with None or the same string object as
@@ -231,14 +266,14 @@ the statement.</p>
 
 <dl class="attribute">
 <dt id="Cursor.rowcount">
-<!--#Cursor.rowcount#--><tt class="descclassname">Cursor.</tt><tt class="descname">rowcount</tt><a class="headerlink" href="#Cursor.rowcount" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">rowcount</tt><a class="headerlink" href="#Cursor.rowcount" title="Permalink to this definition">¶</a></dt>
 <dd>This read-only attribute specifies the number of rows that have currently
 been fetched from the cursor (for select statements) or that have been
 affected by the operation (for insert, update and delete statements).</dd></dl>
 
 <dl class="attribute">
 <dt id="Cursor.rowfactory">
-<!--#Cursor.rowfactory#--><tt class="descclassname">Cursor.</tt><tt class="descname">rowfactory</tt><a class="headerlink" href="#Cursor.rowfactory" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">rowfactory</tt><a class="headerlink" href="#Cursor.rowfactory" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-write attribute specifies a method to call for each row that is
 retrieved from the database. Ordinarily a tuple is returned for each row but
 if this attribute is set, the method is called with the argument tuple that
@@ -251,7 +286,7 @@ would normally be returned and the result of the method is returned instead.</p>
 
 <dl class="method">
 <dt id="Cursor.setinputsizes">
-<!--#Cursor.setinputsizes#--><tt class="descclassname">Cursor.</tt><tt class="descname">setinputsizes</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#Cursor.setinputsizes" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">setinputsizes</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#Cursor.setinputsizes" title="Permalink to this definition">¶</a></dt>
 <dd>This can be used before a call to execute() to predefine memory areas for
 the operation&#8217;s parameters. Each parameter should be a type object
 corresponding to the input that will be used or it should be an integer
@@ -263,7 +298,7 @@ arguments sequence.</dd></dl>
 
 <dl class="method">
 <dt id="Cursor.setoutputsize">
-<!--#Cursor.setoutputsize#--><tt class="descclassname">Cursor.</tt><tt class="descname">setoutputsize</tt><big>(</big><em>size</em><span class="optional">[</span>, <em>column</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Cursor.setoutputsize" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">setoutputsize</tt><big>(</big><em>size</em><span class="optional">[</span>, <em>column</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Cursor.setoutputsize" title="Permalink to this definition">¶</a></dt>
 <dd>This can be used before a call to execute() to predefine memory areas for
 the long columns that will be fetched. The column is specified as an index
 into the result sequence. Not specifying the column will set the default
@@ -271,12 +306,30 @@ size for all large columns in the cursor.</dd></dl>
 
 <dl class="attribute">
 <dt id="Cursor.statement">
-<!--#Cursor.statement#--><tt class="descclassname">Cursor.</tt><tt class="descname">statement</tt><a class="headerlink" href="#Cursor.statement" title="Permalink to this definition">¶</a></dt>
+<tt class="descclassname">Cursor.</tt><tt class="descname">statement</tt><a class="headerlink" href="#Cursor.statement" title="Permalink to this definition">¶</a></dt>
 <dd><p>This read-only attribute provides the string object that was previously
 prepared with prepare() or executed with execute().</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The DB API definition does not define this attribute.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="Cursor.var">
+<tt class="descclassname">Cursor.</tt><tt class="descname">var</tt><big>(</big><em>type</em><span class="optional">[</span>, <em>size</em>, <em>scale</em>, <em>arraysize</em>, <em>inconverter</em>, <em>outconverter</em>, <em>input = True</em>, <em>output = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Cursor.var" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a variable associated with the cursor of the given type and
+characteristics and return a variable object (<a class="reference external" href="variable.html#varobj"><em>Variable Objects</em></a>). If the
+arraysize is not specified, the bind array size (usually 1) is used. The
+inconverter and outconverter specify methods used for converting values
+to/from the database. More information can be found in the section on
+variable objects.</p>
+<p>This method was designed for use with in/out variables where the length or
+type cannot be determined automatically from the Python object passed in or
+for use in input and output type handlers defined on cursors or connections.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The DB API definition does not define this method.</p>
 </div>
 </dd></dl>
 
@@ -286,18 +339,27 @@ prepared with prepare() or executed with execute().</p>
           </div>
         </div>
       </div>
-      <div class="sidebar">
-        <div class="sidebarwrapper">
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
             <h4>Previous topic</h4>
-            <p class="topless"><a href="connection.html" title="previous chapter">Connection Object</a></p>
+            <p class="topless"><a href="connection.html"
+                                  title="previous chapter">Connection Object</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="variable.html" title="next chapter">Variable Objects</a></p>
+            <p class="topless"><a href="variable.html"
+                                  title="next chapter">Variable Objects</a></p>
+          <div id="searchbox" style="display: none">
             <h3>Quick search</h3>
-            <form class="search" action="search.html" method="get">
-              <input type="text" name="q" size="18" /> <input type="submit" value="Go" />
-              <input type="hidden" name="check_keywords" value="yes" />
-              <input type="hidden" name="area" value="default" />
-            </form>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -305,16 +367,25 @@ prepared with prepare() or executed with execute().</p>
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li class="right" style="margin-right: 10px"><a href="genindex.html" title="General Index" accesskey="I">index</a></li>
-        <li class="right"><a href="modindex.html" title="Global Module Index" accesskey="M">modules</a> |</li>
-          <li class="right"><a href="variable.html" title="Variable Objects" accesskey="N">next</a> |</li>
-          <li class="right"><a href="connection.html" title="Connection Object" accesskey="P">previous</a> |</li>
-        <li><a href="index.html">ceODBC v4.4a1 documentation</a> &raquo;</li>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="variable.html" title="Variable Objects"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="connection.html" title="Connection Object"
+             >previous</a> |</li>
+        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2008, Anthony Tuininga.
-      Last updated on May 23, 2008.
+      &copy; Copyright 2007-2010, Anthony Tuininga.
+      Last updated on Mar 29, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
     </div>
   </body>
 </html>
