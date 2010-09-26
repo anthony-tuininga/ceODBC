@@ -192,6 +192,96 @@ static PyObject* Connection_New(
 
 
 //-----------------------------------------------------------------------------
+// FindInString()
+//   Call the method "find" on the object and return the position in the
+// string where it is found.
+//-----------------------------------------------------------------------------
+static int FindInString(
+    PyObject *strObj,                   // string object to search
+    char *stringToFind,                 // string to find
+    int startPos,                       // starting position to search
+    int *foundPos)                      // found position (OUT)
+{
+    PyObject *temp;
+
+    temp = PyObject_CallMethod(strObj, "find", "si", stringToFind, startPos);
+    if (!temp)
+        return -1;
+    *foundPos = PyInt_AsLong(temp);
+    Py_DECREF(temp);
+    if (PyErr_Occurred())
+        return -1;
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Connection_RemovePasswordFromDsn()
+//   Attempt to remove the password from the DSN for security reasons.
+//-----------------------------------------------------------------------------
+static PyObject *Connection_RemovePasswordFromDsn(
+    PyObject *dsnObj,                   // input DSN object
+    PyObject *upperDsnObj)              // input DSN object (uppercase)
+{
+    PyObject *firstPart, *lastPart, *result;
+    int startPos, endPos, bracePos, length;
+
+    // attempt to find PWD= in the DSN
+    if (FindInString(upperDsnObj, "PWD=", 0, &startPos) < 0)
+        return NULL;
+
+    // if not found, simply return the string unchanged
+    if (startPos < 0) {
+        Py_INCREF(dsnObj);
+        return dsnObj;
+    }
+
+    // otherwise search for the semicolon
+    if (FindInString(upperDsnObj, ";", startPos, &endPos) < 0)
+        return NULL;
+    if (endPos < 0) {
+        Py_INCREF(dsnObj);
+        return dsnObj;
+    }
+
+    // search for a brace as well since that escapes the semicolon if present
+    if (FindInString(upperDsnObj, "{", startPos, &bracePos) < 0)
+        return NULL;
+    if (bracePos >= startPos && bracePos < endPos) {
+        if (FindInString(upperDsnObj, "}", bracePos, &bracePos) < 0)
+            return NULL;
+        if (bracePos < 0) {
+            Py_INCREF(dsnObj);
+            return dsnObj;
+        }
+        if (FindInString(upperDsnObj, ";", bracePos, &endPos) < 0)
+            return NULL;
+        if (endPos < 0) {
+            Py_INCREF(dsnObj);
+            return dsnObj;
+        }
+    }
+
+    // finally rip out the portion that doesn't need to be there
+    length = PySequence_Size(dsnObj);
+    if (PyErr_Occurred())
+        return NULL;
+    firstPart = PySequence_GetSlice(dsnObj, 0, startPos + 4);
+    if (!firstPart)
+        return NULL;
+    lastPart = PySequence_GetSlice(dsnObj, endPos, length);
+    if (!lastPart) {
+        Py_DECREF(firstPart);
+        return NULL;
+    }
+    result = PySequence_Concat(firstPart, lastPart);
+    Py_DECREF(firstPart);
+    Py_DECREF(lastPart);
+    return result;
+}
+
+
+//-----------------------------------------------------------------------------
 // Connection_Init()
 //   Initialize the connection members.
 //-----------------------------------------------------------------------------
@@ -200,8 +290,8 @@ static int Connection_Init(
     PyObject *args,                     // arguments
     PyObject *keywordArgs)              // keyword arguments
 {
+    PyObject *autocommitObj, *dsnObj, *upperDsnObj;
     CEODBC_CHAR actualDsnBuffer[1024];
-    PyObject *autocommitObj, *dsnObj;
     SQLSMALLINT actualDsnLength;
     udt_StringBuffer dsnBuffer;
     int autocommit;
@@ -256,8 +346,23 @@ static int Connection_Init(
     self->isConnected = 1;
 
     // save copy of constructed DSN
-    self->dsn = ceString_FromStringAndSize( (char*) actualDsnBuffer,
+    dsnObj = ceString_FromStringAndSize( (char*) actualDsnBuffer,
             actualDsnLength);
+    if (!dsnObj) {
+        Py_DECREF(self);
+        return -1;
+    }
+
+    // attempt to remove password
+    upperDsnObj = PyObject_CallMethod(dsnObj, "upper", "");
+    if (!upperDsnObj) {
+        Py_DECREF(dsnObj);
+        Py_DECREF(self);
+        return -1;
+    }
+    self->dsn = Connection_RemovePasswordFromDsn(dsnObj, upperDsnObj);
+    Py_DECREF(dsnObj);
+    Py_DECREF(upperDsnObj);
     if (!self->dsn) {
         Py_DECREF(self);
         return -1;
