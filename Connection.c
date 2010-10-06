@@ -239,10 +239,11 @@ static PyObject *Connection_RemovePasswordFromDsn(
     // otherwise search for the semicolon
     if (FindInString(upperDsnObj, ";", startPos, &endPos) < 0)
         return NULL;
-    if (endPos < 0) {
-        Py_INCREF(dsnObj);
-        return dsnObj;
-    }
+    length = PySequence_Size(dsnObj);
+    if (PyErr_Occurred())
+        return NULL;
+    if (endPos < 0)
+        endPos = length;
 
     // search for a brace as well since that escapes the semicolon if present
     if (FindInString(upperDsnObj, "{", startPos, &bracePos) < 0)
@@ -256,19 +257,16 @@ static PyObject *Connection_RemovePasswordFromDsn(
         }
         if (FindInString(upperDsnObj, ";", bracePos, &endPos) < 0)
             return NULL;
-        if (endPos < 0) {
-            Py_INCREF(dsnObj);
-            return dsnObj;
-        }
+        if (endPos < 0)
+            endPos = length;
     }
 
     // finally rip out the portion that doesn't need to be there
-    length = PySequence_Size(dsnObj);
-    if (PyErr_Occurred())
-        return NULL;
     firstPart = PySequence_GetSlice(dsnObj, 0, startPos + 4);
     if (!firstPart)
         return NULL;
+    if (endPos == length)
+        return firstPart;
     lastPart = PySequence_GetSlice(dsnObj, endPos, length);
     if (!lastPart) {
         Py_DECREF(firstPart);
