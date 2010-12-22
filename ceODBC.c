@@ -18,6 +18,7 @@
 #ifdef WITH_CX_LOGGING
 #include <cx_Logging.h>
 #else
+#define IsLoggingAtLevelForPython(...) 0
 #define LogMessage(...)
 #define LogMessageV(...)
 #define WriteMessageForPython(...)
