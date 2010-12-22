@@ -501,6 +501,8 @@ static void Cursor_LogBindParameter(
 {
     PyObject *format, *formatArgs, *positionObj, *message;
 
+    if (!IsLoggingAtLevelForPython(LOG_LEVEL_DEBUG))
+        return;
     positionObj = PyInt_FromLong(position);
     if (!positionObj) {
         LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build position obj",
