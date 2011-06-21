@@ -577,8 +577,13 @@ static int Cursor_BindParameters(
                 origVar = NULL;
         } else origVar = NULL;
         if (Cursor_BindParameterHelper(self, numElements, arrayPos, value,
-                origVar, &newVar, deferTypeAssignment) < 0)
+                origVar, &newVar, deferTypeAssignment) < 0) {
+            Py_DECREF(value);
             return -1;
+        }
+        if (self->logSql)
+            Cursor_LogBindParameter(i + 1, value);
+        Py_DECREF(value);
         if (newVar) {
             if (i < PyList_GET_SIZE(self->parameterVars)) {
                 if (PyList_SetItem(self->parameterVars, i,
@@ -601,8 +606,6 @@ static int Cursor_BindParameters(
             if (Variable_BindParameter(origVar, self, i + 1) < 0)
                 return -1;
         }
-        if (self->logSql)
-            Cursor_LogBindParameter(i + 1, value);
     }
 
     return 0;
