@@ -619,8 +619,8 @@ static udt_Variable *Variable_NewForResultSet(
         return NULL;
 
     // some ODBC drivers do not return a long string but instead return string
-    // with a length of zero; provide a workaround
-    if (length == 0) {
+    // with a size of zero; provide a workaround
+    if (size == 0) {
         if (varType == &ceString_VariableType)
             varType = &ceLongString_VariableType;
 #if PY_MAJOR_VERSION < 3
