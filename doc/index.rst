@@ -17,7 +17,7 @@ Front Matter
 ************
 
 
-Copyright |copy| 2007-2010 Anthony Tuininga. All rights reserved.
+Copyright |copy| 2007-2011 Anthony Tuininga. All rights reserved.
 
 See :ref:`license` for complete license and permissions information.
 
