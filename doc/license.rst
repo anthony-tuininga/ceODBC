@@ -8,7 +8,7 @@ License
 
 .. centered:: **LICENSE AGREEMENT FOR ceODBC**
 
-Copyright |copy| 2007-2010, Anthony Tuininga. All rights reserved.
+Copyright |copy| 2007-2011, Anthony Tuininga. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:

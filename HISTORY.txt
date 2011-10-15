@@ -1,3 +1,15 @@
+Changes from 2.0 to 2.0.1
+ 1) Removed memory leak that occurred when binding parameters to a cursor;
+    thanks to Robert Ritchie and Don Reid for discovering this.
+ 2) Remove the password from the DSN in order to eliminate potential security
+    leaks.
+ 3) Improve performance when logging is disabled or not at level DEBUG by
+    avoiding the entire attempt to log bind variable values.
+ 4) Use the size value rather than the length value when defining result set
+    variables since the length value is for the length of the column name;
+    thanks to Heran Quan for the patch.
+ 5) Added support for Python 3.2.
+
 Changes from 1.2 to 2.0
  1) Added support for Python 3.x and Unicode.
  2) Added support for 64-bit Python installations.

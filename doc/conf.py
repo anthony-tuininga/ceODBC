@@ -33,7 +33,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'ceODBC'
-copyright = '2007-2010, Anthony Tuininga'
+copyright = '2007-2011, Anthony Tuininga'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
@@ -41,7 +41,7 @@ copyright = '2007-2010, Anthony Tuininga'
 # The short X.Y version.
 version = '2.0'
 # The full version, including alpha/beta/rc tags.
-release = '2.0'
+release = '2.0.1'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
