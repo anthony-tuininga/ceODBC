@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -5,21 +7,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Connection Object &mdash; ceODBC v2.0 documentation</title>
+    <title>Connection Object &mdash; ceODBC v2.0.1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
-        VERSION:     '2.0',
-        COLLAPSE_MODINDEX: false,
+        URL_ROOT:    '',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="ceODBC v2.0 documentation" href="index.html" />
+    <link rel="top" title="ceODBC v2.0.1 documentation" href="index.html" />
     <link rel="next" title="Cursor Object" href="cursor.html" />
     <link rel="prev" title="Module Interface" href="module.html" /> 
   </head>
@@ -31,15 +34,15 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="cursor.html" title="Cursor Object"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="module.html" title="Module Interface"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -94,10 +97,11 @@ changes to be committed to (or rolled back from) the database.</p>
 <dl class="method">
 <dt id="Connection.close">
 <tt class="descclassname">Connection.</tt><tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.close" title="Permalink to this definition">¶</a></dt>
-<dd>Close the connection now, rather than whenever __del__ is called. The
+<dd><p>Close the connection now, rather than whenever __del__ is called. The
 connection will be unusable from this point forward; an Error exception will
 be raised if any operation is attempted with the connection. The same
-applies to any cursor objects trying to use the connection.</dd></dl>
+applies to any cursor objects trying to use the connection.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="Connection.columnprivileges">
@@ -126,12 +130,14 @@ reference for SQLColumns() for more information.</p>
 <dl class="method">
 <dt id="Connection.commit">
 <tt class="descclassname">Connection.</tt><tt class="descname">commit</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.commit" title="Permalink to this definition">¶</a></dt>
-<dd>Commit any pending transactions to the database.</dd></dl>
+<dd><p>Commit any pending transactions to the database.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="Connection.cursor">
 <tt class="descclassname">Connection.</tt><tt class="descname">cursor</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.cursor" title="Permalink to this definition">¶</a></dt>
-<dd>Return a new Cursor object (<a class="reference external" href="cursor.html#cursorobj"><em>Cursor Object</em></a>) using the connection.</dd></dl>
+<dd><p>Return a new Cursor object (<a class="reference internal" href="cursor.html#cursorobj"><em>Cursor Object</em></a>) using the connection.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Connection.dsn">
@@ -196,7 +202,8 @@ for SQLProcedures() for more information.</p>
 <dl class="method">
 <dt id="Connection.rollback">
 <tt class="descclassname">Connection.</tt><tt class="descname">rollback</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.rollback" title="Permalink to this definition">¶</a></dt>
-<dd>Rollback any pending transactions.</dd></dl>
+<dd><p>Rollback any pending transactions.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="Connection.tableprivileges">
@@ -230,25 +237,25 @@ for SQLTables() for more information.</p>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="module.html"
-                                  title="previous chapter">Module Interface</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="cursor.html"
-                                  title="next chapter">Cursor Object</a></p>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="module.html"
+                        title="previous chapter">Module Interface</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="cursor.html"
+                        title="next chapter">Cursor Object</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -260,7 +267,7 @@ for SQLTables() for more information.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="cursor.html" title="Cursor Object"
@@ -268,13 +275,13 @@ for SQLTables() for more information.</p>
         <li class="right" >
           <a href="module.html" title="Module Interface"
              >previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2007-2010, Anthony Tuininga.
-      Last updated on Mar 29, 2010.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2007-2011, Anthony Tuininga.
+      Last updated on Oct 15, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

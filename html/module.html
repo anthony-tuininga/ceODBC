@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -5,21 +7,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Module Interface &mdash; ceODBC v2.0 documentation</title>
+    <title>Module Interface &mdash; ceODBC v2.0.1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
-        VERSION:     '2.0',
-        COLLAPSE_MODINDEX: false,
+        URL_ROOT:    '',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="ceODBC v2.0 documentation" href="index.html" />
+    <link rel="top" title="ceODBC v2.0.1 documentation" href="index.html" />
     <link rel="next" title="Connection Object" href="connection.html" />
     <link rel="prev" title="ceODBC" href="index.html" /> 
   </head>
@@ -31,15 +34,15 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="connection.html" title="Connection Object"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="ceODBC"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -48,30 +51,32 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="module-interface">
-<span id="module"></span><span id="module-ceODBC"></span><h1>Module Interface<a class="headerlink" href="#module-interface" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-ceODBC"></span><div class="section" id="module-interface">
+<span id="module"></span><h1>Module Interface<a class="headerlink" href="#module-interface" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="ceODBC.Binary">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Binary</tt><big>(</big><em>string</em><big>)</big><a class="headerlink" href="#ceODBC.Binary" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a binary (long) string value.</dd></dl>
+<dd><p>Construct an object holding a binary (long) string value.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.Connection">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Connection</tt><big>(</big><em>dsn</em><span class="optional">[</span>, <em>autocommit = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#ceODBC.Connection" title="Permalink to this definition">¶</a></dt>
 <dt id="ceODBC.connect">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">connect</tt><big>(</big><em>dsn</em><span class="optional">[</span>, <em>autocommit = False</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#ceODBC.connect" title="Permalink to this definition">¶</a></dt>
-<dd>Constructor for creating a connection to the database. Return a Connection
+<dd><p>Constructor for creating a connection to the database. Return a Connection
 object (ref{connobj}). The only required argument is the DSN in the format
 that ODBC expects. The autocommit flag can be set in the constructor or it
 can be manipulated after the connection has been established. If you are
 using a driver that does not handle transactions, ensure that this value is
-set to true or you may get a &#8220;driver not capable&#8221; exception.</dd></dl>
+set to true or you may get a &#8220;driver not capable&#8221; exception.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.Cursor">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Cursor</tt><big>(</big><em>connection</em><big>)</big><a class="headerlink" href="#ceODBC.Cursor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructor for creating a cursor.  Return a new Cursor object
-(<a class="reference external" href="cursor.html#cursorobj"><em>Cursor Object</em></a>) using the connection.</p>
+(<a class="reference internal" href="cursor.html#cursorobj"><em>Cursor Object</em></a>) using the connection.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This method is an extension to the DB API definition.</p>
@@ -81,45 +86,52 @@ set to true or you may get a &#8220;driver not capable&#8221; exception.</dd></d
 <dl class="function">
 <dt id="ceODBC.Date">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Date</tt><big>(</big><em>year</em>, <em>month</em>, <em>day</em><big>)</big><a class="headerlink" href="#ceODBC.Date" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a date value.</dd></dl>
+<dd><p>Construct an object holding a date value.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.DateFromTicks">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">DateFromTicks</tt><big>(</big><em>ticks</em><big>)</big><a class="headerlink" href="#ceODBC.DateFromTicks" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a date value from the given ticks value (number
+<dd><p>Construct an object holding a date value from the given ticks value (number
 of seconds since the epoch; see the documentation of the standard Python
-time module for details).</dd></dl>
+time module for details).</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.Time">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Time</tt><big>(</big><em>hour</em>, <em>minute</em>, <em>second</em><big>)</big><a class="headerlink" href="#ceODBC.Time" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a time value.</dd></dl>
+<dd><p>Construct an object holding a time value.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.TimeFromTicks">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">TimeFromTicks</tt><big>(</big><em>ticks</em><big>)</big><a class="headerlink" href="#ceODBC.TimeFromTicks" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a time value from the given ticks value (number
+<dd><p>Construct an object holding a time value from the given ticks value (number
 of seconds since the epoch; see the documentation of the standard Python
-time module for details).</dd></dl>
+time module for details).</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.Timestamp">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">Timestamp</tt><big>(</big><em>year</em>, <em>month</em>, <em>day</em>, <em>hour</em>, <em>minute</em>, <em>second</em><big>)</big><a class="headerlink" href="#ceODBC.Timestamp" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a time stamp value.</dd></dl>
+<dd><p>Construct an object holding a time stamp value.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="ceODBC.TimestampFromTicks">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">TimestampFromTicks</tt><big>(</big><em>ticks</em><big>)</big><a class="headerlink" href="#ceODBC.TimestampFromTicks" title="Permalink to this definition">¶</a></dt>
-<dd>Construct an object holding a time stamp value from the given ticks value
+<dd><p>Construct an object holding a time stamp value from the given ticks value
 (number of seconds since the epoch; see the documentation of the standard
-Python time module for details).</dd></dl>
+Python time module for details).</p>
+</dd></dl>
 
 <div class="section" id="constants">
 <span id="id1"></span><h2>Constants<a class="headerlink" href="#constants" title="Permalink to this headline">¶</a></h2>
 <dl class="data">
 <dt id="ceODBC.apilevel">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">apilevel</tt><a class="headerlink" href="#ceODBC.apilevel" title="Permalink to this definition">¶</a></dt>
-<dd>String constant stating the supported DB API level. Currently &#8216;2.0&#8217;.</dd></dl>
+<dd><p>String constant stating the supported DB API level. Currently &#8216;2.0&#8217;.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.buildtime">
@@ -134,47 +146,54 @@ Python time module for details).</dd></dl>
 <dl class="data">
 <dt id="ceODBC.BINARY">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">BINARY</tt><a class="headerlink" href="#ceODBC.BINARY" title="Permalink to this definition">¶</a></dt>
-<dd>This type object is used to describe columns in a database that are binary.</dd></dl>
+<dd><p>This type object is used to describe columns in a database that are binary.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.DATETIME">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">DATETIME</tt><a class="headerlink" href="#ceODBC.DATETIME" title="Permalink to this definition">¶</a></dt>
-<dd>This type object is used to describe columns in a database that are dates.</dd></dl>
+<dd><p>This type object is used to describe columns in a database that are dates.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.NUMBER">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">NUMBER</tt><a class="headerlink" href="#ceODBC.NUMBER" title="Permalink to this definition">¶</a></dt>
-<dd>This type object is used to describe columns in a database that are numbers.</dd></dl>
+<dd><p>This type object is used to describe columns in a database that are numbers.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.paramstyle">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">paramstyle</tt><a class="headerlink" href="#ceODBC.paramstyle" title="Permalink to this definition">¶</a></dt>
-<dd>String constant stating the type of parameter marker formatting expected by
-the interface. Currently &#8216;qmark&#8217; as in &#8216;where name = ?&#8217;.</dd></dl>
+<dd><p>String constant stating the type of parameter marker formatting expected by
+the interface. Currently &#8216;qmark&#8217; as in &#8216;where name = ?&#8217;.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.ROWID">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">ROWID</tt><a class="headerlink" href="#ceODBC.ROWID" title="Permalink to this definition">¶</a></dt>
-<dd>This type object is used to describe the pseudo column &#8220;rowid&#8221;.</dd></dl>
+<dd><p>This type object is used to describe the pseudo column &#8220;rowid&#8221;.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.STRING">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">STRING</tt><a class="headerlink" href="#ceODBC.STRING" title="Permalink to this definition">¶</a></dt>
-<dd>This type object is used to describe columns in a database that are strings.</dd></dl>
+<dd><p>This type object is used to describe columns in a database that are strings.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.threadsafety">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">threadsafety</tt><a class="headerlink" href="#ceODBC.threadsafety" title="Permalink to this definition">¶</a></dt>
-<dd>Integer constant stating the level of thread safety that the interface
+<dd><p>Integer constant stating the level of thread safety that the interface
 supports.  Currently 2, which means that threads may share the module and
 connections, but not cursors. Sharing means that a thread may use a
 resource without wrapping it using a mutex semaphore to implement resource
-locking.</dd></dl>
+locking.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.version">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">version</tt><a class="headerlink" href="#ceODBC.version" title="Permalink to this definition">¶</a></dt>
-<dd><p>String constant stating the version of the module. Currently &#8216;2.0&#8216;.</p>
+<dd><p>String constant stating the version of the module. Currently &#8216;2.0.1&#8216;.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This attribute is an extension to the DB API definition.</p>
@@ -187,63 +206,73 @@ locking.</dd></dl>
 <dl class="exception">
 <dt id="ceODBC.Warning">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">Warning</tt><a class="headerlink" href="#ceODBC.Warning" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for important warnings and defined by the DB API but not
-actually used by ceODBC.</dd></dl>
+<dd><p>Exception raised for important warnings and defined by the DB API but not
+actually used by ceODBC.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.Error">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">Error</tt><a class="headerlink" href="#ceODBC.Error" title="Permalink to this definition">¶</a></dt>
-<dd>Exception that is the base class of all other exceptions defined by
+<dd><p>Exception that is the base class of all other exceptions defined by
 ceODBC and is a subclass of the Python StandardError exception (defined in
-the module exceptions).</dd></dl>
+the module exceptions).</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.InterfaceError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">InterfaceError</tt><a class="headerlink" href="#ceODBC.InterfaceError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for errors that are related to the database interface
-rather than the database itself. It is a subclass of Error.</dd></dl>
+<dd><p>Exception raised for errors that are related to the database interface
+rather than the database itself. It is a subclass of Error.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.DatabaseError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">DatabaseError</tt><a class="headerlink" href="#ceODBC.DatabaseError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for errors that are related to the database. It is a
-subclass of Error.</dd></dl>
+<dd><p>Exception raised for errors that are related to the database. It is a
+subclass of Error.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.DataError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">DataError</tt><a class="headerlink" href="#ceODBC.DataError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for errors that are due to problems with the processed
-data. It is a subclass of DatabaseError.</dd></dl>
+<dd><p>Exception raised for errors that are due to problems with the processed
+data. It is a subclass of DatabaseError.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.OperationalError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">OperationalError</tt><a class="headerlink" href="#ceODBC.OperationalError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for errors that are related to the operation of the
+<dd><p>Exception raised for errors that are related to the operation of the
 database but are not necessarily under the control of the progammer. It is a
-subclass of DatabaseError.</dd></dl>
+subclass of DatabaseError.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.IntegrityError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">IntegrityError</tt><a class="headerlink" href="#ceODBC.IntegrityError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised when the relational integrity of the database is affected.
-It is a subclass of DatabaseError.</dd></dl>
+<dd><p>Exception raised when the relational integrity of the database is affected.
+It is a subclass of DatabaseError.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.InternalError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">InternalError</tt><a class="headerlink" href="#ceODBC.InternalError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised when the database encounters an internal error. It is a
-subclass of DatabaseError.</dd></dl>
+<dd><p>Exception raised when the database encounters an internal error. It is a
+subclass of DatabaseError.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.ProgrammingError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">ProgrammingError</tt><a class="headerlink" href="#ceODBC.ProgrammingError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised for programming errors. It is a subclass of DatabaseError.</dd></dl>
+<dd><p>Exception raised for programming errors. It is a subclass of DatabaseError.</p>
+</dd></dl>
 
 <dl class="exception">
 <dt id="ceODBC.NotSupportedError">
 <em class="property">exception </em><tt class="descclassname">ceODBC.</tt><tt class="descname">NotSupportedError</tt><a class="headerlink" href="#ceODBC.NotSupportedError" title="Permalink to this definition">¶</a></dt>
-<dd>Exception raised when a method or database API was used which is not
-supported by the database. It is a subclass of DatabaseError.</dd></dl>
+<dd><p>Exception raised when a method or database API was used which is not
+supported by the database. It is a subclass of DatabaseError.</p>
+</dd></dl>
 
 </div>
 <div class="section" id="variable-types">
@@ -251,7 +280,7 @@ supported by the database. It is a subclass of DatabaseError.</dd></dl>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>The DB API definition does not define these objects.</p>
-<p class="last">These classes all create variable objects (<a class="reference external" href="variable.html#varobj"><em>Variable Objects</em></a>). They are created
+<p class="last">These classes all create variable objects (<a class="reference internal" href="variable.html#varobj"><em>Variable Objects</em></a>). They are created
 implicitly by cursor.execute() as needed and normally need not be created
 directly. These classes can also be passed in to cursor.setinputsizes() in
 favor of the types defined by the DB API in order to have finer control over
@@ -260,79 +289,91 @@ the types of variables created.</p>
 <dl class="data">
 <dt id="ceODBC.BigIntegerVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">BigIntegerVar</tt><a class="headerlink" href="#ceODBC.BigIntegerVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch big integers. Values are returned as
-Python longs and accept Python integers or longs.</dd></dl>
+<dd><p>Variable used to bind and/or fetch big integers. Values are returned as
+Python longs and accept Python integers or longs.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.BinaryVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">BinaryVar</tt><a class="headerlink" href="#ceODBC.BinaryVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch binary data. Values are returned as
+<dd><p>Variable used to bind and/or fetch binary data. Values are returned as
 Python buffer objects and accept Python objects that implement the buffer
-protocol.</dd></dl>
+protocol.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.BitVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">BitVar</tt><a class="headerlink" href="#ceODBC.BitVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch bits. Values are returned as Python
-booleans and accept the same.</dd></dl>
+<dd><p>Variable used to bind and/or fetch bits. Values are returned as Python
+booleans and accept the same.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.DateVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">DateVar</tt><a class="headerlink" href="#ceODBC.DateVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch dates. Values are returned as Python
+<dd><p>Variable used to bind and/or fetch dates. Values are returned as Python
 datetime.date objects and accept Python datetime.date or datetime.datetime
-objects.</dd></dl>
+objects.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.DecimalVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">DecimalVar</tt><a class="headerlink" href="#ceODBC.DecimalVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch decimal numbers. Values are returned as
-Python decimal.Decimal objects and accept the same.</dd></dl>
+<dd><p>Variable used to bind and/or fetch decimal numbers. Values are returned as
+Python decimal.Decimal objects and accept the same.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.DoubleVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">DoubleVar</tt><a class="headerlink" href="#ceODBC.DoubleVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch floating point numbers. Values are
-returned as Python floats and accept Python integers or floats.</dd></dl>
+<dd><p>Variable used to bind and/or fetch floating point numbers. Values are
+returned as Python floats and accept Python integers or floats.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.IntegerVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">IntegerVar</tt><a class="headerlink" href="#ceODBC.IntegerVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch integers. Values are returned as Python
-integers and accept the same.</dd></dl>
+<dd><p>Variable used to bind and/or fetch integers. Values are returned as Python
+integers and accept the same.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.LongBinaryVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">LongBinaryVar</tt><a class="headerlink" href="#ceODBC.LongBinaryVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch long binary data. Values are returned as
+<dd><p>Variable used to bind and/or fetch long binary data. Values are returned as
 Python buffer objects and accept Python objects that implement the buffer
-protocol.</dd></dl>
+protocol.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.LongStringVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">LongStringVar</tt><a class="headerlink" href="#ceODBC.LongStringVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch long string data. Values are returned as
-Python strings and accept the same.</dd></dl>
+<dd><p>Variable used to bind and/or fetch long string data. Values are returned as
+Python strings and accept the same.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.StringVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">StringVar</tt><a class="headerlink" href="#ceODBC.StringVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch string data. Values are returned as
-Python strings and accept the same.</dd></dl>
+<dd><p>Variable used to bind and/or fetch string data. Values are returned as
+Python strings and accept the same.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.TimeVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">TimeVar</tt><a class="headerlink" href="#ceODBC.TimeVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch time data. Values are returned as Python
+<dd><p>Variable used to bind and/or fetch time data. Values are returned as Python
 datetime.time objects and accept Python datetime.time or datetime.datetime
-objects.</dd></dl>
+objects.</p>
+</dd></dl>
 
 <dl class="data">
 <dt id="ceODBC.TimestampVar">
 <tt class="descclassname">ceODBC.</tt><tt class="descname">TimestampVar</tt><a class="headerlink" href="#ceODBC.TimestampVar" title="Permalink to this definition">¶</a></dt>
-<dd>Variable used to bind and/or fetch timestamps. Values are returned as Python
+<dd><p>Variable used to bind and/or fetch timestamps. Values are returned as Python
 datetime.datetime objects and accept Python datetime.date or
-datetime.datetime objects.</dd></dl>
+datetime.datetime objects.</p>
+</dd></dl>
 
 </div>
 </div>
@@ -343,35 +384,35 @@ datetime.datetime objects.</dd></dl>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="index.html">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">Module Interface</a><ul>
-<li><a class="reference external" href="#constants">Constants</a></li>
-<li><a class="reference external" href="#exceptions">Exceptions</a></li>
-<li><a class="reference external" href="#variable-types">Variable Types</a></li>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Module Interface</a><ul>
+<li><a class="reference internal" href="#constants">Constants</a></li>
+<li><a class="reference internal" href="#exceptions">Exceptions</a></li>
+<li><a class="reference internal" href="#variable-types">Variable Types</a></li>
 </ul>
 </li>
 </ul>
 
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="index.html"
-                                  title="previous chapter">ceODBC</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="connection.html"
-                                  title="next chapter">Connection Object</a></p>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">ceODBC</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="connection.html"
+                        title="next chapter">Connection Object</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -383,7 +424,7 @@ datetime.datetime objects.</dd></dl>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="connection.html" title="Connection Object"
@@ -391,13 +432,13 @@ datetime.datetime objects.</dd></dl>
         <li class="right" >
           <a href="index.html" title="ceODBC"
              >previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2007-2010, Anthony Tuininga.
-      Last updated on Mar 29, 2010.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2007-2011, Anthony Tuininga.
+      Last updated on Oct 15, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>

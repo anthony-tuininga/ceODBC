@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -5,21 +7,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Variable Objects &mdash; ceODBC v2.0 documentation</title>
+    <title>Variable Objects &mdash; ceODBC v2.0.1 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '#',
-        VERSION:     '2.0',
-        COLLAPSE_MODINDEX: false,
+        URL_ROOT:    '',
+        VERSION:     '2.0.1',
+        COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  false
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="ceODBC v2.0 documentation" href="index.html" />
+    <link rel="top" title="ceODBC v2.0.1 documentation" href="index.html" />
     <link rel="next" title="License" href="license.html" />
     <link rel="prev" title="Cursor Object" href="cursor.html" /> 
   </head>
@@ -31,15 +34,15 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
-             accesskey="M">modules</a> |</li>
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="license.html" title="License"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="cursor.html" title="Cursor Object"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -57,62 +60,72 @@
 <dl class="attribute">
 <dt id="Variable.bufferSize">
 <tt class="descclassname">Variable.</tt><tt class="descname">bufferSize</tt><a class="headerlink" href="#Variable.bufferSize" title="Permalink to this definition">¶</a></dt>
-<dd>This read-only attribute returns the size of the buffer allocated for each
-element.</dd></dl>
+<dd><p>This read-only attribute returns the size of the buffer allocated for each
+element.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="Variable.getvalue">
 <tt class="descclassname">Variable.</tt><tt class="descname">getvalue</tt><big>(</big><span class="optional">[</span><em>pos=0</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#Variable.getvalue" title="Permalink to this definition">¶</a></dt>
-<dd>Return the value at the given position in the variable.</dd></dl>
+<dd><p>Return the value at the given position in the variable.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.inconverter">
 <tt class="descclassname">Variable.</tt><tt class="descname">inconverter</tt><a class="headerlink" href="#Variable.inconverter" title="Permalink to this definition">¶</a></dt>
-<dd>This read-write attribute specifies the method used to convert data from
+<dd><p>This read-write attribute specifies the method used to convert data from
 Python to the database. The method signature is converter(value) and the
 expected return value is the value to bind to the database. If this
-attribute is None, the value is bound directly without any conversion.</dd></dl>
+attribute is None, the value is bound directly without any conversion.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.input">
 <tt class="descclassname">Variable.</tt><tt class="descname">input</tt><a class="headerlink" href="#Variable.input" title="Permalink to this definition">¶</a></dt>
-<dd>This read-write attribute specifies whether the variable is used as an input
-variable and should normally be left as True.</dd></dl>
+<dd><p>This read-write attribute specifies whether the variable is used as an input
+variable and should normally be left as True.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.numElements">
 <tt class="descclassname">Variable.</tt><tt class="descname">numElements</tt><a class="headerlink" href="#Variable.numElements" title="Permalink to this definition">¶</a></dt>
-<dd>This read-only attribute returns the number of elements allocated.</dd></dl>
+<dd><p>This read-only attribute returns the number of elements allocated.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.outconverter">
 <tt class="descclassname">Variable.</tt><tt class="descname">outconverter</tt><a class="headerlink" href="#Variable.outconverter" title="Permalink to this definition">¶</a></dt>
-<dd>This read-write attribute specifies the method used to convert data from
+<dd><p>This read-write attribute specifies the method used to convert data from
 from the database to Python. The method signature is converter(value) and
 the expected return value is the value to return to Python. If this
-attribute is None, the value is returned directly without any conversion.</dd></dl>
+attribute is None, the value is returned directly without any conversion.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.output">
 <tt class="descclassname">Variable.</tt><tt class="descname">output</tt><a class="headerlink" href="#Variable.output" title="Permalink to this definition">¶</a></dt>
-<dd>This read-write attribute specifies whether the variable is used as an
+<dd><p>This read-write attribute specifies whether the variable is used as an
 output variable. It should normally be left as False except when calling
-stored procedures with output variables.</dd></dl>
+stored procedures with output variables.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.scale">
 <tt class="descclassname">Variable.</tt><tt class="descname">scale</tt><a class="headerlink" href="#Variable.scale" title="Permalink to this definition">¶</a></dt>
-<dd>This read-only attribute returns the scale of the variable.</dd></dl>
+<dd><p>This read-only attribute returns the scale of the variable.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="Variable.setvalue">
 <tt class="descclassname">Variable.</tt><tt class="descname">setvalue</tt><big>(</big><em>pos</em>, <em>value</em><big>)</big><a class="headerlink" href="#Variable.setvalue" title="Permalink to this definition">¶</a></dt>
-<dd>Set the value at the given position in the variable.</dd></dl>
+<dd><p>Set the value at the given position in the variable.</p>
+</dd></dl>
 
 <dl class="attribute">
 <dt id="Variable.size">
 <tt class="descclassname">Variable.</tt><tt class="descname">size</tt><a class="headerlink" href="#Variable.size" title="Permalink to this definition">¶</a></dt>
-<dd>This read-only attribute returns the size of the variable.</dd></dl>
+<dd><p>This read-only attribute returns the size of the variable.</p>
+</dd></dl>
 
 </div>
 
@@ -122,25 +135,25 @@ stored procedures with output variables.</dd></dl>
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h4>Previous topic</h4>
-            <p class="topless"><a href="cursor.html"
-                                  title="previous chapter">Cursor Object</a></p>
-            <h4>Next topic</h4>
-            <p class="topless"><a href="license.html"
-                                  title="next chapter">License</a></p>
-          <div id="searchbox" style="display: none">
-            <h3>Quick search</h3>
-              <form class="search" action="search.html" method="get">
-                <input type="text" name="q" size="18" />
-                <input type="submit" value="Go" />
-                <input type="hidden" name="check_keywords" value="yes" />
-                <input type="hidden" name="area" value="default" />
-              </form>
-              <p class="searchtip" style="font-size: 90%">
-              Enter search terms or a module, class or function name.
-              </p>
-          </div>
-          <script type="text/javascript">$('#searchbox').show(0);</script>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="cursor.html"
+                        title="previous chapter">Cursor Object</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="license.html"
+                        title="next chapter">License</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -152,7 +165,7 @@ stored procedures with output variables.</dd></dl>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="modindex.html" title="Global Module Index"
+          <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
           <a href="license.html" title="License"
@@ -160,13 +173,13 @@ stored procedures with output variables.</dd></dl>
         <li class="right" >
           <a href="cursor.html" title="Cursor Object"
              >previous</a> |</li>
-        <li><a href="index.html">ceODBC v2.0 documentation</a> &raquo;</li> 
+        <li><a href="index.html">ceODBC v2.0.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-      &copy; Copyright 2007-2010, Anthony Tuininga.
-      Last updated on Mar 29, 2010.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+        &copy; Copyright 2007-2011, Anthony Tuininga.
+      Last updated on Oct 15, 2011.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>
 </html>
