@@ -76,7 +76,7 @@ class build_ext(distutils.command.build_ext.build_ext):
             if self.cx_logging is None:
                 self.cx_logging = os.environ.get(envName)
             if self.cx_logging is None:
-                dirName = os.path.join("..", "..", "cx_Logging", "trunk")
+                dirName = os.path.join("..", "cx_Logging")
                 self.cx_logging = os.path.realpath(dirName)
             os.environ[envName] = self.cx_logging
 
