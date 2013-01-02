@@ -1,34 +1,15 @@
-.. ceODBC documentation master file
 
-.. include:: <isonum.txt>
+Welcome to ceODBC's documentation!
+==================================
 
-**********
-  ceODBC
-**********
+**ceODBC** is a Python extension module that enables access to databases using
+the ODBC API and conforms to the Python database API 2.0 specifications with
+a number of additions.  See
+http://www.python.org/topics/database/DatabaseAPI-2.0.html for more
+information on the Python database API specification.
 
-:Author: Anthony Tuininga
-
-:Date: |today|
-
-.. _front:
-
-************
-Front Matter
-************
-
-
-Copyright |copy| 2007-2013 Anthony Tuininga. All rights reserved.
-
-See :ref:`license` for complete license and permissions information.
-
-
-.. topic:: Abstract
-
-   ceODBC is a Python extension module that enables access to databases using
-   the ODBC API and conforms to the Python database API 2.0 specifications with
-   a few exceptions.  See
-   http://www.python.org/topics/database/DatabaseAPI-2.0.html for more
-   information on the Python database API specification.
+**ceODBC** is distributed under an open-source :ref:`license <license>` (the
+PSF license).
 
 
 Contents:
@@ -43,5 +24,10 @@ Contents:
    releasenotes
    license
 
+Indices and tables
+==================
+
 * :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
 
