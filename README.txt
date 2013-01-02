@@ -17,10 +17,8 @@ Place the file ceODBC.pyd or ceODBC.so anywhere on your Python path.
 
 SOURCE INSTALL:
 Use the provided setup.py to build and install the module which makes use of
-the distutils module. Note that on Windows I have used mingw32
-(http://www.mingw.org) and the module will not build with MSVC without
-modification. The commands required to build and install the module are as
-follows:
+the distutils module. The commands required to build and install the module are
+as follows:
 
 	python setup.py build
 	python setup.py install
@@ -32,9 +30,9 @@ If you wish to use cx_Logging for logging, run these commands instead:
 
 The following packages are required on Linux before compilation is possible:
 
-    python-dev
-    unixodbc
-    unixodbc-dev
+    python-devel
+    unixODBC
+    unixODBC-devel
 
 
 USAGE EXAMPLE:

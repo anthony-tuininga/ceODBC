@@ -33,7 +33,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'ceODBC'
-copyright = '2007-2011, Anthony Tuininga'
+copyright = '2007-2013, Anthony Tuininga'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
