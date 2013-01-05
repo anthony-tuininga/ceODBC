@@ -961,6 +961,7 @@ static int Cursor_InternalPrepare(
     udt_Cursor *self,                   // cursor to perform prepare on
     PyObject *statement)                // statement to prepare
 {
+    PyObject *format, *formatArgs, *message;
     udt_StringBuffer buffer;
     SQLRETURN rc;
 
@@ -969,13 +970,6 @@ static int Cursor_InternalPrepare(
         PyErr_SetString(g_ProgrammingErrorException,
                 "no statement specified and no prior statement prepared");
         return -1;
-    }
-
-    // log the statement, if applicable
-    if (self->logSql) {
-        if (statement == Py_None)
-            statement = self->statement;
-        LogMessageV(LOG_LEVEL_DEBUG, "SQL\n%s", PyString_AS_STRING(statement));
     }
 
     // close original statement if necessary in order to discard results
@@ -989,6 +983,24 @@ static int Cursor_InternalPrepare(
         self->statement = statement;
     }
 
+    // log the statement, if applicable
+    if (self->logSql) {
+        format = ceString_FromAscii("SQL\n%s");
+        if (!format)
+            return -1;
+        formatArgs = PyTuple_Pack(1, statement);
+        if (!formatArgs) {
+            Py_DECREF(format);
+            return -1;
+        }
+        message = ceString_Format(format, formatArgs);
+        Py_DECREF(format);
+        Py_DECREF(formatArgs);
+        if (!message)
+            return -1;
+        WriteMessageForPython(LOG_LEVEL_DEBUG, message);
+    }
+
     // clear previous result set parameters
     Py_XDECREF(self->resultSetVars);
     self->resultSetVars = NULL;
@@ -997,7 +1009,7 @@ static int Cursor_InternalPrepare(
 
     // prepare statement
     if (StringBuffer_FromString(&buffer, self->statement,
-                "statement must be a string or None") < 0)
+            "statement must be a string or None") < 0)
         return -1;
     Py_BEGIN_ALLOW_THREADS
     rc = SQLPrepare(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
@@ -1046,8 +1058,8 @@ static PyObject *Cursor_ExecDirect(
     udt_Cursor *self,                   // cursor to execute
     PyObject *args)                     // arguments
 {
+    PyObject *statement, *format, *formatArgs, *message;
     udt_StringBuffer buffer;
-    PyObject *statement;
     SQLRETURN rc;
 
     // parse arguments
@@ -1057,8 +1069,22 @@ static PyObject *Cursor_ExecDirect(
         return NULL;
 
     // log the statement, if applicable
-    if (self->logSql)
-        LogMessageV(LOG_LEVEL_DEBUG, "SQL\n%s", PyString_AS_STRING(statement));
+    if (self->logSql) {
+        format = ceString_FromAscii("SQL\n%s");
+        if (!format)
+            return NULL;
+        formatArgs = PyTuple_Pack(1, statement);
+        if (!formatArgs) {
+            Py_DECREF(format);
+            return NULL;
+        }
+        message = ceString_Format(format, formatArgs);
+        Py_DECREF(format);
+        Py_DECREF(formatArgs);
+        if (!message)
+            return NULL;
+        WriteMessageForPython(LOG_LEVEL_DEBUG, message);
+    }
 
     // clear previous statement, if applicable
     if (self->statement)
@@ -1074,7 +1100,7 @@ static PyObject *Cursor_ExecDirect(
 
     // execute the statement
     if (StringBuffer_FromString(&buffer, statement,
-                "statement must be a string") < 0)
+            "statement must be a string") < 0)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
     rc = SQLExecDirect(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
