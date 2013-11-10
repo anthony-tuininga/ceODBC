@@ -14,7 +14,7 @@ struct _udt_VariableType;
     SQLLEN *lengthOrIndicator; \
     struct _udt_VariableType *type; \
     SQLUINTEGER size; \
-    SQLUINTEGER bufferSize; \
+    SQLLEN bufferSize; \
     SQLSMALLINT scale; \
     int input; \
     int output; \
@@ -754,7 +754,7 @@ static PyObject *Variable_GetValue(
     // check for truncation
     if (self->lengthOrIndicator[arrayPos] > self->bufferSize)
         return PyErr_Format(g_DatabaseErrorException,
-                "column %d (%d) truncated (need %lu, have %lu)",
+                "column %d (%d) truncated (need %d, have %d)",
                 self->position, arrayPos, self->lengthOrIndicator[arrayPos],
                 self->bufferSize);
 
