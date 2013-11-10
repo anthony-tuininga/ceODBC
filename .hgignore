@@ -1,0 +1,6 @@
+syntax: glob
+*.pyc
+__pycache__
+MANIFEST
+build/
+dist/
