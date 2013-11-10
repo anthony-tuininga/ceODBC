@@ -11,6 +11,7 @@
 #include <windows.h>
 #endif
 #include <sql.h>
+#include <sqlext.h>
 #include <sqlucode.h>
 #include <time.h>
 
