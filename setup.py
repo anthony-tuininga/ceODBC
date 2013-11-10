@@ -157,7 +157,6 @@ if sys.platform == "win32":
     libs = ["odbc32"]
 else:
     libs = ["odbc"]
-    defineMacros.append(("BUILD_LEGACY_64_BIT_MODE", None))
 
 # define command classes
 commandClasses = dict(
