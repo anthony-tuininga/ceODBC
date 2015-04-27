@@ -1103,7 +1103,7 @@ static PyObject *Cursor_ExecDirect(
             "statement must be a string") < 0)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecDirect(self->handle, (SQLCHAR*) buffer.ptr, buffer.size);
+    rc = SQLExecDirect(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
     StringBuffer_Clear(&buffer);
     if (Cursor_InternalExecuteHelper(self, rc) < 0)
