@@ -620,7 +620,7 @@ static int Cursor_BindParameters(
 static PyObject *Cursor_InternalCatalogHelper(
     udt_Cursor *self)                   // cursor to fetch from
 {
-    if (!Cursor_PrepareResultSet(self) < 0) {
+    if (Cursor_PrepareResultSet(self) < 0) {
         Py_DECREF(self);
         return NULL;
     }

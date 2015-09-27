@@ -164,7 +164,7 @@ static int Error_CheckForError(
                         "diagnostic message text");
                 break;
             }
-            temp = ceString_FromStringAndSizeInBytes( (char*) buffer, length);
+            temp = ceString_FromStringAndSize( (char*) buffer, length);
             if (!temp) {
                 Py_DECREF(error);
                 Py_DECREF(errorMessages);

@@ -175,7 +175,7 @@ static int Variable_DefaultInit(
     varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
     if (!varType)
         return -1;
-    if (!Variable_InternalInit(self, numElements, varType,
+    if (Variable_InternalInit(self, numElements, varType,
             varType->defaultSize, varType->defaultScale, value, 1, 1) < 0)
         return -1;
 
@@ -207,7 +207,7 @@ static int Variable_InitWithScale(
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
             &value, &scale, &numElements))
         return -1;
-    if (!Variable_InternalInit(self, numElements, varType,
+    if (Variable_InternalInit(self, numElements, varType,
             varType->defaultSize, scale, value, 1, 1) < 0)
         return -1;
 
@@ -239,7 +239,7 @@ static int Variable_InitWithSize(
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
             &value, &size, &numElements))
         return -1;
-    if (!Variable_InternalInit(self, numElements, varType, size,
+    if (Variable_InternalInit(self, numElements, varType, size,
             varType->defaultScale, value, 1, 1) < 0)
         return -1;
 
@@ -754,7 +754,7 @@ static PyObject *Variable_GetValue(
     // check for truncation
     if (self->lengthOrIndicator[arrayPos] > self->bufferSize)
         return PyErr_Format(g_DatabaseErrorException,
-                "column %d (%d) truncated (need %d, have %d)",
+                "column %d (%d) truncated (need %ld, have %ld)",
                 self->position, arrayPos, self->lengthOrIndicator[arrayPos],
                 self->bufferSize);
 
