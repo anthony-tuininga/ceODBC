@@ -328,8 +328,10 @@ static int Connection_Init(
             sizeof(actualDsnBuffer), &actualDsnLength, SQL_DRIVER_NOPROMPT);
     StringBuffer_Clear(&dsnBuffer);
     if (CheckForError(self, rc,
-            "Connection_Init(): connecting to driver") < 0)
+            "Connection_Init(): connecting to driver") < 0) {
+        self->handle = SQL_NULL_HANDLE;
         return -1;
+    }
 
     // turn off autocommit
     if (!autocommit) {
@@ -381,7 +383,9 @@ static void Connection_Free(
         Py_BEGIN_ALLOW_THREADS
         SQLEndTran(self->handleType, self->handle, SQL_ROLLBACK);
         SQLDisconnect(self->handle);
+        SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
         Py_END_ALLOW_THREADS
+        self->handle = NULL;
     }
     if (self->handle)
         SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
