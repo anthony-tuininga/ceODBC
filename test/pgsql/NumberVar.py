@@ -46,7 +46,11 @@ class TestNumberVar(BaseTestCase):
         "test binding in a large long integer"
         valueVar = self.cursor.var(ceODBC.BigIntegerVar)
         valueVar.setvalue(0, 1234567890123456)
-        self.cursor.execute("select ?", valueVar)
+        self.cursor.execute("""
+                select count(*)
+                from TestNumbers
+                where BigIntCol < ?
+                limit 1""", valueVar)
         value = valueVar.getvalue()
         self.failUnlessEqual(value, 1234567890123456)
 
