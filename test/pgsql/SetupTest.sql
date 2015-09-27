@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
  * SetupTest.sql
- *   Creates the objects used for testing ceODBC with a MySQL database.
+ *   Creates the objects used for testing ceODBC with a PostgreSQL database.
  /---------------------------------------------------------------------------*/
 
 create table TestNumbers (
