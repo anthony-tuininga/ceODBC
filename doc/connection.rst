@@ -92,6 +92,21 @@ Connection Object
       This attribute is an extension to the DB API definition.
 
 
+.. attribute:: Connection.inputtypehandler
+
+   This read-write attribute specifies a method called for each value that is
+   bound to a statement executed on any cursor associated with this connection,
+   unless a different handler is specified for that cursor. The method
+   signature is handler(cursor, value, arraysize) and the return value is
+   expected to be a variable object or None in which case a default variable
+   object will be created. If this attribute is None, the default behavior will
+   take place for all values bound to statements.
+
+   note::
+
+   This attribute is an extension to the DB API definition.
+
+
 .. method:: Connection.foreignkeys(pkcatalog=None, pkschema=None, pktable=None, fkcatalog=None, fkschema=None, fktable=None)
 
    Return a cursor containing the foreign keys in the catalog filtered by the
@@ -102,6 +117,21 @@ Connection Object
    .. note::
 
       This method is an extension to the DB API definition.
+
+
+.. attribute:: Connection.outputtypehandler
+
+   This read-write attribute specifies a method called for each value that is
+   to be fetched from any cursor associated with this connection, unless a
+   different handler is specified for that cursor. The method signature is
+   handler(cursor, name, defaultType, length, scale) and the return value is
+   expected to be a variable object or None in which case a default variable
+   object will be created. If this attribute is None, the default behavior will
+   take place for all values fetched from cursors.
+
+   .. note::
+
+      This attribute is an extension to the DB API definition.
 
 
 .. method:: Connection.primarykeys(catalog=None, schema=None, table=None)

@@ -528,6 +528,60 @@ static int Variable_Check(
 
 
 //-----------------------------------------------------------------------------
+// Variable_DefaultNewByValue()
+//   Default method for determining the type of variable to use for the data.
+//-----------------------------------------------------------------------------
+static udt_Variable *Variable_DefaultNewByValue(
+    udt_Cursor *cursor,                 // cursor to associate variable with
+    PyObject *value,                    // Python value to associate
+    unsigned numElements)               // number of elements to allocate
+{
+    udt_VariableType *varType;
+    SQLUINTEGER size = 0;
+
+    varType = Variable_TypeByValue(value, &size);
+    if (!varType)
+        return NULL;
+    if (!size)
+        size = varType->defaultSize;
+    return Variable_InternalNew(numElements, varType, size,
+            varType->defaultScale);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_NewByInputTypeHandler()
+//   Allocate a new variable by calling an input type handler. If the input
+// type handler does not return anything, the default variable type is
+// returned as usual.
+//-----------------------------------------------------------------------------
+static udt_Variable *Variable_NewByInputTypeHandler(
+    udt_Cursor *cursor,                 // cursor to associate variable with
+    PyObject *inputTypeHandler,         // input type handler
+    PyObject *value,                    // Python value to associate
+    unsigned numElements)               // number of elements to allocate
+{
+    PyObject *result;
+
+    result = PyObject_CallFunction(inputTypeHandler, "OOi", cursor, value,
+            numElements);
+    if (!result)
+        return NULL;
+    if (result != Py_None) {
+        if (!Variable_Check(result)) {
+            Py_DECREF(result);
+            PyErr_SetString(PyExc_TypeError,
+                    "expecting variable from input type handler");
+            return NULL;
+        }
+        return (udt_Variable*) result;
+    }
+    Py_DECREF(result);
+    return Variable_DefaultNewByValue(cursor, value, numElements);
+}
+
+
+//-----------------------------------------------------------------------------
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
@@ -536,21 +590,14 @@ static udt_Variable *Variable_NewByValue(
     PyObject *value,                    // Python value to associate
     unsigned numElements)               // number of elements to allocate
 {
-    udt_VariableType *varType;
-    SQLUINTEGER size = 0;
-    udt_Variable *var;
-
-    varType = Variable_TypeByValue(value, &size);
-    if (!varType)
-        return NULL;
-    if (!size)
-        size = varType->defaultSize;
-    var = Variable_InternalNew(numElements, varType, size,
-            varType->defaultScale);
-    if (!var)
-        return NULL;
-
-    return var;
+    if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
+        return Variable_NewByInputTypeHandler(cursor, cursor->inputTypeHandler,
+                value, numElements);
+    if (cursor->connection->inputTypeHandler &&
+            cursor->connection->inputTypeHandler != Py_None)
+        return Variable_NewByInputTypeHandler(cursor,
+                cursor->connection->inputTypeHandler, value, numElements);
+    return Variable_DefaultNewByValue(cursor, value, numElements);
 }
 
 
@@ -587,6 +634,54 @@ static udt_Variable *Variable_NewByType(
         return NULL;
     return Variable_InternalNew(numElements, varType, varType->defaultSize,
             varType->defaultScale);
+}
+
+
+//-----------------------------------------------------------------------------
+// Variable_NewByOutputTypeHandler()
+//   Create a new variable by calling the output type handler.
+//-----------------------------------------------------------------------------
+static udt_Variable *Variable_NewByOutputTypeHandler(
+    udt_Cursor *cursor,                 // cursor to associate variable with
+    PyObject *outputTypeHandler,        // method to call to get type
+    udt_VariableType *varType,          // variable type already chosen
+    SQLUINTEGER size,                   // size of variable
+    SQLSMALLINT scale,                  // scale of variable
+    unsigned numElements)               // number of elements
+{
+    udt_Variable *var;
+    PyObject *result;
+
+    // call method, passing parameters
+    result = PyObject_CallFunction(outputTypeHandler, "OOii", cursor,
+            varType->pythonType, size, scale);
+    if (!result)
+        return NULL;
+
+    // if result is None, assume default behavior
+    if (result == Py_None) {
+        Py_DECREF(result);
+        return Variable_InternalNew(numElements, varType, size, scale);
+    }
+
+    // otherwise, verify that the result is an actual variable
+    if (!Variable_Check(result)) {
+        Py_DECREF(result);
+        PyErr_SetString(PyExc_TypeError,
+                "expecting variable from output type handler");
+        return NULL;
+    }
+
+    // verify that the array size is sufficient to handle the fetch
+    var = (udt_Variable*) result;
+    if (var->numElements < cursor->fetchArraySize) {
+        Py_DECREF(result);
+        PyErr_SetString(PyExc_TypeError,
+                "expecting variable with array size large enough for fetch");
+        return NULL;
+    }
+
+    return var;
 }
 
 
@@ -645,7 +740,17 @@ static udt_Variable *Variable_NewForResultSet(
     }
 
     // create a variable of the correct type
-    var = Variable_InternalNew(cursor->fetchArraySize, varType, size, scale);
+    if (cursor->outputTypeHandler && cursor->outputTypeHandler != Py_None)
+        var = Variable_NewByOutputTypeHandler(cursor, 
+                cursor->outputTypeHandler, varType, size, scale,
+                cursor->fetchArraySize);
+    else if (cursor->connection->outputTypeHandler &&
+            cursor->connection->outputTypeHandler != Py_None)
+        var = Variable_NewByOutputTypeHandler(cursor,
+                cursor->connection->outputTypeHandler, varType, size, scale,
+                cursor->fetchArraySize);
+    else var = Variable_InternalNew(cursor->fetchArraySize, varType, size,
+            scale);
     if (!var)
         return NULL;
 
