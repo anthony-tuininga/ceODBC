@@ -8,6 +8,13 @@ Release notes
 Development version
 -------------------
 
+Version 2.1
+-----------
+1) Added support for Python 3.4 and 3.5.
+2) Added better support for 64-bit Python.
+3) Eliminated compiler warnings; other minor tweaks to improve error handling.
+
+
 Version 2.0.2
 -------------
 
