@@ -41,8 +41,8 @@ Version 2.0.1
 5) Added support for Python 3.2.
 
 
-Version 2.0.1
--------------
+Version 2.0
+-----------
 
 1) Added support for Python 3.x and Unicode.
 2) Added support for 64-bit Python installations.
