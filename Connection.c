@@ -9,6 +9,8 @@
 typedef struct {
     ObjectWithHandle_HEAD
     udt_Environment *environment;
+    PyObject *inputTypeHandler;
+    PyObject *outputTypeHandler;
     int isConnected;
     PyObject *dsn;
     int logSql;
@@ -79,6 +81,10 @@ static PyMethodDef g_ConnectionMethods[] = {
 static PyMemberDef g_ConnectionMembers[] = {
     { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
     { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
+    { "inputtypehandler", T_OBJECT,
+            offsetof(udt_Connection, inputTypeHandler), 0 },
+    { "outputtypehandler", T_OBJECT,
+            offsetof(udt_Connection, outputTypeHandler), 0 },
     { NULL }
 };
 
@@ -391,6 +397,8 @@ static void Connection_Free(
         SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
     Py_CLEAR(self->environment);
     Py_CLEAR(self->dsn);
+    Py_CLEAR(self->inputTypeHandler);
+    Py_CLEAR(self->outputTypeHandler);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
 

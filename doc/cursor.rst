@@ -161,6 +161,21 @@ Cursor Object
    result set or no call was issued yet.
 
 
+.. attribute:: Connection.inputtypehandler
+
+   This read-write attribute specifies a method called for each value that is
+   bound to a statement executed by this cursor, and overrides the attribute
+   with the same name on the connection if specified. The method signature is
+   handler(cursor, value, arraysize) and the return value is expected to be a
+   variable object or None in which case a default variable object will be
+   created.  If this attribute is None, the value of the attribute with the
+   same name on the connection is used.
+
+   note::
+
+   This attribute is an extension to the DB API definition.
+
+
 .. method:: Cursor.__iter__()
 
    Returns the cursor itself to be used as an iterator.
@@ -200,6 +215,21 @@ Cursor Object
    otherwise, the cursor ifself is returned as a convenience for fetching data
    from it. Note that not all databases support the concept of multiple result
    sets.
+
+
+.. attribute:: Connection.outputtypehandler
+
+   This read-write attribute specifies a method called for each value that is
+   to be fetched from this cursor and overrides the attribute with the same
+   name on the connection if specified. The method signature is
+   handler(cursor, name, defaultType, length, scale) and the return value is
+   expected to be a variable object or None in which case a default variable
+   object will be created. If this attribute is None, the value of the
+   attribute with the same name on the connection is used.
+
+   .. note::
+
+      This attribute is an extension to the DB API definition.
 
 
 .. method:: Cursor.prepare(statement)
