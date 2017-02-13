@@ -139,11 +139,11 @@ class test_sqlserver(test):
 
 # define the list of files to be included as documentation
 dataFiles = None
-docFiles = "HISTORY.txt LICENSE.txt README.txt html test"
+docFiles = "README.txt doc test"
 if sys.platform in ("win32", "cygwin"):
     baseName = "ceODBC-doc"
-    dataFiles = [ (baseName, [ "HISTORY.TXT", "LICENSE.TXT", "README.TXT" ]) ]
-    for subDir in ("html", "test"):
+    dataFiles = [ (baseName, [ "README.TXT" ]) ]
+    for subDir in ("doc", "test"):
         for path, dirNames, fileNames in os.walk(subDir):
             if ".svn" in dirNames:
                 dirNames.remove(".svn")
