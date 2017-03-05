@@ -145,8 +145,6 @@ if sys.platform in ("win32", "cygwin"):
     dataFiles = [ (baseName, [ "README.TXT" ]) ]
     for subDir in ("doc", "test"):
         for path, dirNames, fileNames in os.walk(subDir):
-            if ".svn" in dirNames:
-                dirNames.remove(".svn")
             qualifiedFileNames = [os.path.join(path, n) for n in fileNames]
             qualifiedPath = os.path.join(baseName, path)
             dataFiles.append((qualifiedPath, qualifiedFileNames))
@@ -170,7 +168,7 @@ commandClasses = dict(
 classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: Python Software Foundation License",
+        "License :: OSI Approved :: BSD License",
         "Natural Language :: English",
         "Operating System :: OS Independent",
         "Programming Language :: C",
@@ -194,7 +192,7 @@ setup(
         name = "ceODBC",
         version = BUILD_VERSION,
         description = "Python interface to ODBC",
-        license = "Python Software Foundation License",
+        license = "BSD License",
         long_description = \
             "Python interface to ODBC conforming to the Python DB API 2.0 "
             "specification.\n"
