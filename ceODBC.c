@@ -15,6 +15,10 @@
 #include <sqlucode.h>
 #include <time.h>
 
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
+#endif
+
 // set up CX_LOGGING if applicable
 #ifdef WITH_CX_LOGGING
 #include <cx_Logging.h>
@@ -91,6 +95,8 @@ typedef int Py_ssize_t;
 #define SQLGetDiagField             SQLGetDiagFieldW
 #define SQLPrepare                  SQLPrepareW
 #define SQLSetCursorName            SQLSetCursorNameW
+#define SQLExecDirect               SQLExecDirectW
+#define SQLGetCursorName            SQLGetCursorNameW
 #endif
 
 

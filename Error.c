@@ -159,12 +159,14 @@ static int Error_CheckForError(
         for (i = 1; i <= numRecords; i++) {
             rc = SQLGetDiagField(obj->handleType, obj->handle, i,
                     SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &length);
+            if (length > sizeof(buffer) - sizeof(CEODBC_CHAR))
+                length = sizeof(buffer) - sizeof(CEODBC_CHAR);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 error->message = ceString_FromAscii("cannot get " \
                         "diagnostic message text");
                 break;
             }
-            temp = ceString_FromStringAndSize( (char*) buffer, length);
+            temp = ceString_FromStringAndSizeInBytes(buffer, length);
             if (!temp) {
                 Py_DECREF(error);
                 Py_DECREF(errorMessages);
