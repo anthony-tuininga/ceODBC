@@ -330,8 +330,10 @@ static int Connection_Init(
                 "DSN must be a string") < 0)
         return -1;
     rc = SQLDriverConnect(self->handle, NULL, (CEODBC_CHAR*) dsnBuffer.ptr,
-            dsnBuffer.size, (CEODBC_CHAR*) actualDsnBuffer,
-            sizeof(actualDsnBuffer), &actualDsnLength, SQL_DRIVER_NOPROMPT);
+            dsnBuffer.size, actualDsnBuffer, ARRAYSIZE(actualDsnBuffer),
+            &actualDsnLength, SQL_DRIVER_NOPROMPT);
+    if (actualDsnLength > ARRAYSIZE(actualDsnBuffer) - 1)
+        actualDsnLength = ARRAYSIZE(actualDsnBuffer) - 1;
     StringBuffer_Clear(&dsnBuffer);
     if (CheckForError(self, rc,
             "Connection_Init(): connecting to driver") < 0) {
@@ -352,8 +354,7 @@ static int Connection_Init(
     self->isConnected = 1;
 
     // save copy of constructed DSN
-    dsnObj = ceString_FromStringAndSize( (char*) actualDsnBuffer,
-            actualDsnLength);
+    dsnObj = ceString_FromStringAndSize(actualDsnBuffer, actualDsnLength);
     if (!dsnObj) {
         Py_DECREF(self);
         return -1;

@@ -702,8 +702,8 @@ static udt_Variable *Variable_NewForResultSet(
     SQLRETURN rc;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(cursor->handle, position, name, sizeof(name), &length,
-            &dataType, &size, &scale, &nullable);
+    rc = SQLDescribeCol(cursor->handle, position, name, ARRAYSIZE(name),
+            &length, &dataType, &size, &scale, &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
         return NULL;

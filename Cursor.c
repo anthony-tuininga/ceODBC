@@ -708,8 +708,10 @@ static PyObject *Cursor_ItemDescription(
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(self->handle, position, name, sizeof(name),
+    rc = SQLDescribeCol(self->handle, position, name, ARRAYSIZE(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
+    if (nameLength > ARRAYSIZE(name) - 1)
+        nameLength = ARRAYSIZE(name) - 1;
     if (CheckForError(self, rc,
             "Cursor_ItemDescription(): get column info") < 0)
         return NULL;
@@ -749,8 +751,8 @@ static PyObject *Cursor_ItemDescription(
 
     // set each of the items in the tuple
     Py_INCREF(varType->pythonType);
-    PyTuple_SET_ITEM(tuple, 0,
-            ceString_FromStringAndSize( (char*) name, nameLength));
+    PyTuple_SET_ITEM(tuple, 0, 
+            ceString_FromStringAndSize(name, nameLength));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
     PyTuple_SET_ITEM(tuple, 2, PyInt_FromLong(displaySize));
     PyTuple_SET_ITEM(tuple, 3, PyInt_FromLong(size));
@@ -821,11 +823,12 @@ static PyObject *Cursor_GetName(
     void *arg)                          // optional argument (ignored)
 {
     SQLSMALLINT nameLength;
-    char name[255];
+    CEODBC_CHAR name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorName(self->handle, (SQLCHAR*) name, sizeof(name),
-            &nameLength);
+    rc = SQLGetCursorName(self->handle, name, ARRAYSIZE(name), &nameLength);
+    if (nameLength > ARRAYSIZE(name) - 1)
+        nameLength = ARRAYSIZE(name) - 1;
     if (CheckForError(self, rc, "Cursor_GetName()") < 0)
         return NULL;
     return ceString_FromStringAndSize(name, nameLength);
