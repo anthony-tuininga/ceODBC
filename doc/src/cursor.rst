@@ -161,7 +161,7 @@ Cursor Object
    result set or no call was issued yet.
 
 
-.. attribute:: Connection.inputtypehandler
+.. attribute:: Cursor.inputtypehandler
 
    This read-write attribute specifies a method called for each value that is
    bound to a statement executed by this cursor, and overrides the attribute
@@ -173,7 +173,7 @@ Cursor Object
 
    note::
 
-   This attribute is an extension to the DB API definition.
+      This attribute is an extension to the DB API definition.
 
 
 .. method:: Cursor.__iter__()
@@ -217,7 +217,7 @@ Cursor Object
    sets.
 
 
-.. attribute:: Connection.outputtypehandler
+.. attribute:: Cursor.outputtypehandler
 
    This read-write attribute specifies a method called for each value that is
    to be fetched from this cursor and overrides the attribute with the same

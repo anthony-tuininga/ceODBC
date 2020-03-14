@@ -104,7 +104,7 @@ Connection Object
 
    note::
 
-   This attribute is an extension to the DB API definition.
+        This attribute is an extension to the DB API definition.
 
 
 .. method:: Connection.foreignkeys(pkcatalog=None, pkschema=None, pktable=None, fkcatalog=None, fkschema=None, fktable=None)
