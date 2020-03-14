@@ -181,7 +181,7 @@ static int BinaryVar_SetValue(
     udt_StringBuffer buffer;
 
     // get the buffer for binding
-    if (ceBinary_Check(value)) {
+    if (PyBytes_Check(value)) {
         if (StringBuffer_FromBinary(&buffer, value) < 0)
             return -1;
     } else {

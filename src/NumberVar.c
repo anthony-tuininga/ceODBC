@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct {
     Variable_HEAD
-    CEODBC_CHAR *data;
+    SQLWCHAR *data;
 } udt_DecimalVar;
 
 
@@ -255,13 +255,8 @@ static udt_VariableType vt_Decimal = {
     (GetValueProc) DecimalVar_GetValue,
     (GetBufferSizeProc) DecimalVar_GetBufferSize,
     &g_DecimalVarType,                  // Python type
-#if PY_MAJOR_VERSION >= 3
     SQL_WCHAR,                          // SQL type
     SQL_C_WCHAR,                        // C data type
-#else
-    SQL_CHAR,                           // SQL type
-    SQL_C_CHAR,                         // C data type
-#endif
     0,                                  // buffer size
     18,                                 // default size
     0                                   // default scale
@@ -316,11 +311,7 @@ static int BigIntegerVar_SetValue(
     PyObject *value)                    // value to set
 {
     if (PyInt_Check(value)) {
-#if PY_MAJOR_VERSION >= 3
         var->data[pos] = PyLong_AsLongLong(value);
-#else
-        var->data[pos] = PyInt_AsLong(value);
-#endif
         if (PyErr_Occurred())
             return -1;
     } else if (PyLong_Check(value)) {
@@ -350,10 +341,8 @@ static int DecimalVar_GetStringRepOfDecimal(
     long numDigits, scale, i, sign, size, digit;
     char *valuePtr, *value;
     PyObject *digits;
-#if PY_MAJOR_VERSION >= 3
     udt_StringBuffer buffer;
     PyObject *temp;
-#endif
 
     // acquire basic information from the value tuple
     sign = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 0));
@@ -398,7 +387,6 @@ static int DecimalVar_GetStringRepOfDecimal(
         }
     }
     *valuePtr = '\0';
-#if PY_MAJOR_VERSION >= 3
     temp = ceString_FromAscii(value);
     if (!temp)
         return -1;
@@ -410,9 +398,6 @@ static int DecimalVar_GetStringRepOfDecimal(
     var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
     memcpy(value, buffer.ptr, buffer.sizeInBytes);
     StringBuffer_Clear(&buffer);
-#else
-    var->lengthOrIndicator[pos] = strlen(value);
-#endif
 
     return 0;
 }
@@ -428,7 +413,7 @@ static SQLUINTEGER DecimalVar_GetBufferSize(
     udt_DecimalVar *var,                // variable to determine value for
     SQLUINTEGER size)                   // size to allocate
 {
-    return (size + 3) * sizeof(CEODBC_CHAR);
+    return (size + 3) * sizeof(SQLWCHAR);
 }
 
 

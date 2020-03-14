@@ -302,7 +302,7 @@ static PyObject *Cursor_Repr(
         Py_DECREF(format);
         return NULL;
     }
-    result = ceString_Format(format, formatArgs);
+    result = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
     return result;
@@ -531,7 +531,7 @@ static void Cursor_LogBindParameter(
                 position);
         return;
     }
-    message = ceString_Format(format, formatArgs);
+    message = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
     if (!message) {
@@ -702,13 +702,13 @@ static PyObject *Cursor_ItemDescription(
     SQLSMALLINT dataType, nameLength, scale, nullable;
     SQLULEN precision, size, displaySize;
     udt_VariableType *varType;
-    CEODBC_CHAR name[256];
+    SQLWCHAR name[256];
     PyObject *tuple;
     SQLRETURN rc;
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(self->handle, position, name, ARRAYSIZE(name),
+    rc = SQLDescribeColW(self->handle, position, name, ARRAYSIZE(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
     if (nameLength > ARRAYSIZE(name) - 1)
         nameLength = ARRAYSIZE(name) - 1;
@@ -823,10 +823,10 @@ static PyObject *Cursor_GetName(
     void *arg)                          // optional argument (ignored)
 {
     SQLSMALLINT nameLength;
-    CEODBC_CHAR name[255];
+    SQLWCHAR name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorName(self->handle, name, ARRAYSIZE(name), &nameLength);
+    rc = SQLGetCursorNameW(self->handle, name, ARRAYSIZE(name), &nameLength);
     if (nameLength > ARRAYSIZE(name) - 1)
         nameLength = ARRAYSIZE(name) - 1;
     if (CheckForError(self, rc, "Cursor_GetName()") < 0)
@@ -850,7 +850,7 @@ static int Cursor_SetName(
     if (StringBuffer_FromString(&buffer, value,
                 "cursor name must be a string") < 0)
         return -1;
-    rc = SQLSetCursorName(self->handle, (CEODBC_CHAR*) buffer.ptr,
+    rc = SQLSetCursorNameW(self->handle, (SQLWCHAR*) buffer.ptr,
             buffer.size);
     StringBuffer_Clear(&buffer);
     if (CheckForError(self, rc, "Cursor_SetName()") < 0)
@@ -1004,7 +1004,7 @@ static int Cursor_InternalPrepare(
             Py_DECREF(format);
             return -1;
         }
-        message = ceString_Format(format, formatArgs);
+        message = PyUnicode_Format(format, formatArgs);
         Py_DECREF(format);
         Py_DECREF(formatArgs);
         if (!message)
@@ -1023,7 +1023,7 @@ static int Cursor_InternalPrepare(
             "statement must be a string or None") < 0)
         return -1;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepare(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
+    rc = SQLPrepareW(self->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
     StringBuffer_Clear(&buffer);
     if (CheckForError(self, rc, "Cursor_InternalPrepare()") < 0)
@@ -1089,7 +1089,7 @@ static PyObject *Cursor_ExecDirect(
             Py_DECREF(format);
             return NULL;
         }
-        message = ceString_Format(format, formatArgs);
+        message = PyUnicode_Format(format, formatArgs);
         Py_DECREF(format);
         Py_DECREF(formatArgs);
         if (!message)
@@ -1114,7 +1114,7 @@ static PyObject *Cursor_ExecDirect(
             "statement must be a string") < 0)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecDirect(self->handle, (CEODBC_CHAR*) buffer.ptr, buffer.size);
+    rc = SQLExecDirectW(self->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
     StringBuffer_Clear(&buffer);
     if (Cursor_InternalExecuteHelper(self, rc) < 0)
@@ -1287,7 +1287,7 @@ static int Cursor_CallBuildStatement(
         Py_DECREF(format);
         return -1;
     }
-    *statementObj = ceString_Format(format, formatArgs);
+    *statementObj = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
     if (!*statementObj)
@@ -1372,7 +1372,7 @@ static PyObject *Cursor_CallFunc(
     }
     functionName = PyTuple_GET_ITEM(args, 0);
     returnType = PyTuple_GET_ITEM(args, 1);
-    if (!ceString_Check(functionName)) {
+    if (!PyUnicode_Check(functionName)) {
         PyErr_SetString(PyExc_TypeError, "expecting a string");
         return NULL;
     }
@@ -1413,7 +1413,7 @@ static PyObject *Cursor_CallProc(
         return NULL;
     }
     procedureName = PyTuple_GET_ITEM(args, 0);
-    if (!ceString_Check(procedureName)) {
+    if (!PyUnicode_Check(procedureName)) {
         PyErr_SetString(PyExc_TypeError, "expecting a string");
         return NULL;
     }

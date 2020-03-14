@@ -79,25 +79,9 @@ typedef int Py_ssize_t;
 #define MAKE_TYPE_READY(type) \
     if (PyType_Ready(type) < 0) \
         return NULL;
-#if PY_MAJOR_VERSION >= 3
-    #define CEODBC_BASE_EXCEPTION       NULL
-#else
-    #define CEODBC_BASE_EXCEPTION       PyExc_StandardError
-#endif
 
 // define simple construct for determining endianness of the platform
 #define IS_LITTLE_ENDIAN (int)*(unsigned char*) &one
-
-// use Unicode variants for Python 3.x
-#if PY_MAJOR_VERSION >= 3
-#define SQLDescribeCol              SQLDescribeColW
-#define SQLDriverConnect            SQLDriverConnectW
-#define SQLGetDiagField             SQLGetDiagFieldW
-#define SQLPrepare                  SQLPrepareW
-#define SQLSetCursorName            SQLSetCursorNameW
-#define SQLExecDirect               SQLExecDirectW
-#define SQLGetCursorName            SQLGetCursorNameW
-#endif
 
 
 //-----------------------------------------------------------------------------
@@ -236,9 +220,8 @@ static PyMethodDef g_ModuleMethods[] = {
 };
 
 
-#if PY_MAJOR_VERSION >= 3
 //-----------------------------------------------------------------------------
-//   Declaration of module definition for Python 3.x.
+//   Declaration of module definition
 //-----------------------------------------------------------------------------
 static struct PyModuleDef g_ModuleDef = {
     PyModuleDef_HEAD_INIT,
@@ -251,14 +234,12 @@ static struct PyModuleDef g_ModuleDef = {
     NULL,                                  // clear
     NULL                                   // free
 };
-#endif
 
 
 //-----------------------------------------------------------------------------
-// Module_Initialize()
-//   Initialization routine for the module.
+// Start routine for the module.
 //-----------------------------------------------------------------------------
-static PyObject *Module_Initialize(void)
+PyMODINIT_FUNC PyInit_ceODBC(void)
 {
     PyObject *module;
 
@@ -292,30 +273,20 @@ static PyObject *Module_Initialize(void)
     MAKE_TYPE_READY(&g_DoubleVarType)
     MAKE_TYPE_READY(&g_IntegerVarType)
     MAKE_TYPE_READY(&g_LongBinaryVarType)
-#if PY_MAJOR_VERSION < 3
-    MAKE_TYPE_READY(&g_LongStringVarType)
-    MAKE_TYPE_READY(&g_StringVarType)
-#endif
     MAKE_TYPE_READY(&g_LongUnicodeVarType)
     MAKE_TYPE_READY(&g_TimeVarType)
     MAKE_TYPE_READY(&g_TimestampVarType)
     MAKE_TYPE_READY(&g_UnicodeVarType)
 
     // initialize module
-#if PY_MAJOR_VERSION >= 3
     module = PyModule_Create(&g_ModuleDef);
-#else
-    module = Py_InitModule("ceODBC", g_ModuleMethods);
-#endif
     if (!module)
         return NULL;
 
     // add exceptions
-    if (SetException(module, &g_WarningException,
-            "Warning", CEODBC_BASE_EXCEPTION) < 0)
+    if (SetException(module, &g_WarningException, "Warning", NULL) < 0)
         return NULL;
-    if (SetException(module, &g_ErrorException,
-            "Error", CEODBC_BASE_EXCEPTION) < 0)
+    if (SetException(module, &g_ErrorException, "Error", NULL) < 0)
         return NULL;
     if (SetException(module, &g_InterfaceErrorException,
             "InterfaceError", g_ErrorException) < 0)
@@ -352,7 +323,7 @@ static PyObject *Module_Initialize(void)
     ADD_TYPE_OBJECT("connect", &g_ConnectionType)
 
     // add the constructors required by the DB API
-    ADD_TYPE_OBJECT("Binary", &ceBinary_Type)
+    ADD_TYPE_OBJECT("Binary", &PyBytes_Type)
     ADD_TYPE_OBJECT("Date", PyDateTimeAPI->DateType)
     ADD_TYPE_OBJECT("Time", PyDateTimeAPI->TimeType)
     ADD_TYPE_OBJECT("Timestamp", PyDateTimeAPI->DateTimeType)
@@ -366,15 +337,8 @@ static PyObject *Module_Initialize(void)
     ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
     ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
     ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
-#if PY_MAJOR_VERSION < 3
-    ADD_TYPE_OBJECT("LongStringVar", &g_LongStringVarType)
-    ADD_TYPE_OBJECT("StringVar", &g_StringVarType)
-    ADD_TYPE_OBJECT("LongUnicodeVar", &g_LongUnicodeVarType)
-    ADD_TYPE_OBJECT("UnicodeVar", &g_UnicodeVarType)
-#else
     ADD_TYPE_OBJECT("LongStringVar", &g_LongUnicodeVarType)
     ADD_TYPE_OBJECT("StringVar", &g_UnicodeVarType)
-#endif
     ADD_TYPE_OBJECT("TimeVar", &g_TimeVarType)
     ADD_TYPE_OBJECT("TimestampVar", &g_TimestampVarType)
 
@@ -394,13 +358,8 @@ static PyObject *Module_Initialize(void)
     REGISTER_TYPE(g_NumberApiType, &g_DecimalVarType)
     REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
     REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)
-#if PY_MAJOR_VERSION < 3
-    REGISTER_TYPE(g_StringApiType, &g_StringVarType)
-    REGISTER_TYPE(g_StringApiType, &g_LongStringVarType)
-#else
     REGISTER_TYPE(g_StringApiType, &g_UnicodeVarType)
     REGISTER_TYPE(g_StringApiType, &g_LongUnicodeVarType)
-#endif
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)
@@ -422,20 +381,3 @@ static PyObject *Module_Initialize(void)
 
     return module;
 }
-
-
-//-----------------------------------------------------------------------------
-// Start routine for the module.
-//-----------------------------------------------------------------------------
-#if PY_MAJOR_VERSION >= 3
-PyMODINIT_FUNC PyInit_ceODBC(void)
-{
-    return Module_Initialize();
-}
-#else
-void initceODBC(void)
-{
-    Module_Initialize();
-}
-#endif
-

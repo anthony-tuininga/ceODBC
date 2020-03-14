@@ -130,7 +130,7 @@ static PyObject *ApiType_Repr(
         return NULL;
     }
 
-    result = ceString_Format(format, formatArgs);
+    result = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
 

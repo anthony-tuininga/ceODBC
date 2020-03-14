@@ -295,7 +295,7 @@ static int Connection_Init(
     PyObject *keywordArgs)              // keyword arguments
 {
     PyObject *autocommitObj, *dsnObj, *upperDsnObj;
-    CEODBC_CHAR actualDsnBuffer[1024];
+    SQLWCHAR actualDsnBuffer[1024];
     SQLSMALLINT actualDsnLength;
     udt_StringBuffer dsnBuffer;
     int autocommit;
@@ -329,7 +329,7 @@ static int Connection_Init(
     if (StringBuffer_FromString(&dsnBuffer, dsnObj,
                 "DSN must be a string") < 0)
         return -1;
-    rc = SQLDriverConnect(self->handle, NULL, (CEODBC_CHAR*) dsnBuffer.ptr,
+    rc = SQLDriverConnectW(self->handle, NULL, (SQLWCHAR*) dsnBuffer.ptr,
             dsnBuffer.size, actualDsnBuffer, ARRAYSIZE(actualDsnBuffer),
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
     if (actualDsnLength > ARRAYSIZE(actualDsnBuffer) - 1)
@@ -430,7 +430,7 @@ static PyObject *Connection_Repr(
         Py_DECREF(formatArgs);
         return NULL;
     }
-    result = ceString_Format(format, formatArgs);
+    result = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
     return result;

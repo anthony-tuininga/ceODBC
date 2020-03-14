@@ -117,7 +117,7 @@ static int Error_CheckForError(
     const char *context)                // context
 {
     PyObject *errorMessages, *temp, *separator;
-    CEODBC_CHAR buffer[1024];
+    SQLWCHAR buffer[1024];
     SQLINTEGER numRecords;
     SQLSMALLINT length;
     udt_Error *error;
@@ -139,7 +139,7 @@ static int Error_CheckForError(
     error->context = context;
 
     // determine number of diagnostic records available
-    rc = SQLGetDiagField(obj->handleType, obj->handle, 0, SQL_DIAG_NUMBER,
+    rc = SQLGetDiagFieldW(obj->handleType, obj->handle, 0, SQL_DIAG_NUMBER,
             &numRecords, SQL_IS_INTEGER, NULL);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
         error->message = ceString_FromAscii("cannot get number of " \
@@ -157,10 +157,10 @@ static int Error_CheckForError(
             return -1;
         }
         for (i = 1; i <= numRecords; i++) {
-            rc = SQLGetDiagField(obj->handleType, obj->handle, i,
+            rc = SQLGetDiagFieldW(obj->handleType, obj->handle, i,
                     SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &length);
-            if (length > sizeof(buffer) - sizeof(CEODBC_CHAR))
-                length = sizeof(buffer) - sizeof(CEODBC_CHAR);
+            if (length > sizeof(buffer) - sizeof(SQLWCHAR))
+                length = sizeof(buffer) - sizeof(SQLWCHAR);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 error->message = ceString_FromAscii("cannot get " \
                         "diagnostic message text");
@@ -181,7 +181,7 @@ static int Error_CheckForError(
                 Py_DECREF(errorMessages);
                 return -1;
             }
-            error->message = ceString_Join(separator, errorMessages);
+            error->message = PyUnicode_Join(separator, errorMessages);
             Py_DECREF(separator);
             Py_DECREF(errorMessages);
         }

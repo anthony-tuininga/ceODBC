@@ -250,9 +250,6 @@ static int Variable_InitWithSize(
 #include "BinaryVar.c"
 #include "BitVar.c"
 #include "NumberVar.c"
-#if PY_MAJOR_VERSION < 3
-#include "StringVar.c"
-#endif
 #include "UnicodeVar.c"
 #include "DateTimeVar.c"
 
@@ -293,19 +290,13 @@ static udt_VariableType *Variable_TypeByValue(
 {
     if (value == Py_None) {
         *size = 1;
-        return &ceString_VariableType;
+        return &vt_Unicode;
     }
-    if (ceString_Check(value)) {
-        *size = ceString_GetSize(value);
-        return &ceString_VariableType;
-    }
-#if PY_MAJOR_VERSION < 3
     if (PyUnicode_Check(value)) {
         *size = PyUnicode_GET_SIZE(value);
         return &vt_Unicode;
     }
-#endif
-    if (ceBinary_Check(value)) {
+    if (PyBytes_Check(value)) {
         udt_StringBuffer temp;
         if (StringBuffer_FromBinary(&temp, value) < 0)
             return NULL;
@@ -345,18 +336,8 @@ static udt_VariableType *Variable_TypeByValue(
 static udt_VariableType *Variable_TypeByPythonType(
     PyObject* type)                     // Python type
 {
-#if PY_MAJOR_VERSION < 3
-    if (type == (PyObject*) &g_StringVarType)
-        return &vt_String;
-#endif
-    if (type == (PyObject*) ceString_Type)
-        return &ceString_VariableType;
     if (type == (PyObject*) g_StringApiType)
-        return &ceString_VariableType;
-#if PY_MAJOR_VERSION < 3
-    if (type == (PyObject*) &g_LongStringVarType)
-        return &vt_LongString;
-#endif
+        return &vt_Unicode;
     if (type == (PyObject*) &g_UnicodeVarType)
         return &vt_Unicode;
     if (type == (PyObject*) &PyUnicode_Type)
@@ -365,7 +346,7 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_LongUnicode;
     if (type == (PyObject*) &g_BinaryVarType)
         return &vt_Binary;
-    if (type == (PyObject*) &ceBinary_Type)
+    if (type == (PyObject*) &PyBytes_Type)
         return &vt_Binary;
     if (type == (PyObject*) g_BinaryApiType)
         return &vt_Binary;
@@ -450,12 +431,12 @@ static udt_VariableType *Variable_TypeBySqlDataType (
         case SQL_CHAR:
         case SQL_VARCHAR:
         case SQL_GUID:
-            return &ceString_VariableType;
+            return &vt_Unicode;
         case SQL_WCHAR:
         case SQL_WVARCHAR:
             return &vt_Unicode;
         case SQL_LONGVARCHAR:
-            return &ceLongString_VariableType;
+            return &vt_LongUnicode;
         case SQL_WLONGVARCHAR:
             return &vt_LongUnicode;
         case SQL_BINARY:
@@ -517,10 +498,6 @@ static int Variable_Check(
             Py_TYPE(object) == &g_DoubleVarType ||
             Py_TYPE(object) == &g_IntegerVarType ||
             Py_TYPE(object) == &g_LongBinaryVarType ||
-#if PY_MAJOR_VERSION < 3
-            Py_TYPE(object) == &g_LongStringVarType ||
-            Py_TYPE(object) == &g_StringVarType ||
-#endif
             Py_TYPE(object) == &g_LongUnicodeVarType ||
             Py_TYPE(object) == &g_TimestampVarType ||
             Py_TYPE(object) == &g_UnicodeVarType);
@@ -618,8 +595,7 @@ static udt_Variable *Variable_NewByType(
         size = PyInt_AsLong(value);
         if (PyErr_Occurred())
             return NULL;
-        return Variable_InternalNew(numElements, &ceString_VariableType, size,
-                0);
+        return Variable_InternalNew(numElements, &vt_Unicode, size, 0);
     }
 
     // handle directly bound variables
@@ -696,13 +672,13 @@ static udt_Variable *Variable_NewForResultSet(
 {
     SQLSMALLINT dataType, length, scale, nullable;
     udt_VariableType *varType;
-    CEODBC_CHAR name[1];
+    SQLWCHAR name[1];
     udt_Variable *var;
     SQLULEN size;
     SQLRETURN rc;
 
     // retrieve information about the column
-    rc = SQLDescribeCol(cursor->handle, position, name, ARRAYSIZE(name),
+    rc = SQLDescribeColW(cursor->handle, position, name, ARRAYSIZE(name),
             &length, &dataType, &size, &scale, &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
@@ -716,22 +692,14 @@ static udt_Variable *Variable_NewForResultSet(
     // some ODBC drivers do not return a long string but instead return string
     // with a size of zero; provide a workaround
     if (size == 0) {
-        if (varType == &ceString_VariableType)
-            varType = &ceLongString_VariableType;
-#if PY_MAJOR_VERSION < 3
-        else if (varType == &vt_Unicode)
+        if (varType == &vt_Unicode)
             varType = &vt_LongUnicode;
-#endif
         else if (varType == &vt_Binary)
             varType = &vt_LongBinary;
     }
 
     // for long columns, set the size appropriately
-    if (varType == &vt_LongUnicode ||
-#if PY_MAJOR_VERSION < 3
-            varType == &vt_LongString ||
-#endif
-            varType == &vt_LongBinary) {
+    if (varType == &vt_LongUnicode || varType == &vt_LongBinary) {
         if (cursor->setOutputSize > 0 &&
                 (cursor->setOutputSizeColumn == 0 ||
                  position == cursor->setOutputSizeColumn))
@@ -991,7 +959,7 @@ static PyObject *Variable_Repr(
         Py_DECREF(format);
         return NULL;
     }
-    result = ceString_Format(format, formatArgs);
+    result = PyUnicode_Format(format, formatArgs);
     Py_DECREF(format);
     Py_DECREF(formatArgs);
     return result;
