@@ -1,15 +1,14 @@
 Open Source Python/ODBC Utility - ceODBC
 ----------------------------------------
 ceODBC is a Python extension module that enables access to databases using the
-ODBC API and conforms to the Python database API 2.0 specifications with a few
-exceptions.
+ODBC API and conforms to the Python database API 2.0 specifications with a
+number of additions. Python 3.5 and higher is required as of version 3.0.
 
-See http://www.python.org/topics/database/DatabaseAPI-2.0.html for more
-information on the Python database API specification.
+See https://www.python.org/dev/peps/pep-0249 for more information on the Python
+database API specification.
 
-For feedback or patches, contact Anthony Tuininga at
-anthony.tuininga@gmail.com. For help or to ask questions, please use the
-mailing list at http://lists.sourceforge.net/lists/listinfo/ceODBC-users.
+For feedback or patches, please use GitHub issues:
+https://github.com/anthony-tuininga/ceODBC/issues
 
 
 Binary Install
@@ -60,7 +59,7 @@ cursor.execute("""
           and Col5 between ? and ?""",
         ["VALUE", 5, 10])
 for column_1, column_2, column_3 in cursor:
-    print "Values:", column_1, column_2, column_3
+    print("Values:", column_1, column_2, column_3)
 
 
 Notes
@@ -69,9 +68,8 @@ If your driver is not capable of transactions (often indicated by the exception
 "driver not capable" when connecting) then use the following statement to
 connect instead:
 
-connection = ceODBC.connect("<DSN>", autocommit = True)
+connection = ceODBC.connect("<DSN>", autocommit=True)
 
 For further information see
 
 http://ceodbc.readthedocs.org
-

@@ -16,6 +16,10 @@ from distutils.core import setup
 from distutils.errors import DistutilsSetupError
 from distutils.extension import Extension
 
+# check minimum supported Python version
+if sys.version_info[:2] < (3, 5):
+    raise Exception("Python 3.5 or higher is required.")
+
 # define build version
 BUILD_VERSION = "2.1"
 

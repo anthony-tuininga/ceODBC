@@ -11,8 +11,8 @@ Module Interface
    Construct an object holding a binary (long) string value.
 
 
-.. function:: Connection(dsn, [autocommit = False])
-              connect(dsn, [autocommit = False])
+.. function:: Connection(dsn, autocommit=False)
+              connect(dsn, autocommit=False)
 
    Constructor for creating a connection to the database. Return a Connection
    object (\ref{connobj}). The only required argument is the DSN in the format
@@ -296,4 +296,3 @@ Variable Types
    Variable used to bind and/or fetch timestamps. Values are returned as Python
    datetime.datetime objects and accept Python datetime.date or
    datetime.datetime objects.
-
