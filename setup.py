@@ -122,6 +122,7 @@ class test(distutils.core.Command):
             fileName = os.path.join("test", self.subdir, "test3k.py")
             exec(open(fileName).read())
 
+
 class test_pgsql(test):
     description = "run the test suite for PostgreSQL"
     subdir = "pgsql"
@@ -156,6 +157,13 @@ if sys.platform == "win32":
 else:
     libs = ["odbc"]
 
+#define ceODBC sources
+sourceDir = "src"
+sources = [os.path.join(sourceDir, "ceODBC.c")]
+depends = [os.path.join(sourceDir, n) \
+        for n in sorted(os.listdir(sourceDir)) \
+        if n.endswith(".c") and n != "ceODBC.c"]
+
 # define command classes
 commandClasses = dict(
         bdist_rpm = bdist_rpm,
@@ -181,11 +189,8 @@ extension = Extension(
         name = "ceODBC",
         libraries = libs,
         define_macros = defineMacros,
-        sources = ["ceODBC.c"],
-        depends = ["ApiTypes.c", "BinaryVar.c", "BitVar.c", "Connection.c",
-                "Cursor.c", "DateTimeVar.c", "Environment.c", "Error.c",
-                "NumberVar.c", "StringUtils.c", "StringVar.c", "UnicodeVar.c",
-                "Variable.c"])
+        sources = sources,
+        depends = depends)
 
 # perform the setup
 setup(
