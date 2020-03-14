@@ -1,5 +1,5 @@
 include MANIFEST.in
-include *.c
 include *.txt
 recursive-include doc *.rst
+recursive-include src *.c
 recursive-include test *.sql *.py
