@@ -71,8 +71,7 @@ static PyTypeObject g_ApiTypeType = {
 // ApiType_Free()
 //   Deallocation routine.
 //-----------------------------------------------------------------------------
-static void ApiType_Free(
-    udt_ApiType *self)                  // error object
+static void ApiType_Free(udt_ApiType *self)
 {
     Py_CLEAR(self->name);
     Py_CLEAR(self->types);
@@ -84,9 +83,7 @@ static void ApiType_Free(
 // ApiType_New()
 //   Create a new API type and register it with the given name.
 //-----------------------------------------------------------------------------
-static udt_ApiType *ApiType_New(
-    PyObject *module,                   // module in which to register
-    const char *name)                   // name to register type as
+static udt_ApiType *ApiType_New(PyObject *module, const char *name)
 {
     udt_ApiType *self;
 
@@ -111,8 +108,7 @@ static udt_ApiType *ApiType_New(
 // ApiType_Repr()
 //   Return a string representation of the API type.
 //-----------------------------------------------------------------------------
-static PyObject *ApiType_Repr(
-    udt_ApiType *self)                  // variable to return the string for
+static PyObject *ApiType_Repr(udt_ApiType *self)
 {
     PyObject *module, *name, *result, *format, *formatArgs = NULL;
 
@@ -143,10 +139,8 @@ static PyObject *ApiType_Repr(
 //   Comparison routine. This routine allows the variable type objects
 // registered with the API type to match as equal as mandated by the DB API.
 //-----------------------------------------------------------------------------
-static PyObject *ApiType_RichCompare(
-    udt_ApiType *self,                  // API type to compare
-    PyObject *other,                    // other object to compare
-    int comparisonType)                 // comparison type being made
+static PyObject *ApiType_RichCompare(udt_ApiType *self, PyObject *other,
+        int comparisonType)
 {
     PyObject *result;
     int contains;
@@ -171,4 +165,3 @@ static PyObject *ApiType_RichCompare(
     Py_INCREF(result);
     return result;
 }
-

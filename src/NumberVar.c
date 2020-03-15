@@ -293,9 +293,7 @@ static udt_VariableType vt_Integer = {
 // BigIntegerVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *BigIntegerVar_GetValue(
-    udt_BigIntegerVar *var,             // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *BigIntegerVar_GetValue(udt_BigIntegerVar *var, unsigned pos)
 {
     return PyLong_FromLongLong(var->data[pos]);
 }
@@ -305,12 +303,10 @@ static PyObject *BigIntegerVar_GetValue(
 // BigIntegerVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int BigIntegerVar_SetValue(
-    udt_BigIntegerVar *var,             // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int BigIntegerVar_SetValue(udt_BigIntegerVar *var, unsigned pos,
+        PyObject *value)
 {
-    if (PyInt_Check(value)) {
+    if (PyLong_Check(value)) {
         var->data[pos] = PyLong_AsLongLong(value);
         if (PyErr_Occurred())
             return -1;
@@ -333,10 +329,8 @@ static int BigIntegerVar_SetValue(
 // DecimalVar_GetStringRepOfDecimal()
 //   Return the string representation of a decimal value given the tuple value.
 //-----------------------------------------------------------------------------
-static int DecimalVar_GetStringRepOfDecimal(
-    udt_DecimalVar *var,                // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *tupleValue)               // tuple value to parse
+static int DecimalVar_GetStringRepOfDecimal(udt_DecimalVar *var, unsigned pos,
+        PyObject *tupleValue)
 {
     long numDigits, scale, i, sign, size, digit;
     char *valuePtr, *value;
@@ -345,11 +339,11 @@ static int DecimalVar_GetStringRepOfDecimal(
     PyObject *temp;
 
     // acquire basic information from the value tuple
-    sign = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 0));
+    sign = PyLong_AsLong(PyTuple_GET_ITEM(tupleValue, 0));
     if (PyErr_Occurred())
         return -1;
     digits = PyTuple_GET_ITEM(tupleValue, 1);
-    scale = PyInt_AsLong(PyTuple_GET_ITEM(tupleValue, 2));
+    scale = PyLong_AsLong(PyTuple_GET_ITEM(tupleValue, 2));
     if (PyErr_Occurred())
         return -1;
     numDigits = PyTuple_GET_SIZE(digits);
@@ -367,7 +361,7 @@ static int DecimalVar_GetStringRepOfDecimal(
         *valuePtr++ = '-';
     for (i = 0; i < numDigits + scale; i++) {
         if (i < numDigits) {
-            digit = PyInt_AsLong(PyTuple_GetItem(digits, i));
+            digit = PyLong_AsLong(PyTuple_GetItem(digits, i));
             if (PyErr_Occurred())
                 return -1;
         } else digit = 0;
@@ -379,7 +373,7 @@ static int DecimalVar_GetStringRepOfDecimal(
             if (numDigits + i < 0)
                 digit = 0;
             else {
-                digit = PyInt_AsLong(PyTuple_GetItem(digits, numDigits + i));
+                digit = PyLong_AsLong(PyTuple_GetItem(digits, numDigits + i));
                 if (PyErr_Occurred())
                     return -1;
             }
@@ -409,9 +403,8 @@ static int DecimalVar_GetStringRepOfDecimal(
 // and forth between the database and Python we need to include room for the
 // NULL terminator, the + or - sign and the decimal point.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER DecimalVar_GetBufferSize(
-    udt_DecimalVar *var,                // variable to determine value for
-    SQLUINTEGER size)                   // size to allocate
+static SQLUINTEGER DecimalVar_GetBufferSize(udt_DecimalVar *var,
+        SQLUINTEGER size)
 {
     return (size + 3) * sizeof(SQLWCHAR);
 }
@@ -421,9 +414,7 @@ static SQLUINTEGER DecimalVar_GetBufferSize(
 // DecimalVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *DecimalVar_GetValue(
-    udt_DecimalVar *var,                // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *DecimalVar_GetValue(udt_DecimalVar *var, unsigned pos)
 {
     PyObject *obj, *result;
 
@@ -441,10 +432,8 @@ static PyObject *DecimalVar_GetValue(
 // DecimalVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int DecimalVar_SetValue(
-    udt_DecimalVar *var,                // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int DecimalVar_SetValue(udt_DecimalVar *var, unsigned pos,
+        PyObject *value)
 {
     PyObject *tupleValue;
 
@@ -469,9 +458,7 @@ static int DecimalVar_SetValue(
 // DoubleVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *DoubleVar_GetValue(
-    udt_DoubleVar *var,                 // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *DoubleVar_GetValue(udt_DoubleVar *var, unsigned pos)
 {
     return PyFloat_FromDouble(var->data[pos]);
 }
@@ -481,15 +468,13 @@ static PyObject *DoubleVar_GetValue(
 // DoubleVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int DoubleVar_SetValue(
-    udt_DoubleVar *var,                 // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int DoubleVar_SetValue(udt_DoubleVar *var, unsigned pos,
+        PyObject *value)
 {
     if (PyFloat_Check(value))
         var->data[pos] = PyFloat_AS_DOUBLE(value);
-    else if (PyInt_Check(value)) {
-        var->data[pos] = PyInt_AsLong(value);
+    else if (PyLong_Check(value)) {
+        var->data[pos] = PyLong_AsLong(value);
         if (PyErr_Occurred())
             return -1;
     } else {
@@ -507,11 +492,9 @@ static int DoubleVar_SetValue(
 // IntegerVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *IntegerVar_GetValue(
-    udt_IntegerVar *var,                // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *IntegerVar_GetValue(udt_IntegerVar *var, unsigned pos)
 {
-    return PyInt_FromLong(var->data[pos]);
+    return PyLong_FromLong(var->data[pos]);
 }
 
 
@@ -519,13 +502,11 @@ static PyObject *IntegerVar_GetValue(
 // IntegerVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int IntegerVar_SetValue(
-    udt_IntegerVar *var,                // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int IntegerVar_SetValue(udt_IntegerVar *var, unsigned pos,
+        PyObject *value)
 {
-    if (PyInt_Check(value)) {
-        var->data[pos] = PyInt_AsLong(value);
+    if (PyLong_Check(value)) {
+        var->data[pos] = PyLong_AsLong(value);
         if (PyErr_Occurred())
             return -1;
         return 0;
@@ -535,4 +516,3 @@ static int IntegerVar_SetValue(
             Py_TYPE(value)->tp_name);
     return -1;
 }
-

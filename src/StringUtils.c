@@ -32,8 +32,7 @@ typedef struct {
 //   Initialize the string buffer with an empty string. Returns 0 as a
 // convenience to the caller.
 //-----------------------------------------------------------------------------
-static int StringBuffer_Init(
-    udt_StringBuffer *buf)              // buffer to fill
+static int StringBuffer_Init(udt_StringBuffer *buf)
 {
     buf->ptr = NULL;
     buf->size = 0;
@@ -47,8 +46,7 @@ static int StringBuffer_Init(
 // StringBuffer_Clear()
 //   Clear the string buffer, if applicable.
 //-----------------------------------------------------------------------------
-static void StringBuffer_Clear(
-    udt_StringBuffer *buf)              // buffer to fill
+static void StringBuffer_Clear(udt_StringBuffer *buf)
 {
     Py_CLEAR(buf->encodedString);
     buf->ptr = NULL;
@@ -61,9 +59,7 @@ static void StringBuffer_Clear(
 // StringBuffer_FromUnicode()
 //   Populate the string buffer from a unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromUnicode(
-    udt_StringBuffer *buf,              // buffer to fill
-    PyObject *obj)                      // unicode object expected
+static int StringBuffer_FromUnicode(udt_StringBuffer *buf, PyObject *obj)
 {
 #ifdef Py_UNICODE_WIDE
     int one = 1;
@@ -89,10 +85,8 @@ static int StringBuffer_FromUnicode(
 // StringBuffer_FromString()
 //   Populate the string buffer from a Unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromString(
-    udt_StringBuffer *buf,              // buffer to fill
-    PyObject *obj,                      // bytes object expected
-    const char *message)                // message to raise on error
+static int StringBuffer_FromString(udt_StringBuffer *buf, PyObject *obj,
+        const char *message)
 {
     if (PyUnicode_Check(obj))
         return StringBuffer_FromUnicode(buf, obj);
@@ -105,9 +99,7 @@ static int StringBuffer_FromString(
 // StringBuffer_FromBinary()
 //   Populate the string buffer from a bytes object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromBinary(
-    udt_StringBuffer *buf,              // buffer to fill
-    PyObject *obj)                      // bytes object expected
+static int StringBuffer_FromBinary(udt_StringBuffer *buf, PyObject *obj)
 {
     if (!obj)
         return StringBuffer_Init(buf);

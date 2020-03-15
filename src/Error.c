@@ -83,8 +83,7 @@ static PyTypeObject g_ErrorType = {
 // Error_Free()
 //   Deallocate the environment, disconnecting from the database if necessary.
 //-----------------------------------------------------------------------------
-static void Error_Free(
-    udt_Error *self)                    // error object
+static void Error_Free(udt_Error *self)
 {
     Py_CLEAR(self->message);
     Py_TYPE(self)->tp_free((PyObject*) self);
@@ -95,8 +94,7 @@ static void Error_Free(
 // Error_Str()
 //   Return a string representation of the error variable.
 //-----------------------------------------------------------------------------
-static PyObject *Error_Str(
-    udt_Error *self)                    // variable to return the string for
+static PyObject *Error_Str(udt_Error *self)
 {
     if (self->message) {
         Py_INCREF(self->message);
@@ -111,10 +109,8 @@ static PyObject *Error_Str(
 //   Check for an error in the last call and if an error has occurred, raise a
 // Python exception.
 //-----------------------------------------------------------------------------
-static int Error_CheckForError(
-    udt_ObjectWithHandle *obj,          // object to check for errors on
-    SQLRETURN rcToCheck,                // return code of last call
-    const char *context)                // context
+static int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
+        const char *context)
 {
     PyObject *errorMessages, *temp, *separator;
     SQLWCHAR buffer[1024];
@@ -196,4 +192,3 @@ static int Error_CheckForError(
     Py_DECREF(error);
     return -1;
 }
-

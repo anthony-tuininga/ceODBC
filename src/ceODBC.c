@@ -29,32 +29,6 @@
 #define WriteMessageForPython(...)
 #endif
 
-// define Py_ssize_t for versions before Python 2.5
-#if PY_VERSION_HEX < 0x02050000
-typedef int Py_ssize_t;
-#define PY_SSIZE_T_MAX INT_MAX
-#define PY_SSIZE_T_MIN INT_MIN
-#endif
-
-// define PyVarObject_HEAD_INIT for versions before Python 2.6
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) \
-    PyObject_HEAD_INIT(type) size,
-#endif
-
-// define Py_TYPE for versions before Python 2.6
-#ifndef Py_TYPE
-#define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
-#endif
-
-// define PyInt_* macros for Python 3.x
-#ifndef PyInt_Check
-#define PyInt_Check             PyLong_Check
-#define PyInt_FromLong          PyLong_FromLong
-#define PyInt_AsLong            PyLong_AsLong
-#define PyInt_Type              PyLong_Type
-#endif
-
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
     apiTypeObject = ApiType_New(module, name); \
@@ -110,10 +84,8 @@ static PyObject *g_DecimalType = NULL;
 // GetModuleAndName()
 //   Return the module and name for the type.
 //-----------------------------------------------------------------------------
-static int GetModuleAndName(
-    PyTypeObject *type,                 // type to get module/name for
-    PyObject **module,                  // name of module
-    PyObject **name)                    // name of type
+static int GetModuleAndName(PyTypeObject *type, PyObject **module,
+        PyObject **name)
 {
     *module = PyObject_GetAttrString( (PyObject*) type, "__module__");
     if (!*module)
@@ -142,11 +114,8 @@ static udt_ApiType *g_StringApiType = NULL;
 // SetException()
 //   Create an exception and set it in the provided dictionary.
 //-----------------------------------------------------------------------------
-static int SetException(
-    PyObject *module,                   // module object
-    PyObject **exception,               // exception to create
-    char *name,                         // name of the exception
-    PyObject *baseException)            // exception to base exception on
+static int SetException(PyObject *module, PyObject **exception, char *name,
+        PyObject *baseException)
 {
     char buffer[100];
 

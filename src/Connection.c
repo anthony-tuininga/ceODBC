@@ -153,8 +153,7 @@ static PyTypeObject g_ConnectionType = {
 //   Determines if the connection object is connected to the database. If not,
 // a Python exception is raised.
 //-----------------------------------------------------------------------------
-static int Connection_IsConnected(
-    udt_Connection *self)               // connection to check
+static int Connection_IsConnected(udt_Connection *self)
 {
     if (!self->isConnected) {
         PyErr_SetString(g_InterfaceErrorException, "not connected");
@@ -171,10 +170,8 @@ static int Connection_IsConnected(
 // Connection_New()
 //   Create a new connection object and return it.
 //-----------------------------------------------------------------------------
-static PyObject* Connection_New(
-    PyTypeObject *type,                 // type object
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject* Connection_New(PyTypeObject *type, PyObject *args,
+        PyObject *keywordArgs)
 {
     udt_Connection *self;
 
@@ -202,18 +199,15 @@ static PyObject* Connection_New(
 //   Call the method "find" on the object and return the position in the
 // string where it is found.
 //-----------------------------------------------------------------------------
-static int FindInString(
-    PyObject *strObj,                   // string object to search
-    char *stringToFind,                 // string to find
-    int startPos,                       // starting position to search
-    int *foundPos)                      // found position (OUT)
+static int FindInString(PyObject *strObj, char *stringToFind, int startPos,
+        int *foundPos)
 {
     PyObject *temp;
 
     temp = PyObject_CallMethod(strObj, "find", "si", stringToFind, startPos);
     if (!temp)
         return -1;
-    *foundPos = PyInt_AsLong(temp);
+    *foundPos = PyLong_AsLong(temp);
     Py_DECREF(temp);
     if (PyErr_Occurred())
         return -1;
@@ -225,9 +219,8 @@ static int FindInString(
 // Connection_RemovePasswordFromDsn()
 //   Attempt to remove the password from the DSN for security reasons.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_RemovePasswordFromDsn(
-    PyObject *dsnObj,                   // input DSN object
-    PyObject *upperDsnObj)              // input DSN object (uppercase)
+static PyObject *Connection_RemovePasswordFromDsn(PyObject *dsnObj,
+        PyObject *upperDsnObj)
 {
     PyObject *firstPart, *lastPart, *result;
     int startPos, endPos, bracePos, length;
@@ -289,10 +282,8 @@ static PyObject *Connection_RemovePasswordFromDsn(
 // Connection_Init()
 //   Initialize the connection members.
 //-----------------------------------------------------------------------------
-static int Connection_Init(
-    udt_Connection *self,               // connection
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static int Connection_Init(udt_Connection *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     PyObject *autocommitObj, *dsnObj, *upperDsnObj;
     SQLWCHAR actualDsnBuffer[1024];
@@ -383,8 +374,7 @@ static int Connection_Init(
 // Connection_Free()
 //   Deallocate the connection, disconnecting from the database if necessary.
 //-----------------------------------------------------------------------------
-static void Connection_Free(
-    udt_Connection *self)               // connection object
+static void Connection_Free(udt_Connection *self)
 {
     if (self->isConnected) {
         Py_BEGIN_ALLOW_THREADS
@@ -408,8 +398,7 @@ static void Connection_Free(
 // Connection_Repr()
 //   Return a string representation of the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Repr(
-    udt_Connection *connection)         // connection to return the string for
+static PyObject *Connection_Repr(udt_Connection *connection)
 {
     PyObject *module, *name, *result, *format, *formatArgs;
 
@@ -441,9 +430,7 @@ static PyObject *Connection_Repr(
 // Connection_Close()
 //   Close the connection, disconnecting from the database.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Close(
-    udt_Connection *self,               // connection to close
-    PyObject *args)                     // arguments
+static PyObject *Connection_Close(udt_Connection *self, PyObject *args)
 {
     SQLRETURN rc;
 
@@ -477,9 +464,7 @@ static PyObject *Connection_Close(
 // Connection_Commit()
 //   Commit the transaction on the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Commit(
-    udt_Connection *self,               // connection to commit
-    PyObject *args)                     // arguments
+static PyObject *Connection_Commit(udt_Connection *self, PyObject *args)
 {
     SQLRETURN rc;
 
@@ -504,9 +489,7 @@ static PyObject *Connection_Commit(
 // Connection_Rollback()
 //   Rollback the transaction on the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Rollback(
-    udt_Connection *self,               // connection to rollback
-    PyObject *args)                     // arguments
+static PyObject *Connection_Rollback(udt_Connection *self, PyObject *args)
 {
     SQLRETURN rc;
 
@@ -531,9 +514,7 @@ static PyObject *Connection_Rollback(
 // Connection_NewCursor()
 //   Create a new cursor (statement) referencing the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_NewCursor(
-    udt_Connection *self,               // connection to create cursor on
-    PyObject *args)                     // arguments
+static PyObject *Connection_NewCursor(udt_Connection *self, PyObject *args)
 {
     PyObject *createArgs, *result;
 
@@ -553,9 +534,8 @@ static PyObject *Connection_NewCursor(
 //   Called when the connection is used as a context manager and simply returns
 // itself as a convenience to the caller.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ContextManagerEnter(
-    udt_Connection *self,               // connection
-    PyObject* args)                     // arguments
+static PyObject *Connection_ContextManagerEnter(udt_Connection *self,
+        PyObject* args)
 {
     Py_INCREF(self);
     return (PyObject*) self;
@@ -567,9 +547,8 @@ static PyObject *Connection_ContextManagerEnter(
 //   Called when the connection is used as a context manager and if any
 // exception a rollback takes place; otherwise, a commit takes place.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ContextManagerExit(
-    udt_Connection *self,               // connection
-    PyObject* args)                     // arguments
+static PyObject *Connection_ContextManagerExit(udt_Connection *self,
+        PyObject* args)
 {
     PyObject *excType, *excValue, *excTraceback, *result;
     char *methodName;
@@ -593,10 +572,8 @@ static PyObject *Connection_ContextManagerExit(
 // Connection_Columns()
 //   Return columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Columns(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_Columns(udt_Connection *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "column", NULL };
@@ -634,10 +611,8 @@ static PyObject *Connection_Columns(
 // Connection_ColumnPrivileges()
 //   Return column privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ColumnPrivileges(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_ColumnPrivileges(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "column", NULL };
@@ -675,10 +650,8 @@ static PyObject *Connection_ColumnPrivileges(
 // Connection_ForeignKeys()
 //   Return foreign keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ForeignKeys(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_ForeignKeys(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "pkcatalog", "pkschema", "pktable",
             "fkcatalog", "fkschema", "fktable", NULL };
@@ -721,10 +694,8 @@ static PyObject *Connection_ForeignKeys(
 // Connection_PrimaryKeys()
 //   Return primary keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_PrimaryKeys(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_PrimaryKeys(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "catalog", "schema", "table", NULL };
     int catalogLength, schemaLength, tableLength;
@@ -761,10 +732,8 @@ static PyObject *Connection_PrimaryKeys(
 // Connection_Procedures()
 //   Return procedures from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Procedures(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_Procedures(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "catalog", "schema", "proc", NULL };
     int catalogLength, schemaLength, procLength;
@@ -801,10 +770,8 @@ static PyObject *Connection_Procedures(
 // Connection_ProcedureColumns()
 //   Return procedure columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ProcedureColumns(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_ProcedureColumns(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "proc", "column", NULL };
@@ -842,10 +809,8 @@ static PyObject *Connection_ProcedureColumns(
 // Connection_Tables()
 //   Return tables from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Tables(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_Tables(udt_Connection *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "type", NULL };
@@ -883,10 +848,8 @@ static PyObject *Connection_Tables(
 // Connection_TablePrivileges()
 //   Return table privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_TablePrivileges(
-    udt_Connection *self,               // connection to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Connection_TablePrivileges(udt_Connection *self,
+        PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", NULL };
@@ -924,9 +887,7 @@ static PyObject *Connection_TablePrivileges(
 // Connection_GetAutoCommit()
 //   Return the value of the autocommit flag.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_GetAutoCommit(
-    udt_Connection *self,               // connection to get value from
-    void* arg)                          // argument (unused)
+static PyObject *Connection_GetAutoCommit(udt_Connection *self, void* arg)
 {
     SQLUINTEGER autocommit;
     PyObject *result;
@@ -971,4 +932,3 @@ static int Connection_SetAutoCommit(
         return -1;
     return 0;
 }
-

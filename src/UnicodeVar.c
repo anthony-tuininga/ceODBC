@@ -149,9 +149,8 @@ static udt_VariableType vt_LongUnicode = {
 //   Returns the size to use for string buffers. ODBC requires the presence of
 // a NULL terminator so one extra space is allocated for that purpose.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER UnicodeVar_GetBufferSize(
-    udt_UnicodeVar *var,                // variable to determine value for
-    SQLUINTEGER size)                   // size to allocate
+static SQLUINTEGER UnicodeVar_GetBufferSize(udt_UnicodeVar *var,
+        SQLUINTEGER size)
 {
     return (size + 1) * 2;
 }
@@ -161,9 +160,7 @@ static SQLUINTEGER UnicodeVar_GetBufferSize(
 // UnicodeVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *UnicodeVar_GetValue(
-    udt_UnicodeVar *var,                // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *UnicodeVar_GetValue(udt_UnicodeVar *var, unsigned pos)
 {
 #ifdef Py_UNICODE_WIDE
     return PyUnicode_DecodeUTF16((char*) var->data + pos * var->bufferSize,
@@ -180,10 +177,8 @@ static PyObject *UnicodeVar_GetValue(
 // UnicodeVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int UnicodeVar_SetValue(
-    udt_UnicodeVar *var,                // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int UnicodeVar_SetValue(udt_UnicodeVar *var, unsigned pos,
+        PyObject *value)
 {
     udt_StringBuffer buffer;
 
@@ -212,4 +207,3 @@ static int UnicodeVar_SetValue(
 
     return 0;
 }
-

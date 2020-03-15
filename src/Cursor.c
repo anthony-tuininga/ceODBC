@@ -170,8 +170,7 @@ static PyTypeObject g_CursorType = {
 //   Determines if the cursor object is open and if so, if the connection is
 // also open.
 //-----------------------------------------------------------------------------
-static int Cursor_IsOpen(
-    udt_Cursor *self)                   // cursor to check
+static int Cursor_IsOpen(udt_Cursor *self)
 {
     if (!self->handle) {
         PyErr_SetString(g_InterfaceErrorException, "not open");
@@ -185,10 +184,8 @@ static int Cursor_IsOpen(
 // Cursor_New()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_New(
-    PyTypeObject *type,                 // type object
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Cursor_New(PyTypeObject *type, PyObject *args,
+        PyObject *keywordArgs)
 {
     return type->tp_alloc(type, 0);
 }
@@ -198,9 +195,7 @@ static PyObject *Cursor_New(
 // Cursor_InternalInit()
 //   Internal method used for creating a new cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalInit(
-    udt_Cursor *self,                   // cursor object
-    udt_Connection *connection)         // connection object
+static int Cursor_InternalInit(udt_Cursor *self, udt_Connection *connection)
 {
     SQLRETURN rc;
 
@@ -238,8 +233,7 @@ static int Cursor_InternalInit(
 // Cursor_InternalNew()
 //   Internal method of creating a new cursor.
 //-----------------------------------------------------------------------------
-static udt_Cursor *Cursor_InternalNew(
-    udt_Connection *connection)         // connection object
+static udt_Cursor *Cursor_InternalNew(udt_Connection *connection)
 {
     udt_Cursor *self;
 
@@ -259,10 +253,7 @@ static udt_Cursor *Cursor_InternalNew(
 // Cursor_Init()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static int Cursor_Init(
-    udt_Cursor *self,                   // cursor object
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static int Cursor_Init(udt_Cursor *self, PyObject *args, PyObject *keywordArgs)
 {
     udt_Connection *connection;
 
@@ -276,8 +267,7 @@ static int Cursor_Init(
 // Cursor_Repr()
 //   Return a string representation of the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Repr(
-    udt_Cursor *cursor)                 // cursor to return the string for
+static PyObject *Cursor_Repr(udt_Cursor *cursor)
 {
     PyObject *connectionRepr, *module, *name, *result, *format, *formatArgs;
 
@@ -313,8 +303,7 @@ static PyObject *Cursor_Repr(
 // Cursor_Free()
 //   Deallocate the cursor.
 //-----------------------------------------------------------------------------
-static void Cursor_Free(
-    udt_Cursor *self)                   // cursor object
+static void Cursor_Free(udt_Cursor *self)
 {
     if (self->handle && self->connection->isConnected)
         SQLFreeHandle(self->handleType, self->handle);
@@ -334,9 +323,7 @@ static void Cursor_Free(
 //   Massage the arguments. If one argument is passed and that argument is a
 // list or tuple, use that value instead of the arguments given.
 //-----------------------------------------------------------------------------
-static int Cursor_MassageArgs(
-    PyObject **args,                    // incoming args
-    int *argsOffset)                    // offset into the arguments (IN/OUT)
+static int Cursor_MassageArgs(PyObject **args, int *argsOffset)
 {
     PyObject *temp;
 
@@ -360,8 +347,7 @@ static int Cursor_MassageArgs(
 // Cursor_PrepareResultSet()
 //   Prepare the result set for use.
 //-----------------------------------------------------------------------------
-static int Cursor_PrepareResultSet(
-    udt_Cursor *self)                   // cursor to perform define on
+static int Cursor_PrepareResultSet(udt_Cursor *self)
 {
     SQLSMALLINT numColumns;
     SQLUSMALLINT position;
@@ -419,14 +405,9 @@ static int Cursor_PrepareResultSet(
 // Cursor_BindParameterHelper()
 //   Helper for setting a bind variable.
 //-----------------------------------------------------------------------------
-static int Cursor_BindParameterHelper(
-    udt_Cursor *self,			// cursor to perform bind on
-    unsigned numElements,		// number of elements to create
-    unsigned arrayPos,			// array position to set
-    PyObject *value,			// value to bind
-    udt_Variable *origVar,		// original variable bound
-    udt_Variable **newVar,		// new variable to be bound
-    int deferTypeAssignment)    // defer type assignment if null value?
+static int Cursor_BindParameterHelper(udt_Cursor *self, unsigned numElements,
+        unsigned arrayPos, PyObject *value, udt_Variable *origVar,
+        udt_Variable **newVar, int deferTypeAssignment)
 {
     int isValueVar;
 
@@ -503,15 +484,13 @@ static int Cursor_BindParameterHelper(
 // Cursor_LogBindParameter()
 //   Log the bind parameter.
 //-----------------------------------------------------------------------------
-static void Cursor_LogBindParameter(
-    unsigned position,                  // position being bound
-    PyObject *value)                    // value being bound
+static void Cursor_LogBindParameter(unsigned position, PyObject *value)
 {
     PyObject *format, *formatArgs, *positionObj, *message;
 
     if (!IsLoggingAtLevelForPython(LOG_LEVEL_DEBUG))
         return;
-    positionObj = PyInt_FromLong(position);
+    positionObj = PyLong_FromLong(position);
     if (!positionObj) {
         LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build position obj",
                 position);
@@ -549,13 +528,9 @@ static void Cursor_LogBindParameter(
 // Cursor_BindParameters()
 //   Bind all parameters, creating new ones as needed.
 //-----------------------------------------------------------------------------
-static int Cursor_BindParameters(
-    udt_Cursor *self,			// cursor to perform binds on
-    PyObject *parameters,		// parameters to bind
-    int parametersOffset,       // offset into parameters
-    unsigned numElements,		// number of elements to create
-    unsigned arrayPos,			// array position to set
-    int deferTypeAssignment)    // defer type assignment if null value?
+static int Cursor_BindParameters(udt_Cursor *self, PyObject *parameters,
+        int parametersOffset, unsigned numElements, unsigned arrayPos,
+        int deferTypeAssignment)
 {
     int i, numParams, origNumParams;
     udt_Variable *newVar, *origVar;
@@ -625,8 +600,7 @@ static int Cursor_BindParameters(
 //   Internal method used by the catalog methods in order to set up the result
 // set that is supposed to be returned.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_InternalCatalogHelper(
-    udt_Cursor *self)                   // cursor to fetch from
+static PyObject *Cursor_InternalCatalogHelper(udt_Cursor *self)
 {
     if (Cursor_PrepareResultSet(self) < 0) {
         Py_DECREF(self);
@@ -642,9 +616,7 @@ static PyObject *Cursor_InternalCatalogHelper(
 //   Perform the work of executing a cursor and set the rowcount appropriately
 // regardless of whether an error takes place.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalExecuteHelper(
-    udt_Cursor *self,                   // cursor to perform the execute on
-    SQLRETURN rc)                       // return code from ODBC routine
+static int Cursor_InternalExecuteHelper(udt_Cursor *self, SQLRETURN rc)
 {
     // SQL_NO_DATA is returned from statements which do not affect any rows
     if (rc == SQL_NO_DATA) {
@@ -679,8 +651,7 @@ static int Cursor_InternalExecuteHelper(
 //   Perform the work of executing a cursor and set the rowcount appropriately
 // regardless of whether an error takes place.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalExecute(
-    udt_Cursor *self)                   // cursor to perform the execute on
+static int Cursor_InternalExecute(udt_Cursor *self)
 {
     SQLRETURN rc;
 
@@ -695,9 +666,8 @@ static int Cursor_InternalExecute(
 // Cursor_ItemDescription()
 //   Returns a tuple for the column as defined by the DB API.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ItemDescription(
-    udt_Cursor *self,                   // cursor object
-    SQLUSMALLINT position)              // position in description
+static PyObject *Cursor_ItemDescription(udt_Cursor *self,
+        SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
     SQLULEN precision, size, displaySize;
@@ -754,10 +724,10 @@ static PyObject *Cursor_ItemDescription(
     PyTuple_SET_ITEM(tuple, 0, 
             ceString_FromStringAndSize(name, nameLength));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
-    PyTuple_SET_ITEM(tuple, 2, PyInt_FromLong(displaySize));
-    PyTuple_SET_ITEM(tuple, 3, PyInt_FromLong(size));
-    PyTuple_SET_ITEM(tuple, 4, PyInt_FromLong(precision));
-    PyTuple_SET_ITEM(tuple, 5, PyInt_FromLong(scale));
+    PyTuple_SET_ITEM(tuple, 2, PyLong_FromLong(displaySize));
+    PyTuple_SET_ITEM(tuple, 3, PyLong_FromLong(size));
+    PyTuple_SET_ITEM(tuple, 4, PyLong_FromLong(precision));
+    PyTuple_SET_ITEM(tuple, 5, PyLong_FromLong(scale));
     PyTuple_SET_ITEM(tuple, 6, PyBool_FromLong(nullable != SQL_NO_NULLS));
 
     // make sure the tuple is ok
@@ -777,9 +747,7 @@ static PyObject *Cursor_ItemDescription(
 //   Return a list of 7-tuples consisting of the description of the define
 // variables.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetDescription(
-    udt_Cursor *self,                   // cursor object
-    void *arg)                          // optional argument (ignored)
+static PyObject *Cursor_GetDescription(udt_Cursor *self, void *arg)
 {
     PyObject *results, *tuple;
     int numItems, index;
@@ -818,9 +786,7 @@ static PyObject *Cursor_GetDescription(
 // Cursor_GetName()
 //   Return the name associated with the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetName(
-    udt_Cursor *self,                   // cursor object
-    void *arg)                          // optional argument (ignored)
+static PyObject *Cursor_GetName(udt_Cursor *self, void *arg)
 {
     SQLSMALLINT nameLength;
     SQLWCHAR name[255];
@@ -839,10 +805,7 @@ static PyObject *Cursor_GetName(
 // Cursor_SetName()
 //   Set the name associated with the cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_SetName(
-    udt_Cursor *self,                   // cursor object
-    PyObject *value,                    // value to set
-    void *arg)                          // optional argument (ignored)
+static int Cursor_SetName(udt_Cursor *self, PyObject *value, void *arg)
 {
     udt_StringBuffer buffer;
     SQLRETURN rc;
@@ -864,9 +827,7 @@ static int Cursor_SetName(
 // Cursor_Close()
 //   Close the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Close(
-    udt_Cursor *self,                   // cursor to close
-    PyObject *args)                     // arguments
+static PyObject *Cursor_Close(udt_Cursor *self, PyObject *args)
 {
     SQLRETURN rc;
 
@@ -889,9 +850,7 @@ static PyObject *Cursor_Close(
 // Cursor_NextSet()
 //   Return the next result set for the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_NextSet(
-    udt_Cursor *self,                   // cursor to close
-    PyObject *args)                     // arguments
+static PyObject *Cursor_NextSet(udt_Cursor *self, PyObject *args)
 {
     SQLRETURN rc;
 
@@ -925,8 +884,7 @@ static PyObject *Cursor_NextSet(
 // row factory function called with the argument tuple that would otherwise be
 // returned.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CreateRow(
-    udt_Cursor *self)                   // cursor object
+static PyObject *Cursor_CreateRow(udt_Cursor *self)
 {
     PyObject *tuple, *item, *result;
     int numItems, pos;
@@ -968,9 +926,7 @@ static PyObject *Cursor_CreateRow(
 // Cursor_InternalPrepare()
 //   Internal method for preparing a statement for execution.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalPrepare(
-    udt_Cursor *self,                   // cursor to perform prepare on
-    PyObject *statement)                // statement to prepare
+static int Cursor_InternalPrepare(udt_Cursor *self, PyObject *statement)
 {
     PyObject *format, *formatArgs, *message;
     udt_StringBuffer buffer;
@@ -1043,9 +999,7 @@ static int Cursor_InternalPrepare(
 // Cursor_Prepare()
 //   Prepare the statement for execution.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Prepare(
-    udt_Cursor *self,                   // cursor to perform prepare on
-    PyObject *args)                     // arguments
+static PyObject *Cursor_Prepare(udt_Cursor *self, PyObject *args)
 {
     PyObject *statement;
 
@@ -1065,9 +1019,7 @@ static PyObject *Cursor_Prepare(
 // Cursor_ExecDirect()
 //   Execute the statement.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ExecDirect(
-    udt_Cursor *self,                   // cursor to execute
-    PyObject *args)                     // arguments
+static PyObject *Cursor_ExecDirect(udt_Cursor *self, PyObject *args)
 {
     PyObject *statement, *format, *formatArgs, *message;
     udt_StringBuffer buffer;
@@ -1135,9 +1087,7 @@ static PyObject *Cursor_ExecDirect(
 // Cursor_Execute()
 //   Execute the statement.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Execute(
-    udt_Cursor *self,                   // cursor to execute
-    PyObject *args)                     // arguments
+static PyObject *Cursor_Execute(udt_Cursor *self, PyObject *args)
 {
     int numArgs, argsOffset;
     PyObject *statement;
@@ -1186,9 +1136,7 @@ static PyObject *Cursor_Execute(
 //   Execute the statement many times. The number of times is equivalent to the
 // number of elements in the array of dictionaries.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ExecuteMany(
-    udt_Cursor *self,                   // cursor to execute
-    PyObject *args)                     // arguments
+static PyObject *Cursor_ExecuteMany(udt_Cursor *self, PyObject *args)
 {
     PyObject *arguments, *listOfArguments, *statement;
     int i, numRows;
@@ -1240,11 +1188,8 @@ static PyObject *Cursor_ExecuteMany(
 // Cursor_CallBuildStatement()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int Cursor_CallBuildStatement(
-    PyObject *name,                     // name of procedure/function to call
-    udt_Variable *returnValue,          // return value variable (optional)
-    PyObject *args,                     // arguments to procedure/function
-    PyObject **statementObj)            // statement object (OUT)
+static int Cursor_CallBuildStatement(PyObject *name, udt_Variable *returnValue,
+        PyObject *args, PyObject **statementObj)
 {
     PyObject *format, *formatArgs;
     int numArgs, statementSize, i;
@@ -1301,12 +1246,8 @@ static int Cursor_CallBuildStatement(
 // Cursor_Call()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int Cursor_Call(
-    udt_Cursor *self,                   // cursor to call procedure/function on
-    udt_Variable *returnValueVar,       // return value (optional)
-    PyObject *procedureName,            // name of procedure/function
-    PyObject *args,                     // method args
-    int argsOffset)                     // offset into method args
+static int Cursor_Call(udt_Cursor *self, udt_Variable *returnValueVar,
+        PyObject *procedureName, PyObject *args, int argsOffset)
 {
     PyObject *statement, *temp;
 
@@ -1355,9 +1296,7 @@ static int Cursor_Call(
 // Cursor_CallFunc()
 //   Call function, returning the returned value.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CallFunc(
-    udt_Cursor *self,                   // cursor to call procedure on
-    PyObject *args)                     // arguments
+static PyObject *Cursor_CallFunc(udt_Cursor *self, PyObject *args)
 {
     PyObject *functionName, *returnType, *results;
     udt_Variable *returnValueVar;
@@ -1399,9 +1338,7 @@ static PyObject *Cursor_CallFunc(
 // Cursor_CallProc()
 //   Call procedure, return (possibly) modified set of values.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CallProc(
-    udt_Cursor *self,                   // cursor to call procedure on
-    PyObject *args)                     // arguments
+static PyObject *Cursor_CallProc(udt_Cursor *self, PyObject *args)
 {
     PyObject *procedureName, *results, *var, *temp;
     int numArgs, i;
@@ -1445,8 +1382,7 @@ static PyObject *Cursor_CallProc(
 // Cursor_VerifyFetch()
 //   Verify that fetching may happen from this cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_VerifyFetch(
-    udt_Cursor *self)                   // cursor to fetch from
+static int Cursor_VerifyFetch(udt_Cursor *self)
 {
     // make sure the cursor is open
     if (Cursor_IsOpen(self) < 0)
@@ -1466,8 +1402,7 @@ static int Cursor_VerifyFetch(
 // Cursor_InternalFetch()
 //   Performs the actual fetch from the database.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalFetch(
-    udt_Cursor *self)                   // cursor to fetch from
+static int Cursor_InternalFetch(udt_Cursor *self)
 {
     SQLRETURN rc;
 
@@ -1492,8 +1427,7 @@ static int Cursor_InternalFetch(
 //   Returns an integer indicating if more rows can be retrieved from the
 // cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_MoreRows(
-    udt_Cursor *self)                   // cursor to fetch from
+static int Cursor_MoreRows(udt_Cursor *self)
 {
     if (self->rowNum >= self->actualRows) {
         if (self->actualRows < 0 || self->actualRows == self->fetchArraySize) {
@@ -1512,9 +1446,7 @@ static int Cursor_MoreRows(
 //   Return a list consisting of the remaining rows up to the given row limit
 // (if specified).
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_MultiFetch(
-    udt_Cursor *self,                   // cursor to fetch from
-    int rowLimit)                       // row limit
+static PyObject *Cursor_MultiFetch(udt_Cursor *self, int rowLimit)
 {
     PyObject *results, *row;
     int rowNum, rc;
@@ -1554,9 +1486,7 @@ static PyObject *Cursor_MultiFetch(
 // Cursor_FetchOne()
 //   Fetch a single row from the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchOne(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args)                     // arguments
+static PyObject *Cursor_FetchOne(udt_Cursor *self, PyObject *args)
 {
     int rc;
 
@@ -1580,10 +1510,8 @@ static PyObject *Cursor_FetchOne(
 // Cursor_FetchMany()
 //   Fetch multiple rows from the cursor based on the arraysize.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchMany(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Cursor_FetchMany(udt_Cursor *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     static char *keywordList[] = { "numRows", NULL };
     int rowLimit;
@@ -1606,9 +1534,7 @@ static PyObject *Cursor_FetchMany(
 // Cursor_FetchAll()
 //   Fetch all remaining rows from the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchAll(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args)                     // arguments
+static PyObject *Cursor_FetchAll(udt_Cursor *self, PyObject *args)
 {
     if (Cursor_VerifyFetch(self) < 0)
         return NULL;
@@ -1620,9 +1546,7 @@ static PyObject *Cursor_FetchAll(
 // Cursor_SetInputSizes()
 //   Set the sizes of the bind variables.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_SetInputSizes(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args)                     // arguments
+static PyObject *Cursor_SetInputSizes(udt_Cursor *self, PyObject *args)
 {
     PyObject *parameterVars, *value, *inputValue;
     int numArgs, i, argsOffset;
@@ -1673,9 +1597,7 @@ static PyObject *Cursor_SetInputSizes(
 // Cursor_SetOutputSize()
 //   Set the size of all of the long columns or just one of them.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_SetOutputSize(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args)                     // arguments
+static PyObject *Cursor_SetOutputSize(udt_Cursor *self, PyObject *args)
 {
     self->setOutputSizeColumn = 0;
     if (!PyArg_ParseTuple(args, "i|i", &self->setOutputSize,
@@ -1691,10 +1613,8 @@ static PyObject *Cursor_SetOutputSize(
 // Cursor_Var()
 //   Create a bind variable and return it.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Var(
-    udt_Cursor *self,                   // cursor to fetch from
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     static char *keywordList[] = { "type", "size", "scale", "arraysize",
             "inconverter", "outconverter", "input", "output", NULL };
@@ -1741,8 +1661,7 @@ static PyObject *Cursor_Var(
 // Cursor_GetIter()
 //   Return a reference to the cursor which supports the iterator protocol.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetIter(
-    udt_Cursor *self)                   // cursor
+static PyObject *Cursor_GetIter(udt_Cursor *self)
 {
     if (Cursor_VerifyFetch(self) < 0)
         return NULL;
@@ -1755,8 +1674,7 @@ static PyObject *Cursor_GetIter(
 // Cursor_GetNext()
 //   Return a reference to the cursor which supports the iterator protocol.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetNext(
-    udt_Cursor *self)                   // cursor
+static PyObject *Cursor_GetNext(udt_Cursor *self)
 {
     int rc;
 
@@ -1771,4 +1689,3 @@ static PyObject *Cursor_GetNext(
     // no more rows, return NULL without setting an exception
     return NULL;
 }
-

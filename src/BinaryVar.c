@@ -148,9 +148,8 @@ static udt_VariableType vt_LongBinary = {
 // BinaryVar_GetBufferSize()
 //   Returns the size to use for binary buffers.
 //-----------------------------------------------------------------------------
-static SQLUINTEGER BinaryVar_GetBufferSize(
-    udt_BinaryVar *var,                 // variable to determine value for
-    SQLUINTEGER size)                   // size to allocate
+static SQLUINTEGER BinaryVar_GetBufferSize(udt_BinaryVar *var,
+        SQLUINTEGER size)
 {
     return size;
 }
@@ -160,9 +159,7 @@ static SQLUINTEGER BinaryVar_GetBufferSize(
 // BinaryVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *BinaryVar_GetValue(
-    udt_BinaryVar *var,                 // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *BinaryVar_GetValue(udt_BinaryVar *var, unsigned pos)
 {
     return PyBytes_FromStringAndSize((char*) var->data + pos * var->bufferSize,
             var->lengthOrIndicator[pos]);
@@ -173,10 +170,8 @@ static PyObject *BinaryVar_GetValue(
 // BinaryVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int BinaryVar_SetValue(
-    udt_BinaryVar *var,                 // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int BinaryVar_SetValue(udt_BinaryVar *var, unsigned pos,
+        PyObject *value)
 {
     udt_StringBuffer buffer;
 
@@ -203,4 +198,3 @@ static int BinaryVar_SetValue(
 
     return 0;
 }
-

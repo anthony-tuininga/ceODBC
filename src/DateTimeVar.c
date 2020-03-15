@@ -222,9 +222,7 @@ static udt_VariableType vt_Timestamp = {
 // DateVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *DateVar_GetValue(
-    udt_DateVar *var,                   // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *DateVar_GetValue(udt_DateVar *var, unsigned pos)
 {
     DATE_STRUCT *sqlValue;
 
@@ -237,10 +235,7 @@ static PyObject *DateVar_GetValue(
 // DateVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int DateVar_SetValue(
-    udt_DateVar *var,                   // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int DateVar_SetValue(udt_DateVar *var, unsigned pos, PyObject *value)
 {
     DATE_STRUCT *sqlValue;
 
@@ -262,10 +257,7 @@ static int DateVar_SetValue(
 // TimeVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int TimeVar_SetValue(
-    udt_TimeVar *var,              // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int TimeVar_SetValue(udt_TimeVar *var, unsigned pos, PyObject *value)
 {
     TIME_STRUCT *sqlValue;
 
@@ -291,9 +283,7 @@ static int TimeVar_SetValue(
 // TimeVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *TimeVar_GetValue(
-    udt_TimeVar *var,              // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *TimeVar_GetValue(udt_TimeVar *var, unsigned pos)
 {
     TIME_STRUCT *sqlValue;
 
@@ -307,10 +297,8 @@ static PyObject *TimeVar_GetValue(
 // TimestampVar_SetValue()
 //   Set the value of the variable.
 //-----------------------------------------------------------------------------
-static int TimestampVar_SetValue(
-    udt_TimestampVar *var,              // variable to set value for
-    unsigned pos,                       // array position to set
-    PyObject *value)                    // value to set
+static int TimestampVar_SetValue(udt_TimestampVar *var, unsigned pos,
+        PyObject *value)
 {
     TIMESTAMP_STRUCT *sqlValue;
 
@@ -343,9 +331,7 @@ static int TimestampVar_SetValue(
 // TimestampVar_GetValue()
 //   Returns the value stored at the given array position.
 //-----------------------------------------------------------------------------
-static PyObject *TimestampVar_GetValue(
-    udt_TimestampVar *var,              // variable to determine value for
-    unsigned pos)                       // array position
+static PyObject *TimestampVar_GetValue(udt_TimestampVar *var, unsigned pos)
 {
     TIMESTAMP_STRUCT *sqlValue;
 
@@ -354,4 +340,3 @@ static PyObject *TimestampVar_GetValue(
             sqlValue->day, sqlValue->hour, sqlValue->minute, sqlValue->second,
             sqlValue->fraction / 1000);
 }
-

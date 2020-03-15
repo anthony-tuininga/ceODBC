@@ -95,15 +95,9 @@ static PyMethodDef g_VariableMethods[] = {
 // Variable_InternalInit()
 //   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
-static int Variable_InternalInit(
-    udt_Variable *self,                 // variable to initialize
-    unsigned numElements,               // number of elements to allocate
-    udt_VariableType *type,             // variable type
-    SQLUINTEGER size,                   // size of variable
-    SQLSMALLINT scale,                  // scale of variable
-    PyObject *value,                    // value to set (optional)
-    int input,                          // input variable?
-    int output)                         // output variable?
+static int Variable_InternalInit(udt_Variable *self, unsigned numElements,
+        udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale,
+        PyObject *value, int input, int output)
 {
     unsigned PY_LONG_LONG dataLength;
     SQLUINTEGER i;
@@ -156,10 +150,8 @@ static int Variable_InternalInit(
 // Variable_DefaultInit()
 //   Default constructor.
 //-----------------------------------------------------------------------------
-static int Variable_DefaultInit(
-    udt_Variable *self,                 // variable being constructed
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static int Variable_DefaultInit(udt_Variable *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     udt_VariableType *varType;
     PyObject *value;
@@ -187,10 +179,8 @@ static int Variable_DefaultInit(
 // Variable_InitWithScale()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-static int Variable_InitWithScale(
-    udt_Variable *self,                 // variable being constructed
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static int Variable_InitWithScale(udt_Variable *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     udt_VariableType *varType;
     int numElements, scale;
@@ -219,10 +209,8 @@ static int Variable_InitWithScale(
 // Variable_InitWithSize()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-static int Variable_InitWithSize(
-    udt_Variable *self,                 // variable being constructed
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static int Variable_InitWithSize(udt_Variable *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     udt_VariableType *varType;
     int numElements, size;
@@ -258,11 +246,8 @@ static int Variable_InitWithSize(
 // Variable_InternalNew()
 //   Internal method of creating a new variable.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_InternalNew(
-    unsigned numElements,               // number of elements to allocate
-    udt_VariableType *type,             // variable type
-    SQLUINTEGER size,                   // size of variable
-    SQLSMALLINT scale)                  // scale of variable
+static udt_Variable *Variable_InternalNew(unsigned numElements,
+        udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale)
 {
     udt_Variable *self;
 
@@ -284,9 +269,8 @@ static udt_Variable *Variable_InternalNew(
 //   Return a variable type given a Python object or NULL if the Python
 // object does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeByValue(
-    PyObject* value,                    // Python type
-    SQLUINTEGER* size)                  // size to use (OUT)
+static udt_VariableType *Variable_TypeByValue(PyObject* value,
+        SQLUINTEGER* size)
 {
     if (value == Py_None) {
         *size = 1;
@@ -306,7 +290,7 @@ static udt_VariableType *Variable_TypeByValue(
     }
     if (PyBool_Check(value))
         return &vt_Bit;
-    if (PyInt_Check(value))
+    if (PyLong_Check(value))
         return &vt_Integer;
     if (PyLong_Check(value))
         return &vt_BigInteger;
@@ -333,8 +317,7 @@ static udt_VariableType *Variable_TypeByValue(
 //   Return a variable type given a Python type object or NULL if the Python
 // type does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeByPythonType(
-    PyObject* type)                     // Python type
+static udt_VariableType *Variable_TypeByPythonType(PyObject* type)
 {
     if (type == (PyObject*) g_StringApiType)
         return &vt_Unicode;
@@ -362,7 +345,7 @@ static udt_VariableType *Variable_TypeByPythonType(
         return &vt_BigInteger;
     if (type == (PyObject*) &g_IntegerVarType)
         return &vt_Integer;
-    if (type == (PyObject*) &PyInt_Type)
+    if (type == (PyObject*) &PyLong_Type)
         return &vt_Integer;
     if (type == (PyObject*) &g_DoubleVarType)
         return &vt_Double;
@@ -400,9 +383,8 @@ static udt_VariableType *Variable_TypeByPythonType(
 //   Return a variable type given a SQL data type or NULL if the SQL data type
 // does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeBySqlDataType (
-    udt_Cursor *cursor,                 // associated cursor
-    SQLSMALLINT sqlDataType)            // SQL data type
+static udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
+        SQLSMALLINT sqlDataType)
 {
     char buffer[100];
 
@@ -457,10 +439,8 @@ static udt_VariableType *Variable_TypeBySqlDataType (
 // Variable_New()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_New(
-    PyTypeObject *type,                 // type object
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Variable_New(PyTypeObject *type, PyObject *args,
+        PyObject *keywordArgs)
 {
     return type->tp_alloc(type, 0);
 }
@@ -470,8 +450,7 @@ static PyObject *Variable_New(
 // Variable_Free()
 //   Free an existing variable.
 //-----------------------------------------------------------------------------
-static void Variable_Free(
-    udt_Variable *self)                 // variable to free
+static void Variable_Free(udt_Variable *self)
 {
     if (self->lengthOrIndicator)
         PyMem_Free(self->lengthOrIndicator);
@@ -487,8 +466,7 @@ static void Variable_Free(
 // Variable_Check()
 //   Returns a boolean indicating if the object is a variable.
 //-----------------------------------------------------------------------------
-static int Variable_Check(
-    PyObject *object)                   // Python object to check
+static int Variable_Check(PyObject *object)
 {
     return (Py_TYPE(object) == &g_BigIntegerVarType ||
             Py_TYPE(object) == &g_BinaryVarType ||
@@ -508,10 +486,8 @@ static int Variable_Check(
 // Variable_DefaultNewByValue()
 //   Default method for determining the type of variable to use for the data.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_DefaultNewByValue(
-    udt_Cursor *cursor,                 // cursor to associate variable with
-    PyObject *value,                    // Python value to associate
-    unsigned numElements)               // number of elements to allocate
+static udt_Variable *Variable_DefaultNewByValue(udt_Cursor *cursor,
+        PyObject *value, unsigned numElements)
 {
     udt_VariableType *varType;
     SQLUINTEGER size = 0;
@@ -532,11 +508,8 @@ static udt_Variable *Variable_DefaultNewByValue(
 // type handler does not return anything, the default variable type is
 // returned as usual.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByInputTypeHandler(
-    udt_Cursor *cursor,                 // cursor to associate variable with
-    PyObject *inputTypeHandler,         // input type handler
-    PyObject *value,                    // Python value to associate
-    unsigned numElements)               // number of elements to allocate
+static udt_Variable *Variable_NewByInputTypeHandler(udt_Cursor *cursor,
+        PyObject *inputTypeHandler, PyObject *value, unsigned numElements)
 {
     PyObject *result;
 
@@ -562,10 +535,8 @@ static udt_Variable *Variable_NewByInputTypeHandler(
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByValue(
-    udt_Cursor *cursor,                 // cursor to associate variable with
-    PyObject *value,                    // Python value to associate
-    unsigned numElements)               // number of elements to allocate
+static udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
+        unsigned numElements)
 {
     if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
         return Variable_NewByInputTypeHandler(cursor, cursor->inputTypeHandler,
@@ -582,17 +553,15 @@ static udt_Variable *Variable_NewByValue(
 // Variable_NewByType()
 //   Allocate a new variable by looking at the Python data type.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByType(
-    udt_Cursor *cursor,                 // cursor to associate variable with
-    PyObject *value,                    // Python data type to associate
-    unsigned numElements)               // number of elements to allocate
+static udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
+        unsigned numElements)
 {
     udt_VariableType *varType;
     int size;
 
     // passing an integer is assumed to be a string
-    if (PyInt_Check(value)) {
-        size = PyInt_AsLong(value);
+    if (PyLong_Check(value)) {
+        size = PyLong_AsLong(value);
         if (PyErr_Occurred())
             return NULL;
         return Variable_InternalNew(numElements, &vt_Unicode, size, 0);
@@ -617,13 +586,9 @@ static udt_Variable *Variable_NewByType(
 // Variable_NewByOutputTypeHandler()
 //   Create a new variable by calling the output type handler.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByOutputTypeHandler(
-    udt_Cursor *cursor,                 // cursor to associate variable with
-    PyObject *outputTypeHandler,        // method to call to get type
-    udt_VariableType *varType,          // variable type already chosen
-    SQLUINTEGER size,                   // size of variable
-    SQLSMALLINT scale,                  // scale of variable
-    unsigned numElements)               // number of elements
+static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
+        PyObject *outputTypeHandler, udt_VariableType *varType,
+        SQLUINTEGER size, SQLSMALLINT scale, unsigned numElements)
 {
     udt_Variable *var;
     PyObject *result;
@@ -666,9 +631,8 @@ static udt_Variable *Variable_NewByOutputTypeHandler(
 //   Create a new variable for the given position in the result set. The new
 // variable is immediately bound to the statement as well.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewForResultSet(
-    udt_Cursor *cursor,                 // cursor in use
-    SQLUSMALLINT position)              // position in define list
+static udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
+        SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
     udt_VariableType *varType;
@@ -739,10 +703,8 @@ static udt_Variable *Variable_NewForResultSet(
 // Variable_BindParameter()
 //   Allocate a variable and bind it to the given statement.
 //-----------------------------------------------------------------------------
-static int Variable_BindParameter(
-    udt_Variable *self,                 // variable to bind
-    udt_Cursor *cursor,                 // cursor to bind to
-    SQLUSMALLINT position)              // position to bind to
+static int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
+        SQLUSMALLINT position)
 {
     SQLSMALLINT inputOutputType;
     SQLRETURN rc;
@@ -768,9 +730,7 @@ static int Variable_BindParameter(
 // Variable_Resize()
 //   Resize the variable.
 //-----------------------------------------------------------------------------
-static int Variable_Resize(
-    udt_Variable *self,                 // variable to resize
-    SQLUINTEGER newSize)                // new length to use
+static int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 {
     SQLUINTEGER newBufferSize;
     char *newData;
@@ -805,9 +765,7 @@ static int Variable_Resize(
 // Variable_GetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_GetValue(
-    udt_Variable *self,                 // variable to get the value for
-    unsigned arrayPos)                  // array position
+static PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 {
     PyObject *value, *result;
 
@@ -847,10 +805,8 @@ static PyObject *Variable_GetValue(
 // Variable_SetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static int Variable_SetValue(
-    udt_Variable *self,                 // variable to set value for
-    unsigned arrayPos,                  // array position
-    PyObject *value)                    // value to set
+static int Variable_SetValue(udt_Variable *self, unsigned arrayPos,
+        PyObject *value)
 {
     PyObject *convertedValue = NULL;
     int result;
@@ -889,10 +845,8 @@ static int Variable_SetValue(
 // Variable_ExternalGetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalGetValue(
-    udt_Variable *self,                 // variable to get value for
-    PyObject *args,                     // arguments
-    PyObject *keywordArgs)              // keyword arguments
+static PyObject *Variable_ExternalGetValue(udt_Variable *self, PyObject *args,
+        PyObject *keywordArgs)
 {
     static char *keywordList[] = { "pos", NULL };
     unsigned pos = 0;
@@ -908,9 +862,7 @@ static PyObject *Variable_ExternalGetValue(
 // Variable_ExternalSetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalSetValue(
-    udt_Variable *self,                 // variable to set value for
-    PyObject *args)                     // arguments
+static PyObject *Variable_ExternalSetValue(udt_Variable *self, PyObject *args)
 {
     PyObject *value;
     unsigned pos;
@@ -929,8 +881,7 @@ static PyObject *Variable_ExternalSetValue(
 // Variable_Repr()
 //   Return a string representation of the variable.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_Repr(
-    udt_Variable *self)                 // variable to return the string for
+static PyObject *Variable_Repr(udt_Variable *self)
 {
     PyObject *valueRepr, *value, *module, *name, *result, *format, *formatArgs;
 
@@ -964,4 +915,3 @@ static PyObject *Variable_Repr(
     Py_DECREF(formatArgs);
     return result;
 }
-

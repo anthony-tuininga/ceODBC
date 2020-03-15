@@ -85,11 +85,9 @@ static udt_Environment *Environment_New(void)
 // Environment_Free()
 //   Free the environment.
 //-----------------------------------------------------------------------------
-static void Environment_Free(
-    udt_Environment *self)              // environment object
+static void Environment_Free(udt_Environment *self)
 {
     if (self->handle)
         SQLFreeHandle(self->handleType, self->handle);
     Py_TYPE(self)->tp_free((PyObject*) self);
 }
-
