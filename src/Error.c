@@ -3,27 +3,7 @@
 //   Error handling.
 //-----------------------------------------------------------------------------
 
-#define CheckForError(obj, rc, context) \
-        Error_CheckForError((udt_ObjectWithHandle*) obj, rc, context)
-
-#define ObjectWithHandle_HEAD \
-    PyObject_HEAD \
-    SQLSMALLINT handleType; \
-    SQLHANDLE handle;
-
-typedef struct {
-    ObjectWithHandle_HEAD
-} udt_ObjectWithHandle;
-
-//-----------------------------------------------------------------------------
-// structure for the Python type
-//-----------------------------------------------------------------------------
-typedef struct {
-    PyObject_HEAD
-    PyObject *message;
-    const char *context;
-} udt_Error;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // forward declarations
@@ -45,7 +25,7 @@ static PyMemberDef g_ErrorMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of Python type
 //-----------------------------------------------------------------------------
-static PyTypeObject g_ErrorType = {
+PyTypeObject g_ErrorType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC._Error",                    // tp_name
     sizeof(udt_Error),                  // tp_basicsize
@@ -109,7 +89,7 @@ static PyObject *Error_Str(udt_Error *self)
 //   Check for an error in the last call and if an error has occurred, raise a
 // Python exception.
 //-----------------------------------------------------------------------------
-static int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
+int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
         const char *context)
 {
     PyObject *errorMessages, *temp, *separator;

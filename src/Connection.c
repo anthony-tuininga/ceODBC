@@ -3,19 +3,7 @@
 //   Definition of the Python type for connections.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// structure for the Python type "Connection"
-//-----------------------------------------------------------------------------
-typedef struct {
-    ObjectWithHandle_HEAD
-    udt_Environment *environment;
-    PyObject *inputTypeHandler;
-    PyObject *outputTypeHandler;
-    int isConnected;
-    PyObject *dsn;
-    int logSql;
-} udt_Connection;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // functions for the Python type "Connection"
@@ -102,7 +90,7 @@ static PyGetSetDef g_ConnectionCalcMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of Python type "Connection"
 //-----------------------------------------------------------------------------
-static PyTypeObject g_ConnectionType = {
+PyTypeObject g_ConnectionType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Connection",                // tp_name
     sizeof(udt_Connection),             // tp_basicsize
@@ -153,7 +141,7 @@ static PyTypeObject g_ConnectionType = {
 //   Determines if the connection object is connected to the database. If not,
 // a Python exception is raised.
 //-----------------------------------------------------------------------------
-static int Connection_IsConnected(udt_Connection *self)
+int Connection_IsConnected(udt_Connection *self)
 {
     if (!self->isConnected) {
         PyErr_SetString(g_InterfaceErrorException, "not connected");
@@ -161,9 +149,6 @@ static int Connection_IsConnected(udt_Connection *self)
     }
     return 0;
 }
-
-
-#include "Cursor.c"
 
 
 //-----------------------------------------------------------------------------
@@ -321,10 +306,10 @@ static int Connection_Init(udt_Connection *self, PyObject *args,
                 "DSN must be a string") < 0)
         return -1;
     rc = SQLDriverConnectW(self->handle, NULL, (SQLWCHAR*) dsnBuffer.ptr,
-            dsnBuffer.size, actualDsnBuffer, ARRAYSIZE(actualDsnBuffer),
+            dsnBuffer.size, actualDsnBuffer, CEO_ARRAYSIZE(actualDsnBuffer),
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
-    if (actualDsnLength > ARRAYSIZE(actualDsnBuffer) - 1)
-        actualDsnLength = ARRAYSIZE(actualDsnBuffer) - 1;
+    if ((size_t) actualDsnLength > CEO_ARRAYSIZE(actualDsnBuffer) - 1)
+        actualDsnLength = CEO_ARRAYSIZE(actualDsnBuffer) - 1;
     StringBuffer_Clear(&dsnBuffer);
     if (CheckForError(self, rc,
             "Connection_Init(): connecting to driver") < 0) {

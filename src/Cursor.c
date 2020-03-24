@@ -3,30 +3,7 @@
 //   Definition of the Python type for cursors.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// structure for the Python type "Cursor"
-//-----------------------------------------------------------------------------
-typedef struct {
-    ObjectWithHandle_HEAD
-    udt_Connection *connection;
-    PyObject *statement;
-    PyObject *resultSetVars;
-    PyObject *parameterVars;
-    PyObject *rowFactory;
-    PyObject *inputTypeHandler;
-    PyObject *outputTypeHandler;
-    int arraySize;
-    int bindArraySize;
-    SQLULEN fetchArraySize;
-    int setInputSizes;
-    int setOutputSize;
-    int setOutputSizeColumn;
-    SQLLEN rowCount;
-    int actualRows;
-    int rowNum;
-    int logSql;
-} udt_Cursor;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // dependent function defintions
@@ -116,7 +93,7 @@ static PyGetSetDef g_CursorCalcMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of Python type "Cursor"
 //-----------------------------------------------------------------------------
-static PyTypeObject g_CursorType = {
+PyTypeObject g_CursorType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Cursor",                    // tp_name
     sizeof(udt_Cursor),                 // tp_basicsize
@@ -160,9 +137,6 @@ static PyTypeObject g_CursorType = {
     0,                                  // tp_is_gc
     0                                   // tp_bases
 };
-
-
-#include "Variable.c"
 
 
 //-----------------------------------------------------------------------------
@@ -233,7 +207,7 @@ static int Cursor_InternalInit(udt_Cursor *self, udt_Connection *connection)
 // Cursor_InternalNew()
 //   Internal method of creating a new cursor.
 //-----------------------------------------------------------------------------
-static udt_Cursor *Cursor_InternalNew(udt_Connection *connection)
+udt_Cursor *Cursor_InternalNew(udt_Connection *connection)
 {
     udt_Cursor *self;
 
@@ -600,7 +574,7 @@ static int Cursor_BindParameters(udt_Cursor *self, PyObject *parameters,
 //   Internal method used by the catalog methods in order to set up the result
 // set that is supposed to be returned.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_InternalCatalogHelper(udt_Cursor *self)
+PyObject *Cursor_InternalCatalogHelper(udt_Cursor *self)
 {
     if (Cursor_PrepareResultSet(self) < 0) {
         Py_DECREF(self);
@@ -678,10 +652,10 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeColW(self->handle, position, name, ARRAYSIZE(name),
+    rc = SQLDescribeColW(self->handle, position, name, CEO_ARRAYSIZE(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
-    if (nameLength > ARRAYSIZE(name) - 1)
-        nameLength = ARRAYSIZE(name) - 1;
+    if (nameLength > CEO_ARRAYSIZE(name) - 1)
+        nameLength = CEO_ARRAYSIZE(name) - 1;
     if (CheckForError(self, rc,
             "Cursor_ItemDescription(): get column info") < 0)
         return NULL;
@@ -792,9 +766,10 @@ static PyObject *Cursor_GetName(udt_Cursor *self, void *arg)
     SQLWCHAR name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorNameW(self->handle, name, ARRAYSIZE(name), &nameLength);
-    if (nameLength > ARRAYSIZE(name) - 1)
-        nameLength = ARRAYSIZE(name) - 1;
+    rc = SQLGetCursorNameW(self->handle, name, CEO_ARRAYSIZE(name),
+            &nameLength);
+    if (nameLength > CEO_ARRAYSIZE(name) - 1)
+        nameLength = CEO_ARRAYSIZE(name) - 1;
     if (CheckForError(self, rc, "Cursor_GetName()") < 0)
         return NULL;
     return ceString_FromStringAndSize(name, nameLength);

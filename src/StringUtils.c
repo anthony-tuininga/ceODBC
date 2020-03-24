@@ -3,29 +3,7 @@
 //   Defines constants and routines specific to handling strings.
 //-----------------------------------------------------------------------------
 
-#define ceString_FromAscii(str) \
-    PyUnicode_DecodeASCII(str, strlen(str), NULL)
-#ifdef Py_UNICODE_WIDE
-    #define ceString_FromStringAndSize(buffer, size) \
-        PyUnicode_DecodeUTF16(buffer, (size) * 2, NULL, NULL)
-    #define ceString_FromStringAndSizeInBytes(buffer, size) \
-        PyUnicode_DecodeUTF16(buffer, (size), NULL, NULL)
-#else
-    #define ceString_FromStringAndSize(buffer, size) \
-        PyUnicode_FromUnicode((Py_UNICODE*) (buffer), size)
-    #define ceString_FromStringAndSizeInBytes(buffer, size) \
-        PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) / 2)
-#endif
-
-
-// define structure for abstracting string buffers
-typedef struct {
-    const void *ptr;
-    Py_ssize_t size;
-    Py_ssize_t sizeInBytes;
-    PyObject *encodedString;
-} udt_StringBuffer;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // StringBuffer_Init()
@@ -46,7 +24,7 @@ static int StringBuffer_Init(udt_StringBuffer *buf)
 // StringBuffer_Clear()
 //   Clear the string buffer, if applicable.
 //-----------------------------------------------------------------------------
-static void StringBuffer_Clear(udt_StringBuffer *buf)
+void StringBuffer_Clear(udt_StringBuffer *buf)
 {
     Py_CLEAR(buf->encodedString);
     buf->ptr = NULL;
@@ -59,11 +37,11 @@ static void StringBuffer_Clear(udt_StringBuffer *buf)
 // StringBuffer_FromUnicode()
 //   Populate the string buffer from a unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromUnicode(udt_StringBuffer *buf, PyObject *obj)
+int StringBuffer_FromUnicode(udt_StringBuffer *buf, PyObject *obj)
 {
 #ifdef Py_UNICODE_WIDE
     int one = 1;
-    int byteOrder = (IS_LITTLE_ENDIAN) ? -1 : 1;
+    int byteOrder = ((int)*(unsigned char*) &one) ? -1 : 1;
     buf->encodedString = PyUnicode_EncodeUTF16(PyUnicode_AS_UNICODE(obj),
             PyUnicode_GET_SIZE(obj), NULL, byteOrder);
     if (!buf->encodedString)
@@ -85,7 +63,7 @@ static int StringBuffer_FromUnicode(udt_StringBuffer *buf, PyObject *obj)
 // StringBuffer_FromString()
 //   Populate the string buffer from a Unicode object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromString(udt_StringBuffer *buf, PyObject *obj,
+int StringBuffer_FromString(udt_StringBuffer *buf, PyObject *obj,
         const char *message)
 {
     if (PyUnicode_Check(obj))
@@ -99,7 +77,7 @@ static int StringBuffer_FromString(udt_StringBuffer *buf, PyObject *obj,
 // StringBuffer_FromBinary()
 //   Populate the string buffer from a bytes object.
 //-----------------------------------------------------------------------------
-static int StringBuffer_FromBinary(udt_StringBuffer *buf, PyObject *obj)
+int StringBuffer_FromBinary(udt_StringBuffer *buf, PyObject *obj)
 {
     if (!obj)
         return StringBuffer_Init(buf);

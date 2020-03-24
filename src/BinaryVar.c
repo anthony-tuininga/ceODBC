@@ -3,14 +3,7 @@
 //   Defines the routines specific to all binary types.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Declaration of variable type structures
-//-----------------------------------------------------------------------------
-typedef struct {
-    Variable_HEAD
-    SQLCHAR *data;
-} udt_BinaryVar;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
@@ -23,7 +16,7 @@ static int BinaryVar_SetValue(udt_BinaryVar*, unsigned, PyObject*);
 //-----------------------------------------------------------------------------
 // Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_BinaryVarType = {
+PyTypeObject g_BinaryVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BinaryVar",                 // tp_name
     sizeof(udt_BinaryVar),              // tp_basicsize
@@ -69,7 +62,7 @@ static PyTypeObject g_BinaryVarType = {
 };
 
 
-static PyTypeObject g_LongBinaryVarType = {
+PyTypeObject g_LongBinaryVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.LongBinaryVar",             // tp_name
     sizeof(udt_BinaryVar),              // tp_basicsize
@@ -118,7 +111,7 @@ static PyTypeObject g_LongBinaryVarType = {
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Binary = {
+udt_VariableType vt_Binary = {
     (SetValueProc) BinaryVar_SetValue,
     (GetValueProc) BinaryVar_GetValue,
     (GetBufferSizeProc) BinaryVar_GetBufferSize,
@@ -131,7 +124,7 @@ static udt_VariableType vt_Binary = {
 };
 
 
-static udt_VariableType vt_LongBinary = {
+udt_VariableType vt_LongBinary = {
     (SetValueProc) BinaryVar_SetValue,
     (GetValueProc) BinaryVar_GetValue,
     (GetBufferSizeProc) BinaryVar_GetBufferSize,

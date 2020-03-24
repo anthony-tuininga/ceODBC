@@ -3,14 +3,7 @@
 //   Defines the routines specific to unicode types.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Declaration of variable type structures
-//-----------------------------------------------------------------------------
-typedef struct {
-    Variable_HEAD
-    SQLWCHAR *data;
-} udt_UnicodeVar;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
@@ -23,7 +16,7 @@ static int UnicodeVar_SetValue(udt_UnicodeVar*, unsigned, PyObject*);
 //-----------------------------------------------------------------------------
 // Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_UnicodeVarType = {
+PyTypeObject g_UnicodeVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.UnicodeVar",                // tp_name
     sizeof(udt_UnicodeVar),             // tp_basicsize
@@ -69,7 +62,7 @@ static PyTypeObject g_UnicodeVarType = {
 };
 
  
-static PyTypeObject g_LongUnicodeVarType = {
+PyTypeObject g_LongUnicodeVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.LongUnicodeVar",            // tp_name
     sizeof(udt_UnicodeVar),             // tp_basicsize
@@ -118,7 +111,7 @@ static PyTypeObject g_LongUnicodeVarType = {
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Unicode = {
+udt_VariableType vt_Unicode = {
     (SetValueProc) UnicodeVar_SetValue,
     (GetValueProc) UnicodeVar_GetValue,
     (GetBufferSizeProc) UnicodeVar_GetBufferSize,
@@ -131,7 +124,7 @@ static udt_VariableType vt_Unicode = {
 };
 
 
-static udt_VariableType vt_LongUnicode = {
+udt_VariableType vt_LongUnicode = {
     (SetValueProc) UnicodeVar_SetValue,
     (GetValueProc) UnicodeVar_GetValue,
     (GetBufferSizeProc) UnicodeVar_GetBufferSize,

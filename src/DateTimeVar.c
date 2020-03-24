@@ -3,26 +3,7 @@
 //   Defines the routines for handling date/time variables.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Declaration of variable structure.
-//-----------------------------------------------------------------------------
-typedef struct {
-    Variable_HEAD
-    DATE_STRUCT *data;
-} udt_DateVar;
-
-
-typedef struct {
-    Variable_HEAD
-    TIME_STRUCT *data;
-} udt_TimeVar;
-
-
-typedef struct {
-    Variable_HEAD
-    TIMESTAMP_STRUCT *data;
-} udt_TimestampVar;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions.
@@ -38,7 +19,7 @@ static int TimestampVar_SetValue(udt_TimestampVar*, unsigned, PyObject*);
 //-----------------------------------------------------------------------------
 // Python type declaration
 //-----------------------------------------------------------------------------
-static PyTypeObject g_DateVarType = {
+PyTypeObject g_DateVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DateVar",                   // tp_name
     sizeof(udt_DateVar),                // tp_basicsize
@@ -84,7 +65,7 @@ static PyTypeObject g_DateVarType = {
 };
 
 
-static PyTypeObject g_TimeVarType = {
+PyTypeObject g_TimeVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.TimeVar",                   // tp_name
     sizeof(udt_TimeVar),                // tp_basicsize
@@ -130,7 +111,7 @@ static PyTypeObject g_TimeVarType = {
 };
 
 
-static PyTypeObject g_TimestampVarType = {
+PyTypeObject g_TimestampVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.TimestampVar",              // tp_name
     sizeof(udt_TimestampVar),           // tp_basicsize
@@ -179,7 +160,7 @@ static PyTypeObject g_TimestampVarType = {
 //-----------------------------------------------------------------------------
 // variable type declarations
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Date = {
+udt_VariableType vt_Date = {
     (SetValueProc) DateVar_SetValue,
     (GetValueProc) DateVar_GetValue,
     (GetBufferSizeProc) NULL,
@@ -192,7 +173,7 @@ static udt_VariableType vt_Date = {
 };
 
 
-static udt_VariableType vt_Time = {
+udt_VariableType vt_Time = {
     (SetValueProc) TimeVar_SetValue,
     (GetValueProc) TimeVar_GetValue,
     (GetBufferSizeProc) NULL,
@@ -205,7 +186,7 @@ static udt_VariableType vt_Time = {
 };
 
 
-static udt_VariableType vt_Timestamp = {
+udt_VariableType vt_Timestamp = {
     (SetValueProc) TimestampVar_SetValue,
     (GetValueProc) TimestampVar_GetValue,
     (GetBufferSizeProc) NULL,
@@ -224,10 +205,7 @@ static udt_VariableType vt_Timestamp = {
 //-----------------------------------------------------------------------------
 static PyObject *DateVar_GetValue(udt_DateVar *var, unsigned pos)
 {
-    DATE_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    return PyDate_FromDate(sqlValue->year, sqlValue->month, sqlValue->day);
+    return ceoTransform_dateFromSqlValue(&var->data[pos]);
 }
 
 
@@ -237,19 +215,7 @@ static PyObject *DateVar_GetValue(udt_DateVar *var, unsigned pos)
 //-----------------------------------------------------------------------------
 static int DateVar_SetValue(udt_DateVar *var, unsigned pos, PyObject *value)
 {
-    DATE_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    if (PyDateTime_Check(value) || PyDate_Check(value)) {
-        sqlValue->year = PyDateTime_GET_YEAR(value);
-        sqlValue->month = PyDateTime_GET_MONTH(value);
-        sqlValue->day = PyDateTime_GET_DAY(value);
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expecting date or datetime data");
-        return -1;
-    }
-
-    return 0;
+    return ceoTransform_sqlValueFromDate(value, &var->data[pos]);
 }
 
 
@@ -259,23 +225,7 @@ static int DateVar_SetValue(udt_DateVar *var, unsigned pos, PyObject *value)
 //-----------------------------------------------------------------------------
 static int TimeVar_SetValue(udt_TimeVar *var, unsigned pos, PyObject *value)
 {
-    TIME_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    if (PyDateTime_Check(value)) {
-        sqlValue->hour = PyDateTime_DATE_GET_HOUR(value);
-        sqlValue->minute = PyDateTime_DATE_GET_MINUTE(value);
-        sqlValue->second = PyDateTime_DATE_GET_SECOND(value);
-    } else if (PyTime_Check(value)) {
-        sqlValue->hour = PyDateTime_TIME_GET_HOUR(value);
-        sqlValue->minute = PyDateTime_TIME_GET_MINUTE(value);
-        sqlValue->second = PyDateTime_TIME_GET_SECOND(value);
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expecting datetime or time data");
-        return -1;
-    }
-
-    return 0;
+    return ceoTransform_sqlValueFromTime(value, &var->data[pos]);
 }
 
 
@@ -285,11 +235,7 @@ static int TimeVar_SetValue(udt_TimeVar *var, unsigned pos, PyObject *value)
 //-----------------------------------------------------------------------------
 static PyObject *TimeVar_GetValue(udt_TimeVar *var, unsigned pos)
 {
-    TIME_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    return PyTime_FromTime(sqlValue->hour, sqlValue->minute, sqlValue->second,
-            0);
+    return ceoTransform_timeFromSqlValue(&var->data[pos]);
 }
 
 
@@ -300,30 +246,7 @@ static PyObject *TimeVar_GetValue(udt_TimeVar *var, unsigned pos)
 static int TimestampVar_SetValue(udt_TimestampVar *var, unsigned pos,
         PyObject *value)
 {
-    TIMESTAMP_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    sqlValue->fraction = 0;
-    if (PyDateTime_Check(value)) {
-        sqlValue->year = PyDateTime_GET_YEAR(value);
-        sqlValue->month = PyDateTime_GET_MONTH(value);
-        sqlValue->day = PyDateTime_GET_DAY(value);
-        sqlValue->hour = PyDateTime_DATE_GET_HOUR(value);
-        sqlValue->minute = PyDateTime_DATE_GET_MINUTE(value);
-        sqlValue->second = PyDateTime_DATE_GET_SECOND(value);
-    } else if (PyDate_Check(value)) {
-        sqlValue->year = PyDateTime_GET_YEAR(value);
-        sqlValue->month = PyDateTime_GET_MONTH(value);
-        sqlValue->day = PyDateTime_GET_DAY(value);
-        sqlValue->hour = 0;
-        sqlValue->minute = 0;
-        sqlValue->second = 0;
-    } else {
-        PyErr_SetString(PyExc_TypeError, "expecting date or datetime data");
-        return -1;
-    }
-
-    return 0;
+    return ceoTransform_sqlValueFromTimestamp(value, &var->data[pos]);
 }
 
 
@@ -333,10 +256,5 @@ static int TimestampVar_SetValue(udt_TimestampVar *var, unsigned pos,
 //-----------------------------------------------------------------------------
 static PyObject *TimestampVar_GetValue(udt_TimestampVar *var, unsigned pos)
 {
-    TIMESTAMP_STRUCT *sqlValue;
-
-    sqlValue = &var->data[pos];
-    return PyDateTime_FromDateAndTime(sqlValue->year, sqlValue->month,
-            sqlValue->day, sqlValue->hour, sqlValue->minute, sqlValue->second,
-            sqlValue->fraction / 1000);
+    return ceoTransform_timestampFromSqlValue(&var->data[pos]);
 }

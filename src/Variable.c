@@ -3,62 +3,11 @@
 //   Defines Python types for variables.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// define structure common to all variables
-//-----------------------------------------------------------------------------
-struct _udt_VariableType;
-#define Variable_HEAD \
-    PyObject_HEAD \
-    SQLSMALLINT position; \
-    SQLINTEGER numElements; \
-    SQLLEN *lengthOrIndicator; \
-    struct _udt_VariableType *type; \
-    SQLUINTEGER size; \
-    SQLLEN bufferSize; \
-    SQLSMALLINT scale; \
-    int input; \
-    int output; \
-    PyObject *inConverter; \
-    PyObject *outConverter;
-typedef struct {
-    Variable_HEAD
-    void *data;
-} udt_Variable;
-
-
-//-----------------------------------------------------------------------------
-// define function types for the common actions that take place on a variable
-//-----------------------------------------------------------------------------
-typedef int (*SetValueProc)(udt_Variable*, unsigned, PyObject*);
-typedef PyObject * (*GetValueProc)(udt_Variable*, unsigned);
-typedef SQLUINTEGER (*GetBufferSizeProc)(udt_Variable*, SQLUINTEGER);
-
-
-//-----------------------------------------------------------------------------
-// define structure for the common actions that take place on a variable
-//-----------------------------------------------------------------------------
-typedef struct _udt_VariableType {
-    SetValueProc setValueProc;
-    GetValueProc getValueProc;
-    GetBufferSizeProc getBufferSizeProc;
-    PyTypeObject *pythonType;
-    SQLSMALLINT sqlDataType;
-    SQLSMALLINT cDataType;
-    SQLUINTEGER bufferSize;
-    SQLUINTEGER defaultSize;
-    SQLSMALLINT defaultScale;
-} udt_VariableType;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of common variable functions.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_New(PyTypeObject*, PyObject*, PyObject*);
-static void Variable_Free(udt_Variable *);
-static PyObject *Variable_Repr(udt_Variable *);
-static int Variable_Resize(udt_Variable*, SQLUINTEGER);
-static int Variable_SetValue(udt_Variable*, unsigned, PyObject*);
-static udt_VariableType *Variable_TypeByPythonType(PyObject*);
 static PyObject *Variable_ExternalGetValue(udt_Variable*, PyObject*,
         PyObject*);
 static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
@@ -67,7 +16,7 @@ static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
 //-----------------------------------------------------------------------------
 // Declaration of variable members
 //-----------------------------------------------------------------------------
-static PyMemberDef g_VariableMembers[] = {
+PyMemberDef g_VariableMembers[] = {
     { "bufferSize", T_INT, offsetof(udt_Variable, bufferSize), READONLY },
     { "inconverter", T_OBJECT, offsetof(udt_Variable, inConverter), 0 },
     { "input", T_INT, offsetof(udt_Variable, input), 0 },
@@ -83,7 +32,7 @@ static PyMemberDef g_VariableMembers[] = {
 //-----------------------------------------------------------------------------
 // Declaration of variable methods
 //-----------------------------------------------------------------------------
-static PyMethodDef g_VariableMethods[] = {
+PyMethodDef g_VariableMethods[] = {
     { "getvalue", (PyCFunction) Variable_ExternalGetValue,
             METH_VARARGS  | METH_KEYWORDS },
     { "setvalue", (PyCFunction) Variable_ExternalSetValue, METH_VARARGS },
@@ -150,7 +99,7 @@ static int Variable_InternalInit(udt_Variable *self, unsigned numElements,
 // Variable_DefaultInit()
 //   Default constructor.
 //-----------------------------------------------------------------------------
-static int Variable_DefaultInit(udt_Variable *self, PyObject *args,
+int Variable_DefaultInit(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
     udt_VariableType *varType;
@@ -179,7 +128,7 @@ static int Variable_DefaultInit(udt_Variable *self, PyObject *args,
 // Variable_InitWithScale()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-static int Variable_InitWithScale(udt_Variable *self, PyObject *args,
+int Variable_InitWithScale(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
     udt_VariableType *varType;
@@ -209,7 +158,7 @@ static int Variable_InitWithScale(udt_Variable *self, PyObject *args,
 // Variable_InitWithSize()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-static int Variable_InitWithSize(udt_Variable *self, PyObject *args,
+int Variable_InitWithSize(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
     udt_VariableType *varType;
@@ -235,18 +184,11 @@ static int Variable_InitWithSize(udt_Variable *self, PyObject *args,
 }
 
 
-#include "BinaryVar.c"
-#include "BitVar.c"
-#include "NumberVar.c"
-#include "UnicodeVar.c"
-#include "DateTimeVar.c"
-
-
 //-----------------------------------------------------------------------------
 // Variable_InternalNew()
 //   Internal method of creating a new variable.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_InternalNew(unsigned numElements,
+udt_Variable *Variable_InternalNew(unsigned numElements,
         udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale)
 {
     udt_Variable *self;
@@ -296,13 +238,13 @@ static udt_VariableType *Variable_TypeByValue(PyObject* value,
         return &vt_BigInteger;
     if (PyFloat_Check(value))
         return &vt_Double;
-    if (Py_TYPE(value) == (PyTypeObject*) g_DecimalType)
+    if (Py_TYPE(value) == g_DecimalType)
         return &vt_Decimal;
-    if (PyTime_Check(value))
+    if (Py_TYPE(value) == g_TimeType)
         return &vt_Time;
-    if (PyDateTime_Check(value))
+    if (Py_TYPE(value) == g_DateTimeType)
         return &vt_Timestamp;
-    if (PyDate_Check(value))
+    if (Py_TYPE(value) == g_DateType)
         return &vt_Timestamp;
 
     PyErr_Format(g_NotSupportedErrorException,
@@ -317,7 +259,7 @@ static udt_VariableType *Variable_TypeByValue(PyObject* value,
 //   Return a variable type given a Python type object or NULL if the Python
 // type does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeByPythonType(PyObject* type)
+udt_VariableType *Variable_TypeByPythonType(PyObject* type)
 {
     if (type == (PyObject*) g_StringApiType)
         return &vt_Unicode;
@@ -355,19 +297,19 @@ static udt_VariableType *Variable_TypeByPythonType(PyObject* type)
         return &vt_Double;
     if (type == (PyObject*) &g_DecimalVarType)
         return &vt_Decimal;
-    if (type == g_DecimalType)
+    if (type == (PyObject*) g_DecimalType)
         return &vt_Decimal;
     if (type == (PyObject*) &g_DateVarType)
         return &vt_Date;
-    if (type == (PyObject*) PyDateTimeAPI->DateType)
+    if (type == (PyObject*) g_DateType)
         return &vt_Date;
     if (type == (PyObject*) &g_TimeVarType)
         return &vt_Time;
-    if (type == (PyObject*) PyDateTimeAPI->TimeType)
+    if (type == (PyObject*) g_TimeType)
         return &vt_Time;
     if (type == (PyObject*) &g_TimestampVarType)
         return &vt_Timestamp;
-    if (type == (PyObject*) PyDateTimeAPI->DateTimeType)
+    if (type == (PyObject*) g_DateTimeType)
         return &vt_Timestamp;
     if (type == (PyObject*) g_DateTimeApiType)
         return &vt_Timestamp;
@@ -383,7 +325,7 @@ static udt_VariableType *Variable_TypeByPythonType(PyObject* type)
 //   Return a variable type given a SQL data type or NULL if the SQL data type
 // does not have a corresponding variable type.
 //-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
+udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
         SQLSMALLINT sqlDataType)
 {
     char buffer[100];
@@ -439,7 +381,7 @@ static udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
 // Variable_New()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_New(PyTypeObject *type, PyObject *args,
+PyObject *Variable_New(PyTypeObject *type, PyObject *args,
         PyObject *keywordArgs)
 {
     return type->tp_alloc(type, 0);
@@ -450,7 +392,7 @@ static PyObject *Variable_New(PyTypeObject *type, PyObject *args,
 // Variable_Free()
 //   Free an existing variable.
 //-----------------------------------------------------------------------------
-static void Variable_Free(udt_Variable *self)
+void Variable_Free(udt_Variable *self)
 {
     if (self->lengthOrIndicator)
         PyMem_Free(self->lengthOrIndicator);
@@ -466,7 +408,7 @@ static void Variable_Free(udt_Variable *self)
 // Variable_Check()
 //   Returns a boolean indicating if the object is a variable.
 //-----------------------------------------------------------------------------
-static int Variable_Check(PyObject *object)
+int Variable_Check(PyObject *object)
 {
     return (Py_TYPE(object) == &g_BigIntegerVarType ||
             Py_TYPE(object) == &g_BinaryVarType ||
@@ -535,7 +477,7 @@ static udt_Variable *Variable_NewByInputTypeHandler(udt_Cursor *cursor,
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
+udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
         unsigned numElements)
 {
     if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
@@ -553,7 +495,7 @@ static udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
 // Variable_NewByType()
 //   Allocate a new variable by looking at the Python data type.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
+udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
         unsigned numElements)
 {
     udt_VariableType *varType;
@@ -631,7 +573,7 @@ static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
 //   Create a new variable for the given position in the result set. The new
 // variable is immediately bound to the statement as well.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
+udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
@@ -642,7 +584,7 @@ static udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
     SQLRETURN rc;
 
     // retrieve information about the column
-    rc = SQLDescribeColW(cursor->handle, position, name, ARRAYSIZE(name),
+    rc = SQLDescribeColW(cursor->handle, position, name, CEO_ARRAYSIZE(name),
             &length, &dataType, &size, &scale, &nullable);
     if (CheckForError(cursor, rc,
                 "Variable_NewForResultSet(): get column info") < 0)
@@ -703,7 +645,7 @@ static udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
 // Variable_BindParameter()
 //   Allocate a variable and bind it to the given statement.
 //-----------------------------------------------------------------------------
-static int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
+int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT inputOutputType;
@@ -730,7 +672,7 @@ static int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
 // Variable_Resize()
 //   Resize the variable.
 //-----------------------------------------------------------------------------
-static int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
+int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 {
     SQLUINTEGER newBufferSize;
     char *newData;
@@ -765,7 +707,7 @@ static int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 // Variable_GetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
+PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 {
     PyObject *value, *result;
 
@@ -805,8 +747,7 @@ static PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 // Variable_SetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static int Variable_SetValue(udt_Variable *self, unsigned arrayPos,
-        PyObject *value)
+int Variable_SetValue(udt_Variable *self, unsigned arrayPos, PyObject *value)
 {
     PyObject *convertedValue = NULL;
     int result;
@@ -881,7 +822,7 @@ static PyObject *Variable_ExternalSetValue(udt_Variable *self, PyObject *args)
 // Variable_Repr()
 //   Return a string representation of the variable.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_Repr(udt_Variable *self)
+PyObject *Variable_Repr(udt_Variable *self)
 {
     PyObject *valueRepr, *value, *module, *name, *result, *format, *formatArgs;
 

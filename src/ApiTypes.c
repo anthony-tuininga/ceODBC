@@ -3,15 +3,7 @@
 //   Defines class used for implementing the required DB API types.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// declaration of the structure for the Python type
-//-----------------------------------------------------------------------------
-typedef struct {
-    PyObject_HEAD
-    PyObject *name;
-    PyObject *types;
-} udt_ApiType;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // declaration of methods used by the Python type
@@ -34,7 +26,7 @@ static PyMemberDef g_ApiTypeTypeMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of the Python type
 //-----------------------------------------------------------------------------
-static PyTypeObject g_ApiTypeType = {
+PyTypeObject g_ApiTypeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC._ApiType",                  // tp_name
     sizeof(udt_ApiType),                // tp_basicsize
@@ -83,7 +75,7 @@ static void ApiType_Free(udt_ApiType *self)
 // ApiType_New()
 //   Create a new API type and register it with the given name.
 //-----------------------------------------------------------------------------
-static udt_ApiType *ApiType_New(PyObject *module, const char *name)
+udt_ApiType *ApiType_New(PyObject *module, const char *name)
 {
     udt_ApiType *self;
 

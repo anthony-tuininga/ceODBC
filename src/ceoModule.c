@@ -1,33 +1,9 @@
 //-----------------------------------------------------------------------------
-// ceODBC.c
-//   ODBC interface for Python.
+// ceoModule.c
+//   Implementation of ceODBC, an ODBC interface for Python.
 //-----------------------------------------------------------------------------
 
-#include <Python.h>
-#include <structmember.h>
-#include <datetime.h>
-#include <time.h>
-#ifdef MS_WINDOWS
-#include <windows.h>
-#endif
-#include <sql.h>
-#include <sqlext.h>
-#include <sqlucode.h>
-#include <time.h>
-
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
-#endif
-
-// set up CX_LOGGING if applicable
-#ifdef WITH_CX_LOGGING
-#include <cx_Logging.h>
-#else
-#define IsLoggingAtLevelForPython(...) 0
-#define LogMessage(...)
-#define LogMessageV(...)
-#define WriteMessageForPython(...)
-#endif
+#include "ceoModule.h"
 
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
@@ -54,38 +30,36 @@
     if (PyType_Ready(type) < 0) \
         return NULL;
 
-// define simple construct for determining endianness of the platform
-#define IS_LITTLE_ENDIAN (int)*(unsigned char*) &one
-
 
 //-----------------------------------------------------------------------------
 // Exception classes
 //-----------------------------------------------------------------------------
-static PyObject *g_WarningException = NULL;
-static PyObject *g_ErrorException = NULL;
-static PyObject *g_InterfaceErrorException = NULL;
-static PyObject *g_DatabaseErrorException = NULL;
-static PyObject *g_DataErrorException = NULL;
-static PyObject *g_OperationalErrorException = NULL;
-static PyObject *g_IntegrityErrorException = NULL;
-static PyObject *g_InternalErrorException = NULL;
-static PyObject *g_ProgrammingErrorException = NULL;
-static PyObject *g_NotSupportedErrorException = NULL;
+PyObject *g_WarningException = NULL;
+PyObject *g_ErrorException = NULL;
+PyObject *g_InterfaceErrorException = NULL;
+PyObject *g_DatabaseErrorException = NULL;
+PyObject *g_DataErrorException = NULL;
+PyObject *g_OperationalErrorException = NULL;
+PyObject *g_IntegrityErrorException = NULL;
+PyObject *g_InternalErrorException = NULL;
+PyObject *g_ProgrammingErrorException = NULL;
+PyObject *g_NotSupportedErrorException = NULL;
 
 
 //-----------------------------------------------------------------------------
 // globally referenced classes
 //-----------------------------------------------------------------------------
-static PyObject *g_DecimalType = NULL;
+PyTypeObject *g_DecimalType = NULL;
+PyTypeObject *g_DateType = NULL;
+PyTypeObject *g_DateTimeType = NULL;
+PyTypeObject *g_TimeType = NULL;
 
-#include "StringUtils.c"
 
 //-----------------------------------------------------------------------------
 // GetModuleAndName()
 //   Return the module and name for the type.
 //-----------------------------------------------------------------------------
-static int GetModuleAndName(PyTypeObject *type, PyObject **module,
-        PyObject **name)
+int GetModuleAndName(PyTypeObject *type, PyObject **module, PyObject **name)
 {
     *module = PyObject_GetAttrString( (PyObject*) type, "__module__");
     if (!*module)
@@ -98,16 +72,14 @@ static int GetModuleAndName(PyTypeObject *type, PyObject **module,
     return 0;
 }
 
-#include "ApiTypes.c"
-
 //-----------------------------------------------------------------------------
 // API types
 //-----------------------------------------------------------------------------
-static udt_ApiType *g_BinaryApiType = NULL;
-static udt_ApiType *g_DateTimeApiType = NULL;
-static udt_ApiType *g_NumberApiType = NULL;
-static udt_ApiType *g_RowidApiType = NULL;
-static udt_ApiType *g_StringApiType = NULL;
+udt_ApiType *g_BinaryApiType = NULL;
+udt_ApiType *g_DateTimeApiType = NULL;
+udt_ApiType *g_NumberApiType = NULL;
+udt_ApiType *g_RowidApiType = NULL;
+udt_ApiType *g_StringApiType = NULL;
 
 
 //-----------------------------------------------------------------------------
@@ -127,34 +99,13 @@ static int SetException(PyObject *module, PyObject **exception, char *name,
 }
 
 
-#include "Error.c"
-#include "Environment.c"
-#include "Connection.c"
-
-
 //-----------------------------------------------------------------------------
 // TimeFromTicks()
 //   Returns a time value suitable for binding.
 //-----------------------------------------------------------------------------
 static PyObject* TimeFromTicks(PyObject* self, PyObject* args)
 {
-    double inputTicks;
-    struct tm *time;
-#ifdef WIN32
-    __time64_t ticks;
-#else
-    time_t ticks;
-#endif
-
-    if (!PyArg_ParseTuple(args, "d", &inputTicks))
-        return NULL;
-    ticks = (long) inputTicks;
-#ifdef WIN32
-    time = _localtime64(&ticks);
-#else
-    time = localtime(&ticks);
-#endif
-    return PyTime_FromTime(time->tm_hour, time->tm_min, time->tm_sec, 0);
+    return ceoTransform_timeFromTicks(args);
 }
 
 
@@ -164,7 +115,7 @@ static PyObject* TimeFromTicks(PyObject* self, PyObject* args)
 //-----------------------------------------------------------------------------
 static PyObject* DateFromTicks(PyObject* self, PyObject* args)
 {
-    return PyDate_FromTimestamp(args);
+    return ceoTransform_dateFromTicks(args);
 }
 
 
@@ -174,7 +125,7 @@ static PyObject* DateFromTicks(PyObject* self, PyObject* args)
 //-----------------------------------------------------------------------------
 static PyObject* TimestampFromTicks(PyObject* self, PyObject* args)
 {
-    return PyDateTime_FromTimestamp(args);
+    return ceoTransform_timestampFromTicks(args);
 }
 
 
@@ -214,18 +165,8 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
 
     LogMessage(LOG_LEVEL_DEBUG, "ceODBC initializing");
 
-    // import the datetime module
-    PyDateTime_IMPORT;
-    if (PyErr_Occurred())
-        return NULL;
-
-    // import the decimal module
-    module = PyImport_ImportModule("decimal");
-    if (!module)
-        return NULL;
-    g_DecimalType = PyObject_GetAttrString(module, "Decimal");
-    Py_DECREF(module);
-    if (!g_DecimalType)
+    // initialize transforms
+    if (ceoTransform_init() < 0)
         return NULL;
 
     // prepare the types for use by the module
@@ -293,9 +234,9 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
 
     // add the constructors required by the DB API
     ADD_TYPE_OBJECT("Binary", &PyBytes_Type)
-    ADD_TYPE_OBJECT("Date", PyDateTimeAPI->DateType)
-    ADD_TYPE_OBJECT("Time", PyDateTimeAPI->TimeType)
-    ADD_TYPE_OBJECT("Timestamp", PyDateTimeAPI->DateTimeType)
+    ADD_TYPE_OBJECT("Date", g_DateType)
+    ADD_TYPE_OBJECT("Time", g_TimeType)
+    ADD_TYPE_OBJECT("Timestamp", g_DateTimeType)
 
     // add the variable types
     ADD_TYPE_OBJECT("BigIntegerVar", &g_BigIntegerVarType)

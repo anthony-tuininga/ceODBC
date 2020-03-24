@@ -163,10 +163,9 @@ else:
 
 #define ceODBC sources
 sourceDir = "src"
-sources = [os.path.join(sourceDir, "ceODBC.c")]
-depends = [os.path.join(sourceDir, n) \
-        for n in sorted(os.listdir(sourceDir)) \
-        if n.endswith(".c") and n != "ceODBC.c"]
+sources = [os.path.join(sourceDir, n) \
+        for n in sorted(os.listdir(sourceDir)) if n.endswith(".c")]
+depends = [os.path.join(sourceDir, "ceoModule.h")]
 
 # define command classes
 commandClasses = dict(

@@ -3,14 +3,7 @@
 //   Defines the routines for handling bits.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Declaration of variable structure.
-//-----------------------------------------------------------------------------
-typedef struct {
-    Variable_HEAD
-    unsigned char *data;
-} udt_BitVar;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions.
@@ -22,7 +15,7 @@ static int BitVar_SetValue(udt_BitVar*, unsigned, PyObject*);
 //-----------------------------------------------------------------------------
 // Python type declaration
 //-----------------------------------------------------------------------------
-static PyTypeObject g_BitVarType = {
+PyTypeObject g_BitVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BitVar",                    // tp_name
     sizeof(udt_BitVar),                 // tp_basicsize
@@ -71,7 +64,7 @@ static PyTypeObject g_BitVarType = {
 //-----------------------------------------------------------------------------
 // variable type declarations
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_Bit = {
+udt_VariableType vt_Bit = {
     (SetValueProc) BitVar_SetValue,
     (GetValueProc) BitVar_GetValue,
     (GetBufferSizeProc) NULL,

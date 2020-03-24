@@ -3,32 +3,7 @@
 //   Defines the routines for all number like types.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Declaration of variable type structures
-//-----------------------------------------------------------------------------
-typedef struct {
-    Variable_HEAD
-    SQLBIGINT *data;
-} udt_BigIntegerVar;
-
-
-typedef struct {
-    Variable_HEAD
-    SQLWCHAR *data;
-} udt_DecimalVar;
-
-
-typedef struct {
-    Variable_HEAD
-    double *data;
-} udt_DoubleVar;
-
-
-typedef struct {
-    Variable_HEAD
-    SQLINTEGER *data;
-} udt_IntegerVar;
-
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // Declaration of variable functions
@@ -50,7 +25,7 @@ static int IntegerVar_SetValue(udt_IntegerVar*, unsigned, PyObject*);
 //-----------------------------------------------------------------------------
 // Declaration of Python types
 //-----------------------------------------------------------------------------
-static PyTypeObject g_BigIntegerVarType = {
+PyTypeObject g_BigIntegerVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.BigIntegerVar",             // tp_name
     sizeof(udt_BigIntegerVar),          // tp_basicsize
@@ -96,7 +71,7 @@ static PyTypeObject g_BigIntegerVarType = {
 };
 
 
-static PyTypeObject g_DecimalVarType = {
+PyTypeObject g_DecimalVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DecimalVar",                // tp_name
     sizeof(udt_DecimalVar),             // tp_basicsize
@@ -142,7 +117,7 @@ static PyTypeObject g_DecimalVarType = {
 };
 
 
-static PyTypeObject g_DoubleVarType = {
+PyTypeObject g_DoubleVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.DoubleVar",                 // tp_name
     sizeof(udt_DoubleVar),              // tp_basicsize
@@ -188,7 +163,7 @@ static PyTypeObject g_DoubleVarType = {
 };
 
 
-static PyTypeObject g_IntegerVarType = {
+PyTypeObject g_IntegerVarType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.IntegerVar",                // tp_name
     sizeof(udt_IntegerVar),             // tp_basicsize
@@ -237,7 +212,7 @@ static PyTypeObject g_IntegerVarType = {
 //-----------------------------------------------------------------------------
 // Declaration of variable types
 //-----------------------------------------------------------------------------
-static udt_VariableType vt_BigInteger = {
+udt_VariableType vt_BigInteger = {
     (SetValueProc) BigIntegerVar_SetValue,
     (GetValueProc) BigIntegerVar_GetValue,
     (GetBufferSizeProc) NULL,
@@ -250,7 +225,7 @@ static udt_VariableType vt_BigInteger = {
 };
 
 
-static udt_VariableType vt_Decimal = {
+udt_VariableType vt_Decimal = {
     (SetValueProc) DecimalVar_SetValue,
     (GetValueProc) DecimalVar_GetValue,
     (GetBufferSizeProc) DecimalVar_GetBufferSize,
@@ -263,7 +238,7 @@ static udt_VariableType vt_Decimal = {
 };
 
 
-static udt_VariableType vt_Double = {
+udt_VariableType vt_Double = {
     (SetValueProc) DoubleVar_SetValue,
     (GetValueProc) DoubleVar_GetValue,
     (GetBufferSizeProc) NULL,
@@ -276,7 +251,7 @@ static udt_VariableType vt_Double = {
 };
 
 
-static udt_VariableType vt_Integer = {
+udt_VariableType vt_Integer = {
     (SetValueProc) IntegerVar_SetValue,
     (GetValueProc) IntegerVar_GetValue,
     (GetBufferSizeProc) NULL,

@@ -3,12 +3,7 @@
 //   Environment handling.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// structure for the Python type
-//-----------------------------------------------------------------------------
-typedef struct {
-    ObjectWithHandle_HEAD
-} udt_Environment;
+#include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
 // forward declarations
@@ -18,7 +13,7 @@ static void Environment_Free(udt_Environment*);
 //-----------------------------------------------------------------------------
 // declaration of Python type
 //-----------------------------------------------------------------------------
-static PyTypeObject g_EnvironmentType = {
+PyTypeObject g_EnvironmentType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "ceODBC.Environment",               // tp_name
     sizeof(udt_Environment),            // tp_basicsize
@@ -47,7 +42,7 @@ static PyTypeObject g_EnvironmentType = {
 // Environment_New()
 //   Create a new environment object.
 //-----------------------------------------------------------------------------
-static udt_Environment *Environment_New(void)
+udt_Environment *Environment_New(void)
 {
     udt_Environment *self;
     SQLRETURN rc;
