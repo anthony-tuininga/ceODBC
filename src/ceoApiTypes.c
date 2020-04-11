@@ -81,26 +81,14 @@ udt_ApiType *ApiType_New(PyObject *module, const char *name)
 //-----------------------------------------------------------------------------
 static PyObject *ApiType_Repr(udt_ApiType *self)
 {
-    PyObject *module, *name, *result, *format, *formatArgs = NULL;
+    PyObject *module, *name, *result;
 
-    if (GetModuleAndName(Py_TYPE(self), &module, &name) < 0)
+    if (ceoUtils_getModuleAndName(Py_TYPE(self), &module, &name) < 0)
         return NULL;
-    formatArgs = PyTuple_Pack(3, module, name, self->name);
+    result = ceoUtils_formatString("<%s.%s %s>",
+            PyTuple_Pack(3, module, name, self->name));
     Py_DECREF(module);
     Py_DECREF(name);
-    if (!formatArgs)
-        return NULL;
-
-    format = ceString_FromAscii("<%s.%s %s>");
-    if (!format) {
-        Py_DECREF(formatArgs);
-        return NULL;
-    }
-
-    result = PyUnicode_Format(format, formatArgs);
-    Py_DECREF(format);
-    Py_DECREF(formatArgs);
-
     return result;
 }
 

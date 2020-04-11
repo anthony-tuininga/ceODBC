@@ -11,8 +11,13 @@
     if (!apiTypeObject) \
         return NULL;
 
-#define REGISTER_TYPE(apiTypeObject, type) \
-    if (PyList_Append(apiTypeObject->types, (PyObject*) type) < 0) \
+// define macro for adding database types
+#define CEO_ADD_DB_TYPE(transformNum, name, typeObj) \
+    if (ceoModule_addDbType(module, transformNum, name, typeObj) < 0) \
+        return NULL;
+
+#define REGISTER_TYPE(apiTypeObject, dbType) \
+    if (PyList_Append(apiTypeObject->types, dbType) < 0) \
         return NULL;
 
 #define ADD_TYPE_OBJECT(name, type) \
@@ -56,23 +61,6 @@ PyTypeObject *g_TimeType = NULL;
 
 
 //-----------------------------------------------------------------------------
-// GetModuleAndName()
-//   Return the module and name for the type.
-//-----------------------------------------------------------------------------
-int GetModuleAndName(PyTypeObject *type, PyObject **module, PyObject **name)
-{
-    *module = PyObject_GetAttrString( (PyObject*) type, "__module__");
-    if (!*module)
-        return -1;
-    *name = PyObject_GetAttrString( (PyObject*) type, "__name__");
-    if (!*name) {
-        Py_DECREF(*module);
-        return -1;
-    }
-    return 0;
-}
-
-//-----------------------------------------------------------------------------
 // API types
 //-----------------------------------------------------------------------------
 udt_ApiType *g_BinaryApiType = NULL;
@@ -83,11 +71,61 @@ udt_ApiType *g_StringApiType = NULL;
 
 
 //-----------------------------------------------------------------------------
-// SetException()
+// Database types
+//-----------------------------------------------------------------------------
+ceoDbType *ceoDbTypeBigInt = NULL;
+ceoDbType *ceoDbTypeBinary = NULL;
+ceoDbType *ceoDbTypeBit = NULL;
+ceoDbType *ceoDbTypeDate = NULL;
+ceoDbType *ceoDbTypeDecimal = NULL;
+ceoDbType *ceoDbTypeDouble = NULL;
+ceoDbType *ceoDbTypeInt = NULL;
+ceoDbType *ceoDbTypeLongBinary = NULL;
+ceoDbType *ceoDbTypeLongString = NULL;
+ceoDbType *ceoDbTypeString = NULL;
+ceoDbType *ceoDbTypeTime = NULL;
+ceoDbType *ceoDbTypeTimestamp = NULL;
+
+
+//-----------------------------------------------------------------------------
+// ceoModule_dateFromTicks()
+//   Returns a date value suitable for binding.
+//-----------------------------------------------------------------------------
+static PyObject* ceoModule_dateFromTicks(PyObject* self, PyObject* args)
+{
+    return ceoTransform_dateFromTicks(args);
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoModule_addDbType()
+//   Create a database type and add it to the module.
+//-----------------------------------------------------------------------------
+static int ceoModule_addDbType(PyObject *module, ceoTransformNum transformNum,
+        const char *name, ceoDbType **dbType)
+{
+    ceoDbType *tempDbType;
+
+    tempDbType = (ceoDbType*) ceoPyTypeDbType.tp_alloc(&ceoPyTypeDbType, 0);
+    if (!tempDbType)
+        return -1;
+    tempDbType->transformNum = transformNum;
+    tempDbType->name = name;
+    if (PyModule_AddObject(module, name, (PyObject*) tempDbType) < 0) {
+        Py_DECREF(tempDbType);
+        return -1;
+    }
+    *dbType = tempDbType;
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoModule_setException()
 //   Create an exception and set it in the provided dictionary.
 //-----------------------------------------------------------------------------
-static int SetException(PyObject *module, PyObject **exception, char *name,
-        PyObject *baseException)
+static int ceoModule_setException(PyObject *module, PyObject **exception,
+        char *name, PyObject *baseException)
 {
     char buffer[100];
 
@@ -100,30 +138,20 @@ static int SetException(PyObject *module, PyObject **exception, char *name,
 
 
 //-----------------------------------------------------------------------------
-// TimeFromTicks()
+// ceoModule_timeFromTicks()
 //   Returns a time value suitable for binding.
 //-----------------------------------------------------------------------------
-static PyObject* TimeFromTicks(PyObject* self, PyObject* args)
+static PyObject* ceoModule_timeFromTicks(PyObject* self, PyObject* args)
 {
     return ceoTransform_timeFromTicks(args);
 }
 
 
 //-----------------------------------------------------------------------------
-// DateFromTicks()
+// ceoModule_timestampFromTicks()
 //   Returns a date value suitable for binding.
 //-----------------------------------------------------------------------------
-static PyObject* DateFromTicks(PyObject* self, PyObject* args)
-{
-    return ceoTransform_dateFromTicks(args);
-}
-
-
-//-----------------------------------------------------------------------------
-// TimestampFromTicks()
-//   Returns a date value suitable for binding.
-//-----------------------------------------------------------------------------
-static PyObject* TimestampFromTicks(PyObject* self, PyObject* args)
+static PyObject* ceoModule_timestampFromTicks(PyObject* self, PyObject* args)
 {
     return ceoTransform_timestampFromTicks(args);
 }
@@ -133,9 +161,9 @@ static PyObject* TimestampFromTicks(PyObject* self, PyObject* args)
 //   Declaration of methods supported by this module
 //-----------------------------------------------------------------------------
 static PyMethodDef g_ModuleMethods[] = {
-    { "DateFromTicks", DateFromTicks, METH_VARARGS },
-    { "TimeFromTicks", TimeFromTicks, METH_VARARGS },
-    { "TimestampFromTicks", TimestampFromTicks, METH_VARARGS },
+    { "DateFromTicks", ceoModule_dateFromTicks, METH_VARARGS },
+    { "TimeFromTicks", ceoModule_timeFromTicks, METH_VARARGS },
+    { "TimestampFromTicks", ceoModule_timestampFromTicks, METH_VARARGS },
     { NULL }
 };
 
@@ -175,6 +203,7 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     MAKE_TYPE_READY(&ceoPyTypeEnvironment)
     MAKE_TYPE_READY(&ceoPyTypeError)
     MAKE_TYPE_READY(&ceoPyTypeApiType)
+    MAKE_TYPE_READY(&ceoPyTypeDbType)
     MAKE_TYPE_READY(&g_BigIntegerVarType)
     MAKE_TYPE_READY(&g_BinaryVarType)
     MAKE_TYPE_READY(&g_BitVarType)
@@ -194,32 +223,33 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
         return NULL;
 
     // add exceptions
-    if (SetException(module, &g_WarningException, "Warning", NULL) < 0)
+    if (ceoModule_setException(module, &g_WarningException, "Warning",
+            NULL) < 0)
         return NULL;
-    if (SetException(module, &g_ErrorException, "Error", NULL) < 0)
+    if (ceoModule_setException(module, &g_ErrorException, "Error", NULL) < 0)
         return NULL;
-    if (SetException(module, &g_InterfaceErrorException,
+    if (ceoModule_setException(module, &g_InterfaceErrorException,
             "InterfaceError", g_ErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_DatabaseErrorException,
+    if (ceoModule_setException(module, &g_DatabaseErrorException,
             "DatabaseError", g_ErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_DataErrorException,
+    if (ceoModule_setException(module, &g_DataErrorException,
             "DataError", g_DatabaseErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_OperationalErrorException,
+    if (ceoModule_setException(module, &g_OperationalErrorException,
             "OperationalError", g_DatabaseErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_IntegrityErrorException,
+    if (ceoModule_setException(module, &g_IntegrityErrorException,
             "IntegrityError", g_DatabaseErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_InternalErrorException,
+    if (ceoModule_setException(module, &g_InternalErrorException,
             "InternalError", g_DatabaseErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_ProgrammingErrorException,
+    if (ceoModule_setException(module, &g_ProgrammingErrorException,
             "ProgrammingError", g_DatabaseErrorException) < 0)
         return NULL;
-    if (SetException(module, &g_NotSupportedErrorException,
+    if (ceoModule_setException(module, &g_NotSupportedErrorException,
             "NotSupportedError", g_DatabaseErrorException) < 0)
         return NULL;
 
@@ -259,17 +289,35 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     CREATE_API_TYPE(g_RowidApiType, "ROWID")
     CREATE_API_TYPE(g_StringApiType, "STRING")
 
+    // add the database types
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BIGINT, "DB_TYPE_BIGINT", &ceoDbTypeBigInt)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BINARY, "DB_TYPE_BINARY", &ceoDbTypeBinary)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BIT, "DB_TYPE_BIT", &ceoDbTypeBit)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DATE, "DB_TYPE_DATE", &ceoDbTypeDate)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DECIMAL, "DB_TYPE_DECIMAL",
+            &ceoDbTypeDecimal)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DOUBLE, "DB_TYPE_DOUBLE", &ceoDbTypeDouble)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_INT, "DB_TYPE_INT", &ceoDbTypeInt)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_LONG_BINARY, "DB_TYPE_LONG_BINARY",
+            &ceoDbTypeLongBinary)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_LONG_STRING, "DB_TYPE_LONG_STRING",
+            &ceoDbTypeLongString)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_STRING, "DB_TYPE_STRING", &ceoDbTypeString)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_TIME, "DB_TYPE_TIME", &ceoDbTypeTime)
+    CEO_ADD_DB_TYPE(CEO_TRANSFORM_TIMESTAMP, "DB_TYPE_TIMESTAMP",
+            &ceoDbTypeTimestamp)
+
     // register the variable types with the API types
-    REGISTER_TYPE(g_BinaryApiType, &g_BinaryVarType)
-    REGISTER_TYPE(g_BinaryApiType, &g_LongBinaryVarType)
-    REGISTER_TYPE(g_DateTimeApiType, &g_TimestampVarType)
-    REGISTER_TYPE(g_DateTimeApiType, &g_DateVarType)
-    REGISTER_TYPE(g_NumberApiType, &g_BigIntegerVarType)
-    REGISTER_TYPE(g_NumberApiType, &g_DecimalVarType)
-    REGISTER_TYPE(g_NumberApiType, &g_DoubleVarType)
-    REGISTER_TYPE(g_NumberApiType, &g_IntegerVarType)
-    REGISTER_TYPE(g_StringApiType, &g_UnicodeVarType)
-    REGISTER_TYPE(g_StringApiType, &g_LongUnicodeVarType)
+    REGISTER_TYPE(g_BinaryApiType, ceoDbTypeBinary)
+    REGISTER_TYPE(g_BinaryApiType, ceoDbTypeLongBinary)
+    REGISTER_TYPE(g_DateTimeApiType, ceoDbTypeDate)
+    REGISTER_TYPE(g_DateTimeApiType, ceoDbTypeTimestamp)
+    REGISTER_TYPE(g_NumberApiType, ceoDbTypeBigInt)
+    REGISTER_TYPE(g_NumberApiType, ceoDbTypeDecimal)
+    REGISTER_TYPE(g_NumberApiType, ceoDbTypeDouble)
+    REGISTER_TYPE(g_NumberApiType, ceoDbTypeInt)
+    REGISTER_TYPE(g_StringApiType, ceoDbTypeString)
+    REGISTER_TYPE(g_StringApiType, ceoDbTypeLongString)
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)

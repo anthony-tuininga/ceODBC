@@ -824,7 +824,7 @@ static PyObject *Variable_ExternalSetValue(udt_Variable *self, PyObject *args)
 //-----------------------------------------------------------------------------
 PyObject *Variable_Repr(udt_Variable *self)
 {
-    PyObject *valueRepr, *value, *module, *name, *result, *format, *formatArgs;
+    PyObject *valueRepr, *value, *module, *name, *result;
 
     value = Variable_GetValue(self, 0);
     if (!value)
@@ -833,26 +833,14 @@ PyObject *Variable_Repr(udt_Variable *self)
     Py_DECREF(value);
     if (!valueRepr)
         return NULL;
-    format = ceString_FromAscii("<%s.%s with value %s>");
-    if (!format) {
+    if (ceoUtils_getModuleAndName(Py_TYPE(self), &module, &name) < 0) {
         Py_DECREF(valueRepr);
         return NULL;
     }
-    if (GetModuleAndName(Py_TYPE(self), &module, &name) < 0) {
-        Py_DECREF(valueRepr);
-        Py_DECREF(format);
-        return NULL;
-    }
-    formatArgs = PyTuple_Pack(3, module, name, valueRepr);
+    result = ceoUtils_formatString("<%s.%s with value %s>",
+            PyTuple_Pack(3, module, name, valueRepr));
     Py_DECREF(module);
     Py_DECREF(name);
     Py_DECREF(valueRepr);
-    if (!formatArgs) {
-        Py_DECREF(format);
-        return NULL;
-    }
-    result = PyUnicode_Format(format, formatArgs);
-    Py_DECREF(format);
-    Py_DECREF(formatArgs);
     return result;
 }

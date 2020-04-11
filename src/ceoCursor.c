@@ -214,32 +214,20 @@ static int Cursor_Init(udt_Cursor *self, PyObject *args, PyObject *keywordArgs)
 //-----------------------------------------------------------------------------
 static PyObject *Cursor_Repr(udt_Cursor *cursor)
 {
-    PyObject *connectionRepr, *module, *name, *result, *format, *formatArgs;
+    PyObject *connectionRepr, *module, *name, *result;
 
-    format = ceString_FromAscii("<%s.%s on %s>");
-    if (!format)
-        return NULL;
     connectionRepr = PyObject_Repr((PyObject*) cursor->connection);
-    if (!connectionRepr) {
-        Py_DECREF(format);
+    if (!connectionRepr)
         return NULL;
-    }
-    if (GetModuleAndName(Py_TYPE(cursor), &module, &name) < 0) {
-        Py_DECREF(format);
+    if (ceoUtils_getModuleAndName(Py_TYPE(cursor), &module, &name) < 0) {
         Py_DECREF(connectionRepr);
         return NULL;
     }
-    formatArgs = PyTuple_Pack(3, module, name, connectionRepr);
+    result = ceoUtils_formatString("<%s.%s on %s>",
+            PyTuple_Pack(3, module, name, connectionRepr));
     Py_DECREF(module);
     Py_DECREF(name);
     Py_DECREF(connectionRepr);
-    if (!formatArgs) {
-        Py_DECREF(format);
-        return NULL;
-    }
-    result = PyUnicode_Format(format, formatArgs);
-    Py_DECREF(format);
-    Py_DECREF(formatArgs);
     return result;
 }
 

@@ -354,28 +354,19 @@ static void Connection_Free(udt_Connection *self)
 //-----------------------------------------------------------------------------
 static PyObject *Connection_Repr(udt_Connection *connection)
 {
-    PyObject *module, *name, *result, *format, *formatArgs;
+    PyObject *module, *name, *result;
 
-    if (GetModuleAndName(Py_TYPE(connection), &module, &name) < 0)
+    if (ceoUtils_getModuleAndName(Py_TYPE(connection), &module, &name) < 0)
         return NULL;
-    if (connection->dsn)
-        formatArgs = PyTuple_Pack(3, module, name, connection->dsn);
-    else formatArgs = PyTuple_Pack(2, module, name);
+    if (connection->dsn) {
+        result = ceoUtils_formatString("<%s.%s to %s>",
+                PyTuple_Pack(3, module, name, connection->dsn));
+    } else {
+        result = ceoUtils_formatString("<%s.%s to unknown DSN>",
+                PyTuple_Pack(2, module, name));
+    }
     Py_DECREF(module);
     Py_DECREF(name);
-    if (!formatArgs)
-        return NULL;
-
-    if (connection->dsn)
-        format = ceString_FromAscii("<%s.%s to %s>");
-    else format = ceString_FromAscii("<%s.%s to unknown DSN>");
-    if (!format) {
-        Py_DECREF(formatArgs);
-        return NULL;
-    }
-    result = PyUnicode_Format(format, formatArgs);
-    Py_DECREF(format);
-    Py_DECREF(formatArgs);
     return result;
 }
 

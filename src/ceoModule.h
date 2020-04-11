@@ -80,6 +80,7 @@ typedef struct udt_BitVar udt_BitVar;
 typedef struct udt_Connection udt_Connection;
 typedef struct udt_Cursor udt_Cursor;
 typedef struct udt_DateVar udt_DateVar;
+typedef struct ceoDbType ceoDbType;
 typedef struct udt_DecimalVar udt_DecimalVar;
 typedef struct udt_DoubleVar udt_DoubleVar;
 typedef struct udt_Error udt_Error;
@@ -118,6 +119,20 @@ extern udt_ApiType *g_RowidApiType;
 extern udt_ApiType *g_StringApiType;
 
 // database types
+extern ceoDbType *ceoDbTypeBigInt;
+extern ceoDbType *ceoDbTypeBinary;
+extern ceoDbType *ceoDbTypeBit;
+extern ceoDbType *ceoDbTypeDate;
+extern ceoDbType *ceoDbTypeDecimal;
+extern ceoDbType *ceoDbTypeDouble;
+extern ceoDbType *ceoDbTypeInt;
+extern ceoDbType *ceoDbTypeLongBinary;
+extern ceoDbType *ceoDbTypeLongString;
+extern ceoDbType *ceoDbTypeString;
+extern ceoDbType *ceoDbTypeTime;
+extern ceoDbType *ceoDbTypeTimestamp;
+
+// variable types
 extern PyTypeObject g_BigIntegerVarType;
 extern PyTypeObject g_BinaryVarType;
 extern PyTypeObject g_BitVarType;
@@ -135,6 +150,7 @@ extern PyTypeObject g_UnicodeVarType;
 extern PyTypeObject ceoPyTypeApiType;
 extern PyTypeObject ceoPyTypeConnection;
 extern PyTypeObject ceoPyTypeCursor;
+extern PyTypeObject ceoPyTypeDbType;
 extern PyTypeObject ceoPyTypeEnvironment;
 extern PyTypeObject ceoPyTypeError;
 
@@ -161,6 +177,27 @@ extern udt_VariableType vt_LongUnicode;
 extern udt_VariableType vt_Time;
 extern udt_VariableType vt_Timestamp;
 extern udt_VariableType vt_Unicode;
+
+
+//-----------------------------------------------------------------------------
+// Transforms
+//-----------------------------------------------------------------------------
+typedef enum {
+    CEO_TRANSFORM_NONE = 0,
+    CEO_TRANSFORM_BIGINT,
+    CEO_TRANSFORM_BINARY,
+    CEO_TRANSFORM_BIT,
+    CEO_TRANSFORM_DATE,
+    CEO_TRANSFORM_DECIMAL,
+    CEO_TRANSFORM_DOUBLE,
+    CEO_TRANSFORM_INT,
+    CEO_TRANSFORM_LONG_BINARY,
+    CEO_TRANSFORM_LONG_STRING,
+    CEO_TRANSFORM_STRING,
+    CEO_TRANSFORM_TIME,
+    CEO_TRANSFORM_TIMESTAMP,
+    CEO_TRANSFORM_UNSUPPORTED
+} ceoTransformNum;
 
 
 //-----------------------------------------------------------------------------
@@ -229,6 +266,12 @@ struct udt_Cursor {
 struct udt_DateVar {
     Variable_HEAD
     DATE_STRUCT *data;
+};
+
+struct ceoDbType {
+    PyObject_HEAD
+    const char *name;
+    ceoTransformNum transformNum;
 };
 
 struct udt_DecimalVar {
@@ -303,8 +346,6 @@ struct udt_VariableType {
 //-----------------------------------------------------------------------------
 // Functions
 //-----------------------------------------------------------------------------
-int GetModuleAndName(PyTypeObject *type, PyObject **module, PyObject **name);
-
 udt_ApiType *ApiType_New(PyObject *module, const char *name);
 
 int Connection_IsConnected(udt_Connection *conn);
@@ -334,6 +375,9 @@ PyObject *ceoTransform_timeFromSqlValue(TIME_STRUCT *sqlValue);
 PyObject *ceoTransform_timeFromTicks(PyObject* args);
 PyObject *ceoTransform_timestatmpFromSqlValue(TIMESTAMP_STRUCT *sqlValue);
 PyObject *ceoTransform_timestampFromTicks(PyObject *args);
+
+int ceoUtils_getModuleAndName(PyTypeObject *type, PyObject **module,
+        PyObject **name);
 
 int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
         SQLUSMALLINT position);
