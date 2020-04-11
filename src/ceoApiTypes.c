@@ -14,9 +14,9 @@ static PyObject *ApiType_RichCompare(udt_ApiType*, PyObject*, int);
 
 
 //-----------------------------------------------------------------------------
-// declaration of members of the Python type
+// declaration of members for the Python type
 //-----------------------------------------------------------------------------
-static PyMemberDef g_ApiTypeTypeMembers[] = {
+static PyMemberDef ceoMembers[] = {
     { "name", T_OBJECT, offsetof(udt_ApiType, name), READONLY },
     { "types", T_OBJECT, offsetof(udt_ApiType, types), READONLY },
     { NULL }
@@ -26,36 +26,15 @@ static PyMemberDef g_ApiTypeTypeMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of the Python type
 //-----------------------------------------------------------------------------
-PyTypeObject g_ApiTypeType = {
+PyTypeObject ceoPyTypeApiType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "ceODBC._ApiType",                  // tp_name
-    sizeof(udt_ApiType),                // tp_basicsize
-    0,                                  // tp_itemsize
-    (destructor) ApiType_Free,          // tp_dealloc
-    0,                                  // tp_print
-    0,                                  // tp_getattr
-    0,                                  // tp_setattr
-    0,                                  // tp_compare
-    (reprfunc) ApiType_Repr,            // tp_repr
-    0,                                  // tp_as_number
-    0,                                  // tp_as_sequence
-    0,                                  // tp_as_mapping
-    0,                                  // tp_hash
-    0,                                  // tp_call
-    0,                                  // tp_str
-    0,                                  // tp_getattro
-    0,                                  // tp_setattro
-    0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0,                                  // tp_doc
-    0,                                  // tp_traverse
-    0,                                  // tp_clear
-    (richcmpfunc) ApiType_RichCompare,  // tp_richcompare
-    0,                                  // tp_weaklistoffset
-    0,                                  // tp_iter
-    0,                                  // tp_iternext
-    0,                                  // tp_methods
-    g_ApiTypeTypeMembers                // tp_members
+    .tp_name = "ceODBC._ApiType",
+    .tp_basicsize = sizeof(udt_ApiType),
+    .tp_dealloc = (destructor) ApiType_Free,
+    .tp_repr = (reprfunc) ApiType_Repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_richcompare = (richcmpfunc) ApiType_RichCompare,
+    .tp_members = ceoMembers
 };
 
 
@@ -79,7 +58,7 @@ udt_ApiType *ApiType_New(PyObject *module, const char *name)
 {
     udt_ApiType *self;
 
-    self = PyObject_NEW(udt_ApiType, &g_ApiTypeType);
+    self = PyObject_NEW(udt_ApiType, &ceoPyTypeApiType);
     if (!self)
         return NULL;
     self->name = ceString_FromAscii(name);

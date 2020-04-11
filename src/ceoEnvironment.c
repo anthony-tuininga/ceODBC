@@ -11,30 +11,14 @@
 static void Environment_Free(udt_Environment*);
 
 //-----------------------------------------------------------------------------
-// declaration of Python type
+// declaration of the Python type
 //-----------------------------------------------------------------------------
-PyTypeObject g_EnvironmentType = {
+PyTypeObject ceoPyTypeEnvironment = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "ceODBC.Environment",               // tp_name
-    sizeof(udt_Environment),            // tp_basicsize
-    0,                                  // tp_itemsize
-    (destructor) Environment_Free,      // tp_dealloc
-    0,                                  // tp_print
-    0,                                  // tp_getattr
-    0,                                  // tp_setattr
-    0,                                  // tp_compare
-    0,                                  // tp_repr
-    0,                                  // tp_as_number
-    0,                                  // tp_as_sequence
-    0,                                  // tp_as_mapping
-    0,                                  // tp_hash
-    0,                                  // tp_call
-    0,                                  // tp_str
-    0,                                  // tp_getattro
-    0,                                  // tp_setattro
-    0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0                                   // tp_doc
+    .tp_name = "ceODBC.Environment",
+    .tp_basicsize = sizeof(udt_Environment),
+    .tp_dealloc = (destructor) Environment_Free,
+    .tp_flags = Py_TPFLAGS_DEFAULT
 };
 
 
@@ -48,7 +32,7 @@ udt_Environment *Environment_New(void)
     SQLRETURN rc;
 
     // create a new object
-    self = PyObject_NEW(udt_Environment, &g_EnvironmentType);
+    self = PyObject_NEW(udt_Environment, &ceoPyTypeEnvironment);
     if (!self)
         return NULL;
     self->handleType = SQL_HANDLE_ENV;

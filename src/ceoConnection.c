@@ -34,9 +34,9 @@ static int Connection_SetAutoCommit(udt_Connection*, PyObject*, void*);
 
 
 //-----------------------------------------------------------------------------
-// declaration of methods for Python type "Connection"
+// declaration of methods for the Python type
 //-----------------------------------------------------------------------------
-static PyMethodDef g_ConnectionMethods[] = {
+static PyMethodDef ceoMethods[] = {
     { "cursor", (PyCFunction) Connection_NewCursor, METH_NOARGS },
     { "commit", (PyCFunction) Connection_Commit, METH_NOARGS },
     { "rollback", (PyCFunction) Connection_Rollback, METH_NOARGS },
@@ -64,9 +64,9 @@ static PyMethodDef g_ConnectionMethods[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of members for Python type "Connection"
+// declaration of members for the Python type
 //-----------------------------------------------------------------------------
-static PyMemberDef g_ConnectionMembers[] = {
+static PyMemberDef ceoMembers[] = {
     { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
     { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
     { "inputtypehandler", T_OBJECT,
@@ -78,9 +78,9 @@ static PyMemberDef g_ConnectionMembers[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of calculated members for Python type "Connection"
+// declaration of calculated members for the Python type
 //-----------------------------------------------------------------------------
-static PyGetSetDef g_ConnectionCalcMembers[] = {
+static PyGetSetDef ceoCalcMembers[] = {
     { "autocommit", (getter) Connection_GetAutoCommit,
             (setter) Connection_SetAutoCommit, 0, 0 },
     { NULL }
@@ -88,51 +88,20 @@ static PyGetSetDef g_ConnectionCalcMembers[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of Python type "Connection"
+// declaration of the Python type
 //-----------------------------------------------------------------------------
-PyTypeObject g_ConnectionType = {
+PyTypeObject ceoPyTypeConnection = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "ceODBC.Connection",                // tp_name
-    sizeof(udt_Connection),             // tp_basicsize
-    0,                                  // tp_itemsize
-    (destructor) Connection_Free,       // tp_dealloc
-    0,                                  // tp_print
-    0,                                  // tp_getattr
-    0,                                  // tp_setattr
-    0,                                  // tp_compare
-    (reprfunc) Connection_Repr,         // tp_repr
-    0,                                  // tp_as_number
-    0,                                  // tp_as_sequence
-    0,                                  // tp_as_mapping
-    0,                                  // tp_hash
-    0,                                  // tp_call
-    0,                                  // tp_str
-    0,                                  // tp_getattro
-    0,                                  // tp_setattro
-    0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-                                        // tp_flags
-    0,                                  // tp_doc
-    0,                                  // tp_traverse
-    0,                                  // tp_clear
-    0,                                  // tp_richcompare
-    0,                                  // tp_weaklistoffset
-    0,                                  // tp_iter
-    0,                                  // tp_iternext
-    g_ConnectionMethods,                // tp_methods
-    g_ConnectionMembers,                // tp_members
-    g_ConnectionCalcMembers,            // tp_getset
-    0,                                  // tp_base
-    0,                                  // tp_dict
-    0,                                  // tp_descr_get
-    0,                                  // tp_descr_set
-    0,                                  // tp_dictoffset
-    (initproc) Connection_Init,         // tp_init
-    0,                                  // tp_alloc
-    (newfunc) Connection_New,           // tp_new
-    0,                                  // tp_free
-    0,                                  // tp_is_gc
-    0                                   // tp_bases
+    .tp_name = "ceODBC.Connection",
+    .tp_basicsize = sizeof(udt_Connection),
+    .tp_dealloc = (destructor) Connection_Free,
+    .tp_repr = (reprfunc) Connection_Repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
+    .tp_getset = ceoCalcMembers,
+    .tp_init = (initproc) Connection_Init,
+    .tp_new = (newfunc) Connection_New
 };
 
 
@@ -508,7 +477,7 @@ static PyObject *Connection_NewCursor(udt_Connection *self, PyObject *args)
         return NULL;
     Py_INCREF(self);
     PyTuple_SET_ITEM(createArgs, 0, (PyObject*) self);
-    result = PyObject_Call( (PyObject*) &g_CursorType, createArgs, NULL);
+    result = PyObject_Call( (PyObject*) &ceoPyTypeCursor, createArgs, NULL);
     Py_DECREF(createArgs);
     return result;
 }

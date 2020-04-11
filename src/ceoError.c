@@ -13,9 +13,9 @@ static PyObject *Error_Str(udt_Error*);
 
 
 //-----------------------------------------------------------------------------
-// declaration of members
+// declaration of members for Python type
 //-----------------------------------------------------------------------------
-static PyMemberDef g_ErrorMembers[] = {
+static PyMemberDef ceoMembers[] = {
     { "message", T_OBJECT, offsetof(udt_Error, message), READONLY },
     { "context", T_STRING, offsetof(udt_Error, context), READONLY },
     { NULL }
@@ -25,37 +25,14 @@ static PyMemberDef g_ErrorMembers[] = {
 //-----------------------------------------------------------------------------
 // declaration of Python type
 //-----------------------------------------------------------------------------
-PyTypeObject g_ErrorType = {
+PyTypeObject ceoPyTypeError = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "ceODBC._Error",                    // tp_name
-    sizeof(udt_Error),                  // tp_basicsize
-    0,                                  // tp_itemsize
-    (destructor) Error_Free,            // tp_dealloc
-    0,                                  // tp_print
-    0,                                  // tp_getattr
-    0,                                  // tp_setattr
-    0,                                  // tp_compare
-    0,                                  // tp_repr
-    0,                                  // tp_as_number
-    0,                                  // tp_as_sequence
-    0,                                  // tp_as_mapping
-    0,                                  // tp_hash
-    0,                                  // tp_call
-    (reprfunc) Error_Str,               // tp_str
-    0,                                  // tp_getattro
-    0,                                  // tp_setattro
-    0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT,                 // tp_flags
-    0,                                  // tp_doc
-    0,                                  // tp_traverse
-    0,                                  // tp_clear
-    0,                                  // tp_richcompare
-    0,                                  // tp_weaklistoffset
-    0,                                  // tp_iter
-    0,                                  // tp_iternext
-    0,                                  // tp_methods
-    g_ErrorMembers,                     // tp_members
-    0                                   // tp_getset
+    .tp_name = "ceODBC._Error",
+    .tp_basicsize = sizeof(udt_Error),
+    .tp_dealloc = (destructor) Error_Free,
+    .tp_str = (reprfunc) Error_Str,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_members = ceoMembers
 };
 
 
@@ -109,7 +86,7 @@ int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
     }
 
     // create new error object
-    error = PyObject_NEW(udt_Error, &g_ErrorType);
+    error = PyObject_NEW(udt_Error, &ceoPyTypeError);
     if (!error)
         return -1;
     error->context = context;

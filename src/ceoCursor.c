@@ -39,9 +39,9 @@ static PyObject *Cursor_Var(udt_Cursor*, PyObject*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
-// declaration of methods for Python type "Cursor"
+// declaration of methods for the Python type
 //-----------------------------------------------------------------------------
-static PyMethodDef g_CursorMethods[] = {
+static PyMethodDef ceoMethods[] = {
     { "execute", (PyCFunction) Cursor_Execute, METH_VARARGS },
     { "executemany", (PyCFunction) Cursor_ExecuteMany, METH_VARARGS },
     { "fetchall", (PyCFunction) Cursor_FetchAll, METH_NOARGS },
@@ -62,9 +62,9 @@ static PyMethodDef g_CursorMethods[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of members for Python type "Cursor"
+// declaration of members for the Python type
 //-----------------------------------------------------------------------------
-static PyMemberDef g_CursorMembers[] = {
+static PyMemberDef ceoMembers[] = {
     { "arraysize", T_INT, offsetof(udt_Cursor, arraySize), 0 },
     { "bindarraysize", T_INT, offsetof(udt_Cursor, bindArraySize), 0 },
     { "logsql", T_INT, offsetof(udt_Cursor, logSql), 0 },
@@ -81,9 +81,9 @@ static PyMemberDef g_CursorMembers[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of calculated members for Python type "Cursor"
+// declaration of calculated members for the Python type
 //-----------------------------------------------------------------------------
-static PyGetSetDef g_CursorCalcMembers[] = {
+static PyGetSetDef ceoCalcMembers[] = {
     { "description", (getter) Cursor_GetDescription, 0, 0, 0 },
     { "name", (getter) Cursor_GetName, (setter) Cursor_SetName, 0, 0 },
     { NULL }
@@ -91,51 +91,22 @@ static PyGetSetDef g_CursorCalcMembers[] = {
 
 
 //-----------------------------------------------------------------------------
-// declaration of Python type "Cursor"
+// declaration of the Python type
 //-----------------------------------------------------------------------------
-PyTypeObject g_CursorType = {
+PyTypeObject ceoPyTypeCursor = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "ceODBC.Cursor",                    // tp_name
-    sizeof(udt_Cursor),                 // tp_basicsize
-    0,                                  // tp_itemsize
-    (destructor) Cursor_Free,           // tp_dealloc
-    0,                                  // tp_print
-    0,                                  // tp_getattr
-    0,                                  // tp_setattr
-    0,                                  // tp_compare
-    (reprfunc) Cursor_Repr,             // tp_repr
-    0,                                  // tp_as_number
-    0,                                  // tp_as_sequence
-    0,                                  // tp_as_mapping
-    0,                                  // tp_hash
-    0,                                  // tp_call
-    0,                                  // tp_str
-    0,                                  // tp_getattro
-    0,                                  // tp_setattro
-    0,                                  // tp_as_buffer
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-                                        // tp_flags
-    0,                                  // tp_doc
-    0,                                  // tp_traverse
-    0,                                  // tp_clear
-    0,                                  // tp_richcompare
-    0,                                  // tp_weaklistoffset
-    (getiterfunc) Cursor_GetIter,       // tp_iter
-    (iternextfunc) Cursor_GetNext,      // tp_iternext
-    g_CursorMethods,                    // tp_methods
-    g_CursorMembers,                    // tp_members
-    g_CursorCalcMembers,                // tp_getset
-    0,                                  // tp_base
-    0,                                  // tp_dict
-    0,                                  // tp_descr_get
-    0,                                  // tp_descr_set
-    0,                                  // tp_dictoffset
-    (initproc) Cursor_Init,             // tp_init
-    0,                                  // tp_alloc
-    Cursor_New,                         // tp_new
-    0,                                  // tp_free
-    0,                                  // tp_is_gc
-    0                                   // tp_bases
+    .tp_name = "ceODBC.Cursor",
+    .tp_basicsize = sizeof(udt_Cursor),
+    .tp_dealloc = (destructor) Cursor_Free,
+    .tp_repr = (reprfunc) Cursor_Repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_iter = (getiterfunc) Cursor_GetIter,
+    .tp_iternext = (iternextfunc) Cursor_GetNext,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
+    .tp_getset = ceoCalcMembers,
+    .tp_init = (initproc) Cursor_Init,
+    .tp_new = Cursor_New
 };
 
 
@@ -211,7 +182,7 @@ udt_Cursor *Cursor_InternalNew(udt_Connection *connection)
 {
     udt_Cursor *self;
 
-    self = PyObject_NEW(udt_Cursor, &g_CursorType);
+    self = PyObject_NEW(udt_Cursor, &ceoPyTypeCursor);
     if (!self)
         return NULL;
     if (Cursor_InternalInit(self, connection) < 0) {
@@ -231,7 +202,7 @@ static int Cursor_Init(udt_Cursor *self, PyObject *args, PyObject *keywordArgs)
 {
     udt_Connection *connection;
 
-    if (!PyArg_ParseTuple(args, "O!", &g_ConnectionType, &connection))
+    if (!PyArg_ParseTuple(args, "O!", &ceoPyTypeConnection, &connection))
         return -1;
     return Cursor_InternalInit(self, connection);
 }

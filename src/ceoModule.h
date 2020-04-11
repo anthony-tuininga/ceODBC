@@ -132,11 +132,11 @@ extern PyTypeObject g_TimestampVarType;
 extern PyTypeObject g_UnicodeVarType;
 
 // other module types
-extern PyTypeObject g_ApiTypeType;
-extern PyTypeObject g_ConnectionType;
-extern PyTypeObject g_CursorType;
-extern PyTypeObject g_EnvironmentType;
-extern PyTypeObject g_ErrorType;
+extern PyTypeObject ceoPyTypeApiType;
+extern PyTypeObject ceoPyTypeConnection;
+extern PyTypeObject ceoPyTypeCursor;
+extern PyTypeObject ceoPyTypeEnvironment;
+extern PyTypeObject ceoPyTypeError;
 
 // other Python types
 extern PyTypeObject *g_DecimalType;

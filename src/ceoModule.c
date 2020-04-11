@@ -170,11 +170,11 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
         return NULL;
 
     // prepare the types for use by the module
-    MAKE_TYPE_READY(&g_ConnectionType)
-    MAKE_TYPE_READY(&g_CursorType)
-    MAKE_TYPE_READY(&g_EnvironmentType)
-    MAKE_TYPE_READY(&g_ErrorType)
-    MAKE_TYPE_READY(&g_ApiTypeType)
+    MAKE_TYPE_READY(&ceoPyTypeConnection)
+    MAKE_TYPE_READY(&ceoPyTypeCursor)
+    MAKE_TYPE_READY(&ceoPyTypeEnvironment)
+    MAKE_TYPE_READY(&ceoPyTypeError)
+    MAKE_TYPE_READY(&ceoPyTypeApiType)
     MAKE_TYPE_READY(&g_BigIntegerVarType)
     MAKE_TYPE_READY(&g_BinaryVarType)
     MAKE_TYPE_READY(&g_BitVarType)
@@ -224,13 +224,13 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
         return NULL;
 
     // add the base types
-    ADD_TYPE_OBJECT("Connection", &g_ConnectionType)
-    ADD_TYPE_OBJECT("Cursor", &g_CursorType)
-    ADD_TYPE_OBJECT("_ApiType", &g_ApiTypeType)
-    ADD_TYPE_OBJECT("_Error", &g_ErrorType)
+    ADD_TYPE_OBJECT("Connection", &ceoPyTypeConnection)
+    ADD_TYPE_OBJECT("Cursor", &ceoPyTypeCursor)
+    ADD_TYPE_OBJECT("_ApiType", &ceoPyTypeApiType)
+    ADD_TYPE_OBJECT("_Error", &ceoPyTypeError)
 
     // the name "connect" is required by the DB API
-    ADD_TYPE_OBJECT("connect", &g_ConnectionType)
+    ADD_TYPE_OBJECT("connect", &ceoPyTypeConnection)
 
     // add the constructors required by the DB API
     ADD_TYPE_OBJECT("Binary", &PyBytes_Type)
