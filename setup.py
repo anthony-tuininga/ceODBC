@@ -21,7 +21,7 @@ if sys.version_info[:2] < (3, 5):
     raise Exception("Python 3.5 or higher is required.")
 
 # define build version
-BUILD_VERSION = "2.1"
+BUILD_VERSION = "3.0"
 
 # define class to allow building the module with or without cx_Logging
 class build_ext(distutils.command.build_ext.build_ext):
