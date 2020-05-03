@@ -149,3 +149,28 @@ int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
     Py_DECREF(error);
     return -1;
 }
+
+
+//-----------------------------------------------------------------------------
+// ceoError_raiseFromString()
+//   Internal method for raising an exception given a string. Returns -1 as a
+// convenience to the caller.
+//-----------------------------------------------------------------------------
+int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
+        const char *context)
+{
+    udt_Error *error;
+
+    error = (udt_Error*) ceoPyTypeError.tp_alloc(&ceoPyTypeError, 0);
+    if (!error)
+        return -1;
+    error->context = context;
+    error->message = PyUnicode_DecodeASCII(message, strlen(message), NULL);
+    if (!error->message) {
+        Py_DECREF(error);
+        return -1;
+    }
+    PyErr_SetObject(exceptionType, (PyObject*) error);
+    Py_DECREF(error);
+    return -1;
+}

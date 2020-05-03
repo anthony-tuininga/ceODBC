@@ -68,3 +68,6 @@ Variable Objects
 
    This read-only attribute returns the size of the variable.
 
+.. attribute:: Variable.type
+
+   This read-only attribute returns the type of the variable.

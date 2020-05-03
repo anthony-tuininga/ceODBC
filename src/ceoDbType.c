@@ -50,6 +50,175 @@ static void ceoDbType_free(ceoDbType *dbType)
 
 
 //-----------------------------------------------------------------------------
+// ceoDbType_fromSqlDataType()
+//   Return the database type corresponding to the SQL data type.
+//-----------------------------------------------------------------------------
+ceoDbType *ceoDbType_fromSqlDataType(SQLSMALLINT sqlDataType)
+{
+    char buffer[100];
+
+    switch(sqlDataType) {
+        case SQL_BIGINT:
+            return ceoDbTypeBigInt;
+        case SQL_BIT:
+            return ceoDbTypeBit;
+        case SQL_SMALLINT:
+        case SQL_TINYINT:
+        case SQL_INTEGER:
+            return ceoDbTypeInt;
+        case SQL_REAL:
+        case SQL_FLOAT:
+        case SQL_DOUBLE:
+            return ceoDbTypeDouble;
+        case SQL_DECIMAL:
+        case SQL_NUMERIC:
+            return ceoDbTypeDecimal;
+        case SQL_TYPE_DATE:
+            return ceoDbTypeDate;
+        case SQL_TYPE_TIME:
+            return ceoDbTypeTime;
+        case SQL_TYPE_TIMESTAMP:
+            return ceoDbTypeTimestamp;
+        case SQL_CHAR:
+        case SQL_VARCHAR:
+        case SQL_GUID:
+        case SQL_WCHAR:
+        case SQL_WVARCHAR:
+            return ceoDbTypeString;
+        case SQL_LONGVARCHAR:
+        case SQL_WLONGVARCHAR:
+            return ceoDbTypeLongString;
+        case SQL_BINARY:
+        case SQL_VARBINARY:
+            return ceoDbTypeBinary;
+        case SQL_LONGVARBINARY:
+            return ceoDbTypeLongBinary;
+    }
+
+    sprintf(buffer, "unsupported SQL data type %d", sqlDataType);
+    PyErr_SetString(g_NotSupportedErrorException, buffer);
+    return NULL;
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoDbType_fromPythonType()
+//   Return the database type corresponding to the Python type. An exception is
+// raised if the Python type is not supported.
+//-----------------------------------------------------------------------------
+ceoDbType *ceoDbType_fromPythonType(PyTypeObject *type)
+{
+    char message[250];
+
+    if (type == &PyUnicode_Type)
+        return ceoDbTypeString;
+    if (type == &PyBytes_Type)
+        return ceoDbTypeBinary;
+    if (type == &PyFloat_Type)
+        return ceoDbTypeDouble;
+    if (type == &PyLong_Type)
+        return ceoDbTypeInt;
+    if (type == g_DecimalType)
+        return ceoDbTypeDecimal;
+    if (type == &PyBool_Type)
+        return ceoDbTypeBit;
+    if (type == g_DateType)
+        return ceoDbTypeDate;
+    if (type == g_DateTimeType)
+        return ceoDbTypeTimestamp;
+    if (type == g_TimeType)
+        return ceoDbTypeTime;
+
+    // no valid type specified
+    snprintf(message, sizeof(message), "Python type %s not supported.",
+            type->tp_name);
+    ceoError_raiseFromString(g_NotSupportedErrorException, message, __func__);
+    return NULL;
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoDbType_fromType()
+//   Return the database type corresponding to the type value supplied by the
+// user. This could be either a database type, an API type or a base Python
+// type.
+//-----------------------------------------------------------------------------
+ceoDbType *ceoDbType_fromType(PyObject *type)
+{
+    udt_ApiType *apiType;
+    char message[250];
+    int status;
+
+    // check to see if a database type constant was specified
+    status = PyObject_IsInstance(type, (PyObject*) &ceoPyTypeDbType);
+    if (status < 0)
+        return NULL;
+    if (status == 1)
+        return (ceoDbType*) type;
+
+    // check to see if an API type constant was specified
+    status = PyObject_IsInstance(type, (PyObject*) &ceoPyTypeApiType);
+    if (status < 0)
+        return NULL;
+    if (status == 1) {
+        apiType = (udt_ApiType*) type;
+        return PyList_GET_ITEM(apiType->types, 0);
+    }
+
+    // check to see if a Python type has been specified
+    if (Py_TYPE(type) != &PyType_Type) {
+        PyErr_SetString(PyExc_TypeError, "expecting type");
+        return NULL;
+    }
+
+    return ceoDbType_fromPythonType((PyTypeObject*) type);
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoDbType_fromValue()
+//   Return the database type corresponding to the value supplied by the user.
+//-----------------------------------------------------------------------------
+ceoDbType *ceoDbType_fromValue(PyObject *value, SQLUINTEGER *size)
+{
+    char message[250];
+
+    *size = 0;
+    if (value == Py_None) {
+        *size = 1;
+        return ceoDbTypeString;
+    }
+    if (PyUnicode_Check(value)) {
+        *size = PyUnicode_GetLength(value);
+        return ceoDbTypeString;
+    }
+    if (PyBytes_Check(value)) {
+        *size = PyBytes_Size(value);
+        return ceoDbTypeBinary;
+    }
+    if (PyBool_Check(value))
+        return ceoDbTypeBit;
+    if (PyLong_Check(value))
+        return ceoDbTypeBigInt;
+    if (PyFloat_Check(value))
+        return ceoDbTypeDouble;
+    if (Py_TYPE(value) == g_DecimalType)
+        return ceoDbTypeDecimal;
+    if (Py_TYPE(value) == g_TimeType)
+        return ceoDbTypeTime;
+    if (Py_TYPE(value) == g_DateTimeType)
+        return ceoDbTypeTimestamp;
+    if (Py_TYPE(value) == g_DateType)
+        return ceoDbTypeDate;
+
+    snprintf(message, sizeof(message), "Python value of type %s not supported",
+            Py_TYPE(value)->tp_name);
+    ceoError_raiseFromString(g_NotSupportedErrorException, message, __func__);
+    return NULL;
+}
+
+
+//-----------------------------------------------------------------------------
 // ceoDbType_repr()
 //   Return a string representation of a queue.
 //-----------------------------------------------------------------------------
@@ -125,5 +294,5 @@ static PyObject *ceoDbType_richCompare(ceoDbType* dbType, PyObject* obj,
 //-----------------------------------------------------------------------------
 static Py_hash_t ceoDbType_hash(ceoDbType *dbType)
 {
-    return (Py_hash_t) dbType->transformNum;
+    return (Py_hash_t) dbType->sqlDataType;
 }

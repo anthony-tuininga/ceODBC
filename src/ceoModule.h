@@ -26,6 +26,12 @@
 #define WriteMessageForPython(...)
 #endif
 
+// define default size for STRING and BINARY values
+#define CEO_DEFAULT_VAR_SIZE            255
+
+// define default size for LONG string and binary values
+#define CEO_DEFAULT_LONG_VAR_SIZE       128 * 1024
+
 // define macro for determining the number of elements in an array
 #define CEO_ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
 
@@ -54,21 +60,6 @@
     SQLSMALLINT handleType; \
     SQLHANDLE handle;
 
-// define macro for defining variable types
-#define Variable_HEAD \
-    PyObject_HEAD \
-    SQLSMALLINT position; \
-    SQLINTEGER numElements; \
-    SQLLEN *lengthOrIndicator; \
-    udt_VariableType *type; \
-    SQLUINTEGER size; \
-    SQLLEN bufferSize; \
-    SQLSMALLINT scale; \
-    int input; \
-    int output; \
-    PyObject *inConverter; \
-    PyObject *outConverter;
-
 
 //-----------------------------------------------------------------------------
 // Forward Declarations
@@ -92,7 +83,6 @@ typedef struct udt_TimeVar udt_TimeVar;
 typedef struct udt_TimestampVar udt_TimestampVar;
 typedef struct udt_UnicodeVar udt_UnicodeVar;
 typedef struct udt_Variable udt_Variable;
-typedef struct udt_VariableType udt_VariableType;
 
 
 //-----------------------------------------------------------------------------
@@ -132,20 +122,6 @@ extern ceoDbType *ceoDbTypeString;
 extern ceoDbType *ceoDbTypeTime;
 extern ceoDbType *ceoDbTypeTimestamp;
 
-// variable types
-extern PyTypeObject g_BigIntegerVarType;
-extern PyTypeObject g_BinaryVarType;
-extern PyTypeObject g_BitVarType;
-extern PyTypeObject g_DateVarType;
-extern PyTypeObject g_DecimalVarType;
-extern PyTypeObject g_DoubleVarType;
-extern PyTypeObject g_IntegerVarType;
-extern PyTypeObject g_LongBinaryVarType;
-extern PyTypeObject g_LongUnicodeVarType;
-extern PyTypeObject g_TimeVarType;
-extern PyTypeObject g_TimestampVarType;
-extern PyTypeObject g_UnicodeVarType;
-
 // other module types
 extern PyTypeObject ceoPyTypeApiType;
 extern PyTypeObject ceoPyTypeConnection;
@@ -153,51 +129,13 @@ extern PyTypeObject ceoPyTypeCursor;
 extern PyTypeObject ceoPyTypeDbType;
 extern PyTypeObject ceoPyTypeEnvironment;
 extern PyTypeObject ceoPyTypeError;
+extern PyTypeObject ceoPyTypeVar;
 
 // other Python types
 extern PyTypeObject *g_DecimalType;
 extern PyTypeObject *g_DateType;
 extern PyTypeObject *g_DateTimeType;
 extern PyTypeObject *g_TimeType;
-
-// variable members and methods
-extern PyMemberDef g_VariableMembers[];
-extern PyMethodDef g_VariableMethods[];
-
-// variable types
-extern udt_VariableType vt_BigInteger;
-extern udt_VariableType vt_Binary;
-extern udt_VariableType vt_Bit;
-extern udt_VariableType vt_Date;
-extern udt_VariableType vt_Decimal;
-extern udt_VariableType vt_Double;
-extern udt_VariableType vt_Integer;
-extern udt_VariableType vt_LongBinary;
-extern udt_VariableType vt_LongUnicode;
-extern udt_VariableType vt_Time;
-extern udt_VariableType vt_Timestamp;
-extern udt_VariableType vt_Unicode;
-
-
-//-----------------------------------------------------------------------------
-// Transforms
-//-----------------------------------------------------------------------------
-typedef enum {
-    CEO_TRANSFORM_NONE = 0,
-    CEO_TRANSFORM_BIGINT,
-    CEO_TRANSFORM_BINARY,
-    CEO_TRANSFORM_BIT,
-    CEO_TRANSFORM_DATE,
-    CEO_TRANSFORM_DECIMAL,
-    CEO_TRANSFORM_DOUBLE,
-    CEO_TRANSFORM_INT,
-    CEO_TRANSFORM_LONG_BINARY,
-    CEO_TRANSFORM_LONG_STRING,
-    CEO_TRANSFORM_STRING,
-    CEO_TRANSFORM_TIME,
-    CEO_TRANSFORM_TIMESTAMP,
-    CEO_TRANSFORM_UNSUPPORTED
-} ceoTransformNum;
 
 
 //-----------------------------------------------------------------------------
@@ -209,27 +147,29 @@ typedef SQLUINTEGER (*GetBufferSizeProc)(udt_Variable*, SQLUINTEGER);
 
 
 //-----------------------------------------------------------------------------
+// Unions
+//-----------------------------------------------------------------------------
+typedef union {
+    void *asRaw;
+    SQLBIGINT *asBigInt;
+    SQLCHAR *asBinary;
+    unsigned char *asBit;
+    DATE_STRUCT *asDate;
+    double *asDouble;
+    SQLINTEGER *asInt;
+    SQLWCHAR *asString;
+    TIME_STRUCT *asTime;
+    TIMESTAMP_STRUCT *asTimestamp;
+} ceoVarData;
+
+
+//-----------------------------------------------------------------------------
 // Structures
 //-----------------------------------------------------------------------------
 struct udt_ApiType {
     PyObject_HEAD
     PyObject *name;
     PyObject *types;
-};
-
-struct udt_BigIntegerVar {
-    Variable_HEAD
-    SQLBIGINT *data;
-};
-
-struct udt_BinaryVar {
-    Variable_HEAD
-    SQLCHAR *data;
-};
-
-struct udt_BitVar {
-    Variable_HEAD
-    unsigned char *data;
 };
 
 struct udt_Connection {
@@ -263,25 +203,13 @@ struct udt_Cursor {
     int logSql;
 };
 
-struct udt_DateVar {
-    Variable_HEAD
-    DATE_STRUCT *data;
-};
-
 struct ceoDbType {
     PyObject_HEAD
     const char *name;
-    ceoTransformNum transformNum;
-};
-
-struct udt_DecimalVar {
-    Variable_HEAD
-    SQLWCHAR *data;
-};
-
-struct udt_DoubleVar {
-    Variable_HEAD
-    double *data;
+    SQLSMALLINT sqlDataType;
+    SQLSMALLINT cDataType;
+    SQLUINTEGER bufferSize;
+    SQLUINTEGER bytesMultiplier;
 };
 
 struct udt_Environment {
@@ -292,11 +220,6 @@ struct udt_Error {
     PyObject_HEAD
     PyObject *message;
     const char *context;
-};
-
-struct udt_IntegerVar {
-    Variable_HEAD
-    SQLINTEGER *data;
 };
 
 struct udt_ObjectWithHandle {
@@ -310,36 +233,20 @@ struct udt_StringBuffer {
     PyObject *encodedString;
 };
 
-struct udt_TimeVar {
-    Variable_HEAD
-    TIME_STRUCT *data;
-};
-
-struct udt_TimestampVar {
-    Variable_HEAD
-    TIMESTAMP_STRUCT *data;
-};
-
-struct udt_UnicodeVar {
-    Variable_HEAD
-    SQLWCHAR *data;
-};
-
 struct udt_Variable {
-    Variable_HEAD
-    void *data;
-};
-
-struct udt_VariableType {
-    SetValueProc setValueProc;
-    GetValueProc getValueProc;
-    GetBufferSizeProc getBufferSizeProc;
-    PyTypeObject *pythonType;
-    SQLSMALLINT sqlDataType;
-    SQLSMALLINT cDataType;
-    SQLUINTEGER bufferSize;
-    SQLUINTEGER defaultSize;
-    SQLSMALLINT defaultScale;
+    PyObject_HEAD
+    SQLSMALLINT position;
+    SQLINTEGER numElements;
+    SQLLEN *lengthOrIndicator;
+    ceoDbType *type;
+    SQLUINTEGER size;
+    SQLLEN bufferSize;
+    SQLSMALLINT scale;
+    int input;
+    int output;
+    PyObject *inConverter;
+    PyObject *outConverter;
+    ceoVarData data;
 };
 
 
@@ -353,9 +260,16 @@ int Connection_IsConnected(udt_Connection *conn);
 PyObject *Cursor_InternalCatalogHelper(udt_Cursor *cursor);
 udt_Cursor *Cursor_InternalNew(udt_Connection *connection);
 
+ceoDbType *ceoDbType_fromPythonType(PyTypeObject *type);
+ceoDbType *ceoDbType_fromSqlDataType(SQLSMALLINT sqlDataType);
+ceoDbType *ceoDbType_fromType(PyObject *type);
+ceoDbType *ceoDbType_fromValue(PyObject *value, SQLUINTEGER *size);
+
 udt_Environment *Environment_New(void);
 
 int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
+        const char *context);
+int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
         const char *context);
 
 void StringBuffer_Clear(udt_StringBuffer *buf);
@@ -376,12 +290,12 @@ PyObject *ceoTransform_timeFromTicks(PyObject* args);
 PyObject *ceoTransform_timestatmpFromSqlValue(TIMESTAMP_STRUCT *sqlValue);
 PyObject *ceoTransform_timestampFromTicks(PyObject *args);
 
+PyObject *ceoUtils_formatString(const char *format, PyObject *args);
 int ceoUtils_getModuleAndName(PyTypeObject *type, PyObject **module,
         PyObject **name);
 
 int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
         SQLUSMALLINT position);
-int Variable_Check(PyObject *object);
 int Variable_DefaultInit(udt_Variable *var, PyObject *args,
         PyObject *keywordArgs);
 void Variable_Free(udt_Variable *var);
@@ -391,7 +305,7 @@ int Variable_InitWithScale(udt_Variable *self, PyObject *args,
 int Variable_InitWithSize(udt_Variable *var, PyObject *args,
         PyObject *keywordArgs);
 udt_Variable *Variable_InternalNew(unsigned numElements,
-        udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale);
+        ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale);
 PyObject *Variable_New(PyTypeObject *type, PyObject *args,
         PyObject *keywordArgs);
 udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
@@ -403,6 +317,3 @@ udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
 PyObject *Variable_Repr(udt_Variable *var);
 int Variable_Resize(udt_Variable *var, SQLUINTEGER newSize);
 int Variable_SetValue(udt_Variable *self, unsigned arrayPos, PyObject *value);
-udt_VariableType *Variable_TypeByPythonType(PyObject*);
-udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
-        SQLSMALLINT sqlDataType);

@@ -12,8 +12,10 @@
         return NULL;
 
 // define macro for adding database types
-#define CEO_ADD_DB_TYPE(transformNum, name, typeObj) \
-    if (ceoModule_addDbType(module, transformNum, name, typeObj) < 0) \
+#define CEO_ADD_DB_TYPE(typeObj, name, sqlDataType, cDataType, bufferSize, \
+        bytesMultiplier) \
+    if (ceoModule_addDbType(module, typeObj, name, sqlDataType, cDataType, \
+            bufferSize, bytesMultiplier) < 0) \
         return NULL;
 
 #define REGISTER_TYPE(apiTypeObject, dbType) \
@@ -101,16 +103,20 @@ static PyObject* ceoModule_dateFromTicks(PyObject* self, PyObject* args)
 // ceoModule_addDbType()
 //   Create a database type and add it to the module.
 //-----------------------------------------------------------------------------
-static int ceoModule_addDbType(PyObject *module, ceoTransformNum transformNum,
-        const char *name, ceoDbType **dbType)
+static int ceoModule_addDbType(PyObject *module, ceoDbType **dbType,
+        const char *name, SQLSMALLINT sqlDataType, SQLSMALLINT cDataType,
+        SQLUINTEGER bufferSize, SQLUINTEGER bytesMultiplier)
 {
     ceoDbType *tempDbType;
 
     tempDbType = (ceoDbType*) ceoPyTypeDbType.tp_alloc(&ceoPyTypeDbType, 0);
     if (!tempDbType)
         return -1;
-    tempDbType->transformNum = transformNum;
     tempDbType->name = name;
+    tempDbType->sqlDataType = sqlDataType;
+    tempDbType->cDataType = cDataType;
+    tempDbType->bufferSize = bufferSize;
+    tempDbType->bytesMultiplier = bytesMultiplier;
     if (PyModule_AddObject(module, name, (PyObject*) tempDbType) < 0) {
         Py_DECREF(tempDbType);
         return -1;
@@ -198,24 +204,13 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
         return NULL;
 
     // prepare the types for use by the module
+    MAKE_TYPE_READY(&ceoPyTypeApiType)
     MAKE_TYPE_READY(&ceoPyTypeConnection)
     MAKE_TYPE_READY(&ceoPyTypeCursor)
+    MAKE_TYPE_READY(&ceoPyTypeDbType)
     MAKE_TYPE_READY(&ceoPyTypeEnvironment)
     MAKE_TYPE_READY(&ceoPyTypeError)
-    MAKE_TYPE_READY(&ceoPyTypeApiType)
-    MAKE_TYPE_READY(&ceoPyTypeDbType)
-    MAKE_TYPE_READY(&g_BigIntegerVarType)
-    MAKE_TYPE_READY(&g_BinaryVarType)
-    MAKE_TYPE_READY(&g_BitVarType)
-    MAKE_TYPE_READY(&g_DateVarType)
-    MAKE_TYPE_READY(&g_DecimalVarType)
-    MAKE_TYPE_READY(&g_DoubleVarType)
-    MAKE_TYPE_READY(&g_IntegerVarType)
-    MAKE_TYPE_READY(&g_LongBinaryVarType)
-    MAKE_TYPE_READY(&g_LongUnicodeVarType)
-    MAKE_TYPE_READY(&g_TimeVarType)
-    MAKE_TYPE_READY(&g_TimestampVarType)
-    MAKE_TYPE_READY(&g_UnicodeVarType)
+    MAKE_TYPE_READY(&ceoPyTypeVar)
 
     // initialize module
     module = PyModule_Create(&g_ModuleDef);
@@ -268,20 +263,6 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     ADD_TYPE_OBJECT("Time", g_TimeType)
     ADD_TYPE_OBJECT("Timestamp", g_DateTimeType)
 
-    // add the variable types
-    ADD_TYPE_OBJECT("BigIntegerVar", &g_BigIntegerVarType)
-    ADD_TYPE_OBJECT("BinaryVar", &g_BinaryVarType)
-    ADD_TYPE_OBJECT("BitVar", &g_BitVarType)
-    ADD_TYPE_OBJECT("DateVar", &g_DateVarType)
-    ADD_TYPE_OBJECT("DecimalVar", &g_DecimalVarType)
-    ADD_TYPE_OBJECT("DoubleVar", &g_DoubleVarType)
-    ADD_TYPE_OBJECT("IntegerVar", &g_IntegerVarType)
-    ADD_TYPE_OBJECT("LongBinaryVar", &g_LongBinaryVarType)
-    ADD_TYPE_OBJECT("LongStringVar", &g_LongUnicodeVarType)
-    ADD_TYPE_OBJECT("StringVar", &g_UnicodeVarType)
-    ADD_TYPE_OBJECT("TimeVar", &g_TimeVarType)
-    ADD_TYPE_OBJECT("TimestampVar", &g_TimestampVarType)
-
     // add the API types required by the DB API
     CREATE_API_TYPE(g_BinaryApiType, "BINARY")
     CREATE_API_TYPE(g_DateTimeApiType, "DATETIME")
@@ -290,22 +271,31 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     CREATE_API_TYPE(g_StringApiType, "STRING")
 
     // add the database types
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BIGINT, "DB_TYPE_BIGINT", &ceoDbTypeBigInt)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BINARY, "DB_TYPE_BINARY", &ceoDbTypeBinary)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_BIT, "DB_TYPE_BIT", &ceoDbTypeBit)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DATE, "DB_TYPE_DATE", &ceoDbTypeDate)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DECIMAL, "DB_TYPE_DECIMAL",
-            &ceoDbTypeDecimal)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_DOUBLE, "DB_TYPE_DOUBLE", &ceoDbTypeDouble)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_INT, "DB_TYPE_INT", &ceoDbTypeInt)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_LONG_BINARY, "DB_TYPE_LONG_BINARY",
-            &ceoDbTypeLongBinary)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_LONG_STRING, "DB_TYPE_LONG_STRING",
-            &ceoDbTypeLongString)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_STRING, "DB_TYPE_STRING", &ceoDbTypeString)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_TIME, "DB_TYPE_TIME", &ceoDbTypeTime)
-    CEO_ADD_DB_TYPE(CEO_TRANSFORM_TIMESTAMP, "DB_TYPE_TIMESTAMP",
-            &ceoDbTypeTimestamp)
+    CEO_ADD_DB_TYPE(&ceoDbTypeBigInt, "DB_TYPE_BIGINT", SQL_BIGINT,
+            SQL_C_SBIGINT, sizeof(SQLBIGINT), 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeBinary, "DB_TYPE_BINARY", SQL_VARBINARY,
+            SQL_C_BINARY, 0, 1)
+    CEO_ADD_DB_TYPE(&ceoDbTypeBit, "DB_TYPE_BIT", SQL_BIT, SQL_C_BIT,
+            sizeof(unsigned char), 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeDate, "DB_TYPE_DATE", SQL_TYPE_DATE,
+            SQL_C_TYPE_DATE, sizeof(DATE_STRUCT), 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeDecimal, "DB_TYPE_DECIMAL", SQL_WCHAR,
+            SQL_C_WCHAR, 40, 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeDouble, "DB_TYPE_DOUBLE", SQL_DOUBLE,
+            SQL_C_DOUBLE, sizeof(SQLDOUBLE), 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeInt, "DB_TYPE_INT", SQL_INTEGER, SQL_C_LONG,
+            sizeof(SQLINTEGER), 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeLongBinary, "DB_TYPE_LONG_BINARY",
+            SQL_LONGVARBINARY, SQL_C_BINARY, 0, 1)
+    CEO_ADD_DB_TYPE(&ceoDbTypeLongString, "DB_TYPE_LONG_STRING",
+            SQL_WLONGVARCHAR, SQL_C_WCHAR, 0, 2)
+    CEO_ADD_DB_TYPE(&ceoDbTypeString, "DB_TYPE_STRING", SQL_WVARCHAR,
+            SQL_C_WCHAR, 0, 2)
+    CEO_ADD_DB_TYPE(&ceoDbTypeTime, "DB_TYPE_TIME", SQL_TYPE_TIME,
+            SQL_C_TYPE_TIME, sizeof(TIME_STRUCT), 00)
+    CEO_ADD_DB_TYPE(&ceoDbTypeTimestamp, "DB_TYPE_TIMESTAMP",
+            SQL_TYPE_TIMESTAMP, SQL_C_TYPE_TIMESTAMP, sizeof(TIMESTAMP_STRUCT),
+            0)
 
     // register the variable types with the API types
     REGISTER_TYPE(g_BinaryApiType, ceoDbTypeBinary)
@@ -318,6 +308,20 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     REGISTER_TYPE(g_NumberApiType, ceoDbTypeInt)
     REGISTER_TYPE(g_StringApiType, ceoDbTypeString)
     REGISTER_TYPE(g_StringApiType, ceoDbTypeLongString)
+
+    // create synonyms for backwards compatibility
+    ADD_TYPE_OBJECT("BigIntegerVar", ceoDbTypeBigInt)
+    ADD_TYPE_OBJECT("BinaryVar", ceoDbTypeBinary)
+    ADD_TYPE_OBJECT("BitVar", ceoDbTypeBit)
+    ADD_TYPE_OBJECT("DateVar", ceoDbTypeDate)
+    ADD_TYPE_OBJECT("DecimalVar", ceoDbTypeDecimal)
+    ADD_TYPE_OBJECT("DoubleVar", ceoDbTypeDouble)
+    ADD_TYPE_OBJECT("IntegerVar", ceoDbTypeInt)
+    ADD_TYPE_OBJECT("LongBinaryVar", ceoDbTypeLongBinary)
+    ADD_TYPE_OBJECT("LongStringVar", ceoDbTypeLongString)
+    ADD_TYPE_OBJECT("StringVar", ceoDbTypeString)
+    ADD_TYPE_OBJECT("TimeVar", ceoDbTypeTime)
+    ADD_TYPE_OBJECT("TimestampVar", ceoDbTypeTimestamp)
 
     // create constants required by Python DB API 2.0
     if (PyModule_AddStringConstant(module, "apilevel", "2.0") < 0)

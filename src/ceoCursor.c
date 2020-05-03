@@ -12,7 +12,7 @@ static void Cursor_Free(udt_Cursor*);
 
 
 //-----------------------------------------------------------------------------
-// functions for the Python type "Cursor"
+// functions for the Python type
 //-----------------------------------------------------------------------------
 static PyObject *Cursor_GetIter(udt_Cursor*);
 static PyObject *Cursor_GetNext(udt_Cursor*);
@@ -346,7 +346,7 @@ static int Cursor_BindParameterHelper(udt_Cursor *self, unsigned numElements,
 
     // initialization
     *newVar = NULL;
-    isValueVar = Variable_Check(value);
+    isValueVar = (Py_TYPE(value) == &ceoPyTypeVar);
 
     // handle case where variable is already bound
     if (origVar) {
@@ -604,8 +604,8 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
     SQLULEN precision, size, displaySize;
-    udt_VariableType *varType;
     SQLWCHAR name[256];
+    ceoDbType *dbType;
     PyObject *tuple;
     SQLRETURN rc;
     int i;
@@ -620,8 +620,8 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
         return NULL;
 
     // determine variable type
-    varType = Variable_TypeBySqlDataType(self, dataType);
-    if (!varType)
+    dbType = ceoDbType_fromSqlDataType(dataType);
+    if (!dbType)
         return NULL;
 
     // create the tuple and populate it
@@ -631,32 +631,30 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
 
     // reset precision and scale for all but numbers
     size = precision;
-    if (varType != &vt_BigInteger &&
-            varType != &vt_Bit &&
-            varType != &vt_Integer &&
-            varType != &vt_Double &&
-            varType != &vt_Decimal) {
+    if (dbType != ceoDbTypeBigInt &&
+            dbType != ceoDbTypeBit &&
+            dbType != ceoDbTypeInt &&
+            dbType != ceoDbTypeDouble &&
+            dbType != ceoDbTypeDecimal) {
         precision = 0;
         scale = 0;
     }
 
     // set display size based on data type
     displaySize = size;
-    if (varType == &vt_BigInteger ||
-            varType == &vt_Integer)
+    if (dbType == ceoDbTypeBigInt || dbType == ceoDbTypeInt) {
         displaySize = size + 1;
-    else if (varType == &vt_Double ||
-            varType == &vt_Decimal) {
+    } else if (dbType == ceoDbTypeDouble || dbType == ceoDbTypeDecimal) {
         displaySize = size + 1;
         if (scale > 0)
             displaySize++;
     }
 
     // set each of the items in the tuple
-    Py_INCREF(varType->pythonType);
+    Py_INCREF((PyObject*) dbType);
     PyTuple_SET_ITEM(tuple, 0, 
             ceString_FromStringAndSize(name, nameLength));
-    PyTuple_SET_ITEM(tuple, 1, (PyObject*) varType->pythonType);
+    PyTuple_SET_ITEM(tuple, 1, (PyObject*) dbType);
     PyTuple_SET_ITEM(tuple, 2, PyLong_FromLong(displaySize));
     PyTuple_SET_ITEM(tuple, 3, PyLong_FromLong(size));
     PyTuple_SET_ITEM(tuple, 4, PyLong_FromLong(precision));
@@ -1554,7 +1552,7 @@ static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
             "inconverter", "outconverter", "input", "output", NULL };
     int size, arraySize, scale, input, output;
     PyObject *inConverter, *outConverter;
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     udt_Variable *var;
     PyObject *type;
 
@@ -1569,13 +1567,13 @@ static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
             &outConverter, &input, &output))
         return NULL;
 
-    // determine the type of variable
-    varType = Variable_TypeByPythonType(type);
-    if (!varType)
+    // determine the database type
+    dbType = ceoDbType_fromType(type);
+    if (!dbType)
         return NULL;
 
     // create the variable
-    var = Variable_InternalNew(arraySize, varType, size, scale);
+    var = Variable_InternalNew(arraySize, dbType, size, scale);
     if (!var)
         return NULL;
 

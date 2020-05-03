@@ -25,6 +25,7 @@ PyMemberDef g_VariableMembers[] = {
     { "output", T_INT, offsetof(udt_Variable, output), 0 },
     { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
     { "size", T_INT, offsetof(udt_Variable, size), READONLY },
+    { "type", T_OBJECT, offsetof(udt_Variable, type), READONLY },
     { NULL }
 };
 
@@ -41,54 +42,68 @@ PyMethodDef g_VariableMethods[] = {
 
 
 //-----------------------------------------------------------------------------
+// declaration of the Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeVar = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC.Var",
+    .tp_basicsize = sizeof(udt_Variable),
+    .tp_dealloc = (destructor) Variable_Free,
+    .tp_repr = (reprfunc) Variable_Repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_methods = g_VariableMethods,
+    .tp_members = g_VariableMembers,
+    .tp_init = (initproc) Variable_DefaultInit,
+    .tp_new = Variable_New
+};
+
+
+//-----------------------------------------------------------------------------
 // Variable_InternalInit()
 //   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
-static int Variable_InternalInit(udt_Variable *self, unsigned numElements,
-        udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale,
+static int Variable_InternalInit(udt_Variable *var, unsigned numElements,
+        ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale,
         PyObject *value, int input, int output)
 {
     unsigned PY_LONG_LONG dataLength;
     SQLUINTEGER i;
 
     // perform basic initialization
-    self->position = -1;
-    if (numElements < 1)
-        self->numElements = 1;
-    else self->numElements = numElements;
-    self->size = size;
-    if (type->getBufferSizeProc)
-        self->bufferSize = (*type->getBufferSizeProc)(self, size);
-    else self->bufferSize = type->bufferSize;
-    self->scale = scale;
-    self->type = type;
-    self->input = input;
-    self->output = output;
-    self->lengthOrIndicator = NULL;
-    self->data = NULL;
-    self->inConverter = NULL;
-    self->outConverter = NULL;
+    var->position = -1;
+    var->numElements = (numElements > 1) ? numElements : 1;
+    var->size = size;
+    var->bufferSize = (type->bufferSize > 0) ? type->bufferSize :
+            var->size * type->bytesMultiplier;
+    var->scale = scale;
+    var->type = type;
+    var->input = input;
+    var->output = output;
+    var->lengthOrIndicator = NULL;
+    var->data.asRaw = NULL;
+    var->inConverter = NULL;
+    var->outConverter = NULL;
 
     // allocate the indicator and data arrays
     dataLength = (unsigned PY_LONG_LONG) numElements *
-            (unsigned PY_LONG_LONG) self->bufferSize;
+            (unsigned PY_LONG_LONG) var->bufferSize;
     if (dataLength > INT_MAX) {
         PyErr_SetString(PyExc_ValueError, "array size too large");
         return -1;
     }
-    self->lengthOrIndicator = PyMem_Malloc(numElements * sizeof(SQLLEN));
-    self->data = PyMem_Malloc((size_t) dataLength);
-    if (!self->lengthOrIndicator || !self->data) {
+    var->lengthOrIndicator = PyMem_Malloc(numElements * sizeof(SQLLEN));
+    var->data.asRaw = PyMem_Malloc((size_t) dataLength);
+    if (!var->lengthOrIndicator || !var->data.asRaw) {
         PyErr_NoMemory();
         return -1;
     }
 
     // ensure that all variable values start out NULL
     for (i = 0; i < numElements; i++)
-        self->lengthOrIndicator[i] = SQL_NULL_DATA;
+        var->lengthOrIndicator[i] = SQL_NULL_DATA;
 
     // set value, if applicable
-    if (value && Variable_SetValue(self, 0, value) < 0)
+    if (value && Variable_SetValue(var, 0, value) < 0)
         return -1;
 
     return 0;
@@ -102,7 +117,7 @@ static int Variable_InternalInit(udt_Variable *self, unsigned numElements,
 int Variable_DefaultInit(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     PyObject *value;
     int numElements;
 
@@ -113,11 +128,11 @@ int Variable_DefaultInit(udt_Variable *self, PyObject *args,
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oi", keywordList,
             &value, &numElements))
         return -1;
-    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
-    if (!varType)
+    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
+    if (!dbType)
         return -1;
-    if (Variable_InternalInit(self, numElements, varType,
-            varType->defaultSize, varType->defaultScale, value, 1, 1) < 0)
+    if (Variable_InternalInit(self, numElements, dbType, 0, 0, value, 1,
+            1) < 0)
         return -1;
 
     return 0;
@@ -131,23 +146,23 @@ int Variable_DefaultInit(udt_Variable *self, PyObject *args,
 int Variable_InitWithScale(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     int numElements, scale;
     PyObject *value;
 
     static char *keywordList[] = { "value", "scale", "numElements", NULL };
 
-    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
-    if (!varType)
+    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
+    if (!dbType)
         return -1;
     value = NULL;
+    scale = 0;
     numElements = 1;
-    scale = varType->defaultScale;
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
             &value, &scale, &numElements))
         return -1;
-    if (Variable_InternalInit(self, numElements, varType,
-            varType->defaultSize, scale, value, 1, 1) < 0)
+    if (Variable_InternalInit(self, numElements, dbType, 0, scale, value, 1,
+            1) < 0)
         return -1;
 
     return 0;
@@ -161,23 +176,23 @@ int Variable_InitWithScale(udt_Variable *self, PyObject *args,
 int Variable_InitWithSize(udt_Variable *self, PyObject *args,
         PyObject *keywordArgs)
 {
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     int numElements, size;
     PyObject *value;
 
     static char *keywordList[] = { "value", "size", "numElements", NULL };
 
-    varType = Variable_TypeByPythonType((PyObject*) Py_TYPE(self));
-    if (!varType)
+    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
+    if (!dbType)
         return -1;
     value = NULL;
     numElements = 1;
-    size = varType->defaultSize;
+    size = 0;
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
             &value, &size, &numElements))
         return -1;
-    if (Variable_InternalInit(self, numElements, varType, size,
-            varType->defaultScale, value, 1, 1) < 0)
+    if (Variable_InternalInit(self, numElements, dbType, size, 0, value, 1,
+            1) < 0)
         return -1;
 
     return 0;
@@ -189,191 +204,20 @@ int Variable_InitWithSize(udt_Variable *self, PyObject *args,
 //   Internal method of creating a new variable.
 //-----------------------------------------------------------------------------
 udt_Variable *Variable_InternalNew(unsigned numElements,
-        udt_VariableType *type, SQLUINTEGER size, SQLSMALLINT scale)
+        ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale)
 {
-    udt_Variable *self;
+    udt_Variable *var;
 
-    self = PyObject_NEW(udt_Variable, type->pythonType);
-    if (!self)
+    var = (udt_Variable*) ceoPyTypeVar.tp_alloc(&ceoPyTypeVar, 0);
+    if (!var)
         return NULL;
-    if (Variable_InternalInit(self, numElements, type, size, scale,
+    if (Variable_InternalInit(var, numElements, type, size, scale,
             NULL, 1, 0) < 0) {
-        Py_DECREF(self);
+        Py_DECREF(var);
         return NULL;
     }
 
-    return self;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_TypeByValue()
-//   Return a variable type given a Python object or NULL if the Python
-// object does not have a corresponding variable type.
-//-----------------------------------------------------------------------------
-static udt_VariableType *Variable_TypeByValue(PyObject* value,
-        SQLUINTEGER* size)
-{
-    if (value == Py_None) {
-        *size = 1;
-        return &vt_Unicode;
-    }
-    if (PyUnicode_Check(value)) {
-        *size = PyUnicode_GET_SIZE(value);
-        return &vt_Unicode;
-    }
-    if (PyBytes_Check(value)) {
-        udt_StringBuffer temp;
-        if (StringBuffer_FromBinary(&temp, value) < 0)
-            return NULL;
-        *size = temp.size;
-        StringBuffer_Clear(&temp);
-        return &vt_Binary;
-    }
-    if (PyBool_Check(value))
-        return &vt_Bit;
-    if (PyLong_Check(value))
-        return &vt_Integer;
-    if (PyLong_Check(value))
-        return &vt_BigInteger;
-    if (PyFloat_Check(value))
-        return &vt_Double;
-    if (Py_TYPE(value) == g_DecimalType)
-        return &vt_Decimal;
-    if (Py_TYPE(value) == g_TimeType)
-        return &vt_Time;
-    if (Py_TYPE(value) == g_DateTimeType)
-        return &vt_Timestamp;
-    if (Py_TYPE(value) == g_DateType)
-        return &vt_Timestamp;
-
-    PyErr_Format(g_NotSupportedErrorException,
-            "Variable_TypeByValue(): unhandled data type %s",
-            Py_TYPE(value)->tp_name);
-    return NULL;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_TypeByPythonType()
-//   Return a variable type given a Python type object or NULL if the Python
-// type does not have a corresponding variable type.
-//-----------------------------------------------------------------------------
-udt_VariableType *Variable_TypeByPythonType(PyObject* type)
-{
-    if (type == (PyObject*) g_StringApiType)
-        return &vt_Unicode;
-    if (type == (PyObject*) &g_UnicodeVarType)
-        return &vt_Unicode;
-    if (type == (PyObject*) &PyUnicode_Type)
-        return &vt_Unicode;
-    if (type == (PyObject*) &g_LongUnicodeVarType)
-        return &vt_LongUnicode;
-    if (type == (PyObject*) &g_BinaryVarType)
-        return &vt_Binary;
-    if (type == (PyObject*) &PyBytes_Type)
-        return &vt_Binary;
-    if (type == (PyObject*) g_BinaryApiType)
-        return &vt_Binary;
-    if (type == (PyObject*) &g_LongBinaryVarType)
-        return &vt_LongBinary;
-    if (type == (PyObject*) &g_BitVarType)
-        return &vt_Bit;
-    if (type == (PyObject*) &PyBool_Type)
-        return &vt_Bit;
-    if (type == (PyObject*) &g_BigIntegerVarType)
-        return &vt_BigInteger;
-    if (type == (PyObject*) &PyLong_Type)
-        return &vt_BigInteger;
-    if (type == (PyObject*) &g_IntegerVarType)
-        return &vt_Integer;
-    if (type == (PyObject*) &PyLong_Type)
-        return &vt_Integer;
-    if (type == (PyObject*) &g_DoubleVarType)
-        return &vt_Double;
-    if (type == (PyObject*) &PyFloat_Type)
-        return &vt_Double;
-    if (type == (PyObject*) g_NumberApiType)
-        return &vt_Double;
-    if (type == (PyObject*) &g_DecimalVarType)
-        return &vt_Decimal;
-    if (type == (PyObject*) g_DecimalType)
-        return &vt_Decimal;
-    if (type == (PyObject*) &g_DateVarType)
-        return &vt_Date;
-    if (type == (PyObject*) g_DateType)
-        return &vt_Date;
-    if (type == (PyObject*) &g_TimeVarType)
-        return &vt_Time;
-    if (type == (PyObject*) g_TimeType)
-        return &vt_Time;
-    if (type == (PyObject*) &g_TimestampVarType)
-        return &vt_Timestamp;
-    if (type == (PyObject*) g_DateTimeType)
-        return &vt_Timestamp;
-    if (type == (PyObject*) g_DateTimeApiType)
-        return &vt_Timestamp;
-
-    PyErr_SetString(g_NotSupportedErrorException,
-            "Variable_TypeByPythonType(): unhandled data type");
-    return NULL;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_TypeBySqlDataType()
-//   Return a variable type given a SQL data type or NULL if the SQL data type
-// does not have a corresponding variable type.
-//-----------------------------------------------------------------------------
-udt_VariableType *Variable_TypeBySqlDataType(udt_Cursor *cursor,
-        SQLSMALLINT sqlDataType)
-{
-    char buffer[100];
-
-    switch(sqlDataType) {
-        case SQL_BIGINT:
-            return &vt_BigInteger;
-        case SQL_BIT:
-            return &vt_Bit;
-        case SQL_SMALLINT:
-        case SQL_TINYINT:
-        case SQL_INTEGER:
-            return &vt_Integer;
-        case SQL_REAL:
-        case SQL_FLOAT:
-        case SQL_DOUBLE:
-            return &vt_Double;
-        case SQL_DECIMAL:
-        case SQL_NUMERIC:
-            return &vt_Decimal;
-        case SQL_TYPE_DATE:
-            return &vt_Date;
-        case SQL_TYPE_TIME:
-            return &vt_Time;
-        case SQL_TYPE_TIMESTAMP:
-            return &vt_Timestamp;
-        case SQL_CHAR:
-        case SQL_VARCHAR:
-        case SQL_GUID:
-            return &vt_Unicode;
-        case SQL_WCHAR:
-        case SQL_WVARCHAR:
-            return &vt_Unicode;
-        case SQL_LONGVARCHAR:
-            return &vt_LongUnicode;
-        case SQL_WLONGVARCHAR:
-            return &vt_LongUnicode;
-        case SQL_BINARY:
-        case SQL_VARBINARY:
-            return &vt_Binary;
-        case SQL_LONGVARBINARY:
-            return &vt_LongBinary;
-    }
-
-    sprintf(buffer, "Variable_TypeBySqlDataType: unhandled data type %d",
-            sqlDataType);
-    PyErr_SetString(g_NotSupportedErrorException, buffer);
-    return NULL;
+    return var;
 }
 
 
@@ -396,31 +240,11 @@ void Variable_Free(udt_Variable *self)
 {
     if (self->lengthOrIndicator)
         PyMem_Free(self->lengthOrIndicator);
-    if (self->data)
-        PyMem_Free(self->data);
+    if (self->data.asRaw)
+        PyMem_Free(self->data.asRaw);
     Py_CLEAR(self->inConverter);
     Py_CLEAR(self->outConverter);
     Py_TYPE(self)->tp_free((PyObject*) self);
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_Check()
-//   Returns a boolean indicating if the object is a variable.
-//-----------------------------------------------------------------------------
-int Variable_Check(PyObject *object)
-{
-    return (Py_TYPE(object) == &g_BigIntegerVarType ||
-            Py_TYPE(object) == &g_BinaryVarType ||
-            Py_TYPE(object) == &g_BitVarType ||
-            Py_TYPE(object) == &g_DateVarType ||
-            Py_TYPE(object) == &g_DecimalVarType ||
-            Py_TYPE(object) == &g_DoubleVarType ||
-            Py_TYPE(object) == &g_IntegerVarType ||
-            Py_TYPE(object) == &g_LongBinaryVarType ||
-            Py_TYPE(object) == &g_LongUnicodeVarType ||
-            Py_TYPE(object) == &g_TimestampVarType ||
-            Py_TYPE(object) == &g_UnicodeVarType);
 }
 
 
@@ -431,16 +255,13 @@ int Variable_Check(PyObject *object)
 static udt_Variable *Variable_DefaultNewByValue(udt_Cursor *cursor,
         PyObject *value, unsigned numElements)
 {
-    udt_VariableType *varType;
-    SQLUINTEGER size = 0;
+    ceoDbType *dbType;
+    SQLUINTEGER size;
 
-    varType = Variable_TypeByValue(value, &size);
-    if (!varType)
+    dbType = ceoDbType_fromValue(value, &size);
+    if (!dbType)
         return NULL;
-    if (!size)
-        size = varType->defaultSize;
-    return Variable_InternalNew(numElements, varType, size,
-            varType->defaultScale);
+    return Variable_InternalNew(numElements, dbType, size, 0);
 }
 
 
@@ -460,7 +281,7 @@ static udt_Variable *Variable_NewByInputTypeHandler(udt_Cursor *cursor,
     if (!result)
         return NULL;
     if (result != Py_None) {
-        if (!Variable_Check(result)) {
+        if (Py_TYPE(result) != &ceoPyTypeVar) {
             Py_DECREF(result);
             PyErr_SetString(PyExc_TypeError,
                     "expecting variable from input type handler");
@@ -498,7 +319,7 @@ udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
 udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
         unsigned numElements)
 {
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     int size;
 
     // passing an integer is assumed to be a string
@@ -506,21 +327,20 @@ udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
         size = PyLong_AsLong(value);
         if (PyErr_Occurred())
             return NULL;
-        return Variable_InternalNew(numElements, &vt_Unicode, size, 0);
+        return Variable_InternalNew(numElements, ceoDbTypeString, size, 0);
     }
 
     // handle directly bound variables
-    if (Variable_Check(value)) {
+    if (Py_TYPE(value) == &ceoPyTypeVar) {
         Py_INCREF(value);
         return (udt_Variable*) value;
     }
 
     // everything else ought to be a Python type
-    varType = Variable_TypeByPythonType(value);
-    if (!varType)
+    dbType = ceoDbType_fromType(value);
+    if (!dbType)
         return NULL;
-    return Variable_InternalNew(numElements, varType, varType->defaultSize,
-            varType->defaultScale);
+    return Variable_InternalNew(numElements, dbType, 0, 0);
 }
 
 
@@ -529,7 +349,7 @@ udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
 //   Create a new variable by calling the output type handler.
 //-----------------------------------------------------------------------------
 static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
-        PyObject *outputTypeHandler, udt_VariableType *varType,
+        PyObject *outputTypeHandler, ceoDbType *dbType,
         SQLUINTEGER size, SQLSMALLINT scale, unsigned numElements)
 {
     udt_Variable *var;
@@ -537,18 +357,18 @@ static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
 
     // call method, passing parameters
     result = PyObject_CallFunction(outputTypeHandler, "OOii", cursor,
-            varType->pythonType, size, scale);
+            dbType, size, scale);
     if (!result)
         return NULL;
 
     // if result is None, assume default behavior
     if (result == Py_None) {
         Py_DECREF(result);
-        return Variable_InternalNew(numElements, varType, size, scale);
+        return Variable_InternalNew(numElements, dbType, size, scale);
     }
 
     // otherwise, verify that the result is an actual variable
-    if (!Variable_Check(result)) {
+    if (Py_TYPE(result) != &ceoPyTypeVar) {
         Py_DECREF(result);
         PyErr_SetString(PyExc_TypeError,
                 "expecting variable from output type handler");
@@ -577,7 +397,7 @@ udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
-    udt_VariableType *varType;
+    ceoDbType *dbType;
     SQLWCHAR name[1];
     udt_Variable *var;
     SQLULEN size;
@@ -591,39 +411,41 @@ udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
         return NULL;
 
     // determine data type
-    varType = Variable_TypeBySqlDataType(cursor, dataType);
-    if (!varType)
+    dbType = ceoDbType_fromSqlDataType(dataType);
+    if (!dbType)
         return NULL;
 
     // some ODBC drivers do not return a long string but instead return string
     // with a size of zero; provide a workaround
     if (size == 0) {
-        if (varType == &vt_Unicode)
-            varType = &vt_LongUnicode;
-        else if (varType == &vt_Binary)
-            varType = &vt_LongBinary;
+        if (dbType == ceoDbTypeString)
+            dbType = ceoDbTypeLongString;
+        else if (dbType == ceoDbTypeBinary)
+            dbType = ceoDbTypeLongBinary;
     }
 
     // for long columns, set the size appropriately
-    if (varType == &vt_LongUnicode || varType == &vt_LongBinary) {
+    if (dbType == ceoDbTypeLongString || dbType == ceoDbTypeLongBinary) {
         if (cursor->setOutputSize > 0 &&
                 (cursor->setOutputSizeColumn == 0 ||
-                 position == cursor->setOutputSizeColumn))
+                 position == cursor->setOutputSizeColumn)) {
             size = cursor->setOutputSize;
-        else size = varType->defaultSize;
+        } else {
+            size = CEO_DEFAULT_LONG_VAR_SIZE;
+        }
     }
 
     // create a variable of the correct type
     if (cursor->outputTypeHandler && cursor->outputTypeHandler != Py_None)
         var = Variable_NewByOutputTypeHandler(cursor, 
-                cursor->outputTypeHandler, varType, size, scale,
+                cursor->outputTypeHandler, dbType, size, scale,
                 cursor->fetchArraySize);
     else if (cursor->connection->outputTypeHandler &&
             cursor->connection->outputTypeHandler != Py_None)
         var = Variable_NewByOutputTypeHandler(cursor,
-                cursor->connection->outputTypeHandler, varType, size, scale,
+                cursor->connection->outputTypeHandler, dbType, size, scale,
                 cursor->fetchArraySize);
-    else var = Variable_InternalNew(cursor->fetchArraySize, varType, size,
+    else var = Variable_InternalNew(cursor->fetchArraySize, dbType, size,
             scale);
     if (!var)
         return NULL;
@@ -631,7 +453,7 @@ udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
     // bind the column
     var->position = position;
     rc = SQLBindCol(cursor->handle, position, var->type->cDataType,
-            var->data, var->bufferSize, var->lengthOrIndicator);
+            var->data.asRaw, var->bufferSize, var->lengthOrIndicator);
     if (CheckForError(cursor, rc, "Variable_NewForResultSet(): bind()") < 0) {
         Py_DECREF(var);
         return NULL;
@@ -659,7 +481,7 @@ int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
     else inputOutputType = SQL_PARAM_INPUT;
     rc = SQLBindParameter(cursor->handle, position, inputOutputType,
             self->type->cDataType, self->type->sqlDataType, self->size,
-            self->scale, self->data, self->bufferSize,
+            self->scale, self->data.asRaw, self->bufferSize,
             self->lengthOrIndicator);
     if (CheckForError(cursor, rc, "Variable_BindParameter()") < 0)
         return -1;
@@ -675,11 +497,11 @@ int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
 int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 {
     SQLUINTEGER newBufferSize;
-    char *newData;
+    char *newData, *oldData;
     SQLINTEGER i;
 
     // allocate new memory for the larger size
-    newBufferSize = (*self->type->getBufferSizeProc)(self, newSize);
+    newBufferSize = newSize * self->type->bytesMultiplier;
     newData = (char*) PyMem_Malloc(self->numElements * newBufferSize);
     if (!newData) {
         PyErr_NoMemory();
@@ -687,12 +509,12 @@ int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
     }
 
     // copy the data from the original array to the new array
+    oldData = (char*) self->data.asRaw;
     for (i = 0; i < self->numElements; i++)
-        memcpy(newData + newBufferSize * i,
-                (void*) ( (char*) self->data + self->bufferSize * i ),
+        memcpy(newData + newBufferSize * i, oldData + self->bufferSize * i,
                 self->bufferSize);
-    PyMem_Free(self->data);
-    self->data = newData;
+    PyMem_Free(self->data.asRaw);
+    self->data.asRaw = newData;
     self->size = newSize;
     self->bufferSize = newBufferSize;
 
@@ -700,6 +522,63 @@ int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
     self->position = -1;
 
     return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoVar_getValueHelper()
+//   Return the value of the variable at the given position.
+//-----------------------------------------------------------------------------
+PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
+{
+    char message[250], *ptr;
+    PyObject *obj, *result;
+
+    switch (var->type->sqlDataType) {
+        case SQL_VARBINARY:
+        case SQL_LONGVARBINARY:
+            ptr = (char*) var->data.asBinary + pos * var->bufferSize;
+            return PyBytes_FromStringAndSize(ptr, var->lengthOrIndicator[pos]);
+        case SQL_BIT:
+            return PyBool_FromLong(var->data.asBit[pos]);
+        case SQL_BIGINT:
+            return PyLong_FromLongLong(var->data.asBigInt[pos]);
+        case SQL_DOUBLE:
+            return PyFloat_FromDouble(var->data.asDouble[pos]);
+        case SQL_WVARCHAR:
+        case SQL_WLONGVARCHAR:
+            ptr = (char*) var->data.asString + pos * var->bufferSize;
+#ifdef Py_UNICODE_WIDE
+            return PyUnicode_DecodeUTF16(ptr, var->lengthOrIndicator[pos],
+                    NULL, NULL);
+#else
+            return PyUnicode_FromUnicode((Py_UNICODE*) ptr,
+                    var->lengthOrIndicator[pos] / 2);
+#endif
+        case SQL_WCHAR:
+            ptr = (char*) var->data.asString + pos * var->bufferSize;
+            obj = ceString_FromStringAndSizeInBytes(ptr,
+                    var->lengthOrIndicator[pos]);
+            if (!obj)
+                return NULL;
+            result = PyObject_CallFunctionObjArgs(g_DecimalType, obj, NULL);
+            Py_DECREF(obj);
+            return result;
+        case SQL_INTEGER:
+            return PyLong_FromLong(var->data.asInt[pos]);
+        case SQL_TYPE_DATE:
+            return ceoTransform_dateFromSqlValue(&var->data.asDate[pos]);
+        case SQL_TYPE_TIME:
+            return ceoTransform_timeFromSqlValue(&var->data.asTime[pos]);
+        case SQL_TYPE_TIMESTAMP:
+            return ceoTransform_timestampFromSqlValue(
+                    &var->data.asTimestamp[pos]);
+    }
+ 
+    snprintf(message, sizeof(message), "missing get support for DB type %s",
+            var->type->name);
+    ceoError_raiseFromString(g_InternalErrorException, message, __func__);
+    return NULL;
 }
 
 
@@ -732,7 +611,7 @@ PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
                 self->bufferSize);
 
     // calculate value to return
-    value = (*self->type->getValueProc)(self, arrayPos);
+    value = ceoVar_getValueHelper(self, arrayPos);
     if (value && self->outConverter && self->outConverter != Py_None) {
         result = PyObject_CallFunctionObjArgs(self->outConverter, value, NULL);
         Py_DECREF(value);
@@ -740,6 +619,138 @@ PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
     }
 
     return value;
+}
+
+
+//-----------------------------------------------------------------------------
+// ceoVar_setValueHelper()
+//   Set the value of the variable at the given position.
+//-----------------------------------------------------------------------------
+int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
+{
+    udt_StringBuffer buffer;
+    PyObject *textValue;
+    char message[250];
+
+    switch (var->type->sqlDataType) {
+        case SQL_VARBINARY:
+        case SQL_LONGVARBINARY:
+            if (!PyBytes_Check(value)) {
+                PyErr_SetString(PyExc_TypeError, "expecting bytes data");
+                return -1;
+            }
+            if (StringBuffer_FromBinary(&buffer, value) < 0)
+                return -1;
+            if (buffer.size > var->size) {
+                if (Variable_Resize(var, buffer.size) < 0) {
+                    StringBuffer_Clear(&buffer);
+                    return -1;
+                }
+            }
+            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.size;
+            if (buffer.size)
+                memcpy(var->data.asBinary + var->bufferSize * pos, buffer.ptr,
+                        buffer.size);
+            StringBuffer_Clear(&buffer);
+            return 0;
+        case SQL_BIT:
+            if (!PyBool_Check(value)) {
+                PyErr_SetString(PyExc_TypeError, "expecting boolean data");
+                return -1;
+            }
+            var->data.asBit[pos] = (unsigned char) PyLong_AsLong(value);
+            if (PyErr_Occurred())
+                return -1;
+            return 0;
+        case SQL_DOUBLE:
+            if (PyFloat_Check(value)) {
+                var->data.asDouble[pos] = PyFloat_AS_DOUBLE(value);
+            } else if (PyLong_Check(value)) {
+                var->data.asDouble[pos] = PyLong_AsLong(value);
+                if (PyErr_Occurred())
+                    return -1;
+            } else {
+                PyErr_Format(PyExc_TypeError, "expecting floating point data, "
+                        "got value of type %s instead",
+                        Py_TYPE(value)->tp_name);
+                return -1;
+            }
+            return 0;
+        case SQL_BIGINT:
+            if (!PyLong_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                        "expecting integer data, got value of type %s instead",
+                        Py_TYPE(value)->tp_name);
+                return -1;
+            }
+            var->data.asBigInt[pos] = PyLong_AsLongLong(value);
+            if (PyErr_Occurred())
+                return -1;
+            return 0;
+        case SQL_WCHAR:
+            if (Py_TYPE(value) != (PyTypeObject*) g_DecimalType) {
+                PyErr_SetString(PyExc_TypeError, "expecting decimal object");
+                return -1;
+            }
+            textValue = PyObject_Str(value);
+            if (!textValue)
+                return -1;
+            if (StringBuffer_FromUnicode(&buffer, textValue) < 0) {
+                Py_DECREF(textValue);
+                return -1;
+            }
+            Py_DECREF(textValue);
+            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
+            memcpy(var->data.asString + var->bufferSize * pos, buffer.ptr,
+                    buffer.sizeInBytes);
+            StringBuffer_Clear(&buffer);
+            return 0;
+        case SQL_WVARCHAR:
+        case SQL_WLONGVARCHAR:
+            if (!PyUnicode_Check(value)) {
+                PyErr_SetString(PyExc_TypeError, "expecting string");
+                return -1;
+            }
+            if (StringBuffer_FromUnicode(&buffer, value) < 0)
+                return -1;
+            if (buffer.size > var->size) {
+                if (Variable_Resize((udt_Variable*) var, buffer.size) < 0) {
+                    StringBuffer_Clear(&buffer);
+                    return -1;
+                }
+            }
+            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
+            if (buffer.sizeInBytes)
+                memcpy(var->data.asString + var->bufferSize * pos, buffer.ptr,
+                        buffer.sizeInBytes);
+            StringBuffer_Clear(&buffer);
+            return 0;
+        case SQL_INTEGER:
+            if (!PyLong_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                        "expecting integer data, got value of type %s instead",
+                        Py_TYPE(value)->tp_name);
+                return -1;
+            }
+            var->data.asInt[pos] = PyLong_AsLong(value);
+            if (PyErr_Occurred())
+                return -1;
+            return 0;
+        case SQL_TYPE_DATE:
+            return ceoTransform_sqlValueFromDate(value,
+                    &var->data.asDate[pos]);
+        case SQL_TYPE_TIME:
+            return ceoTransform_sqlValueFromTime(value,
+                    &var->data.asTime[pos]);
+        case SQL_TYPE_TIMESTAMP:
+            return ceoTransform_sqlValueFromTimestamp(value,
+                    &var->data.asTimestamp[pos]);
+    }
+
+    snprintf(message, sizeof(message), "missing set support for DB type %s",
+            var->type->name);
+    return ceoError_raiseFromString(g_InternalErrorException, message,
+            __func__);
 }
 
 
@@ -776,7 +787,7 @@ int Variable_SetValue(udt_Variable *self, unsigned arrayPos, PyObject *value)
     }
 
     self->lengthOrIndicator[arrayPos] = 0;
-    result = (*self->type->setValueProc)(self, arrayPos, value);
+    result = ceoVar_setValueHelper(self, arrayPos, value);
     Py_XDECREF(convertedValue);
     return result;
 }

@@ -43,7 +43,7 @@ class TestStringVar(BaseTestCase):
     def testBindLongStringAfterSettingSize(self):
         "test that setinputsizes() returns a long variable"
         var = self.cursor.setinputsizes(90000)[0]
-        self.failUnlessEqual(type(var), ceODBC.STRING)
+        self.failUnlessEqual(var.type, ceODBC.STRING)
         inString = "1234567890" * 9000
         var.setvalue(0, inString)
         outString = var.getvalue()
