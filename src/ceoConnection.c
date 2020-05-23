@@ -118,10 +118,11 @@ static PyObject *ceoConnection_removePasswordFromDsn(PyObject *dsnObj,
 static int ceoConnection_init(ceoConnection *conn, PyObject *args,
         PyObject *keywordArgs)
 {
-    PyObject *autocommitObj, *dsnObj, *upperDsnObj;
-    SQLWCHAR actualDsnBuffer[1024];
+    PyObject *dsnObj, *upperDsnObj;
+    SQLCHAR actualDsnBuffer[1024];
     SQLSMALLINT actualDsnLength;
-    udt_StringBuffer dsnBuffer;
+    Py_ssize_t dsnLength;
+    const char *dsn;
     int autocommit;
     SQLRETURN rc;
 
@@ -129,12 +130,9 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
     static char *keywordList[] = { "dsn", "autocommit", NULL };
 
     // parse arguments
-    autocommitObj = Py_None;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O|O", keywordList,
-            &dsnObj, &autocommitObj))
-        return -1;
-    autocommit = PyObject_IsTrue(autocommitObj);
-    if (autocommit < 0)
+    autocommit = 0;
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "z#|p", keywordList,
+            &dsn, &dsnLength, &autocommit))
         return -1;
 
     // set up the environment
@@ -149,15 +147,11 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
         return -1;
 
     // connecting to driver
-    if (StringBuffer_FromString(&dsnBuffer, dsnObj,
-                "DSN must be a string") < 0)
-        return -1;
-    rc = SQLDriverConnectW(conn->handle, NULL, (SQLWCHAR*) dsnBuffer.ptr,
-            dsnBuffer.size, actualDsnBuffer, CEO_ARRAYSIZE(actualDsnBuffer),
+    rc = SQLDriverConnectA(conn->handle, NULL, dsn, dsnLength,
+            actualDsnBuffer, CEO_ARRAYSIZE(actualDsnBuffer),
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
     if ((size_t) actualDsnLength > CEO_ARRAYSIZE(actualDsnBuffer) - 1)
         actualDsnLength = CEO_ARRAYSIZE(actualDsnBuffer) - 1;
-    StringBuffer_Clear(&dsnBuffer);
     if (CheckForError(conn, rc,
             "ceoConnection_init(): connecting to driver") < 0) {
         conn->handle = SQL_NULL_HANDLE;
@@ -177,7 +171,7 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
     conn->isConnected = 1;
 
     // save copy of constructed DSN
-    dsnObj = ceString_FromStringAndSize(actualDsnBuffer, actualDsnLength);
+    dsnObj = PyUnicode_FromStringAndSize(actualDsnBuffer, actualDsnLength);
     if (!dsnObj) {
         Py_DECREF(conn);
         return -1;
