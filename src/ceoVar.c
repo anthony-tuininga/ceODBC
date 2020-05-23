@@ -252,7 +252,7 @@ void Variable_Free(udt_Variable *self)
 // Variable_DefaultNewByValue()
 //   Default method for determining the type of variable to use for the data.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_DefaultNewByValue(udt_Cursor *cursor,
+static udt_Variable *Variable_DefaultNewByValue(ceoCursor *cursor,
         PyObject *value, unsigned numElements)
 {
     ceoDbType *dbType;
@@ -271,7 +271,7 @@ static udt_Variable *Variable_DefaultNewByValue(udt_Cursor *cursor,
 // type handler does not return anything, the default variable type is
 // returned as usual.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByInputTypeHandler(udt_Cursor *cursor,
+static udt_Variable *Variable_NewByInputTypeHandler(ceoCursor *cursor,
         PyObject *inputTypeHandler, PyObject *value, unsigned numElements)
 {
     PyObject *result;
@@ -298,7 +298,7 @@ static udt_Variable *Variable_NewByInputTypeHandler(udt_Cursor *cursor,
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
+udt_Variable *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
@@ -316,7 +316,7 @@ udt_Variable *Variable_NewByValue(udt_Cursor *cursor, PyObject *value,
 // Variable_NewByType()
 //   Allocate a new variable by looking at the Python data type.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
+udt_Variable *Variable_NewByType(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     ceoDbType *dbType;
@@ -348,7 +348,7 @@ udt_Variable *Variable_NewByType(udt_Cursor *cursor, PyObject *value,
 // Variable_NewByOutputTypeHandler()
 //   Create a new variable by calling the output type handler.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
+static udt_Variable *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
         PyObject *outputTypeHandler, ceoDbType *dbType,
         SQLUINTEGER size, SQLSMALLINT scale, unsigned numElements)
 {
@@ -393,7 +393,7 @@ static udt_Variable *Variable_NewByOutputTypeHandler(udt_Cursor *cursor,
 //   Create a new variable for the given position in the result set. The new
 // variable is immediately bound to the statement as well.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
+udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
@@ -467,7 +467,7 @@ udt_Variable *Variable_NewForResultSet(udt_Cursor *cursor,
 // Variable_BindParameter()
 //   Allocate a variable and bind it to the given statement.
 //-----------------------------------------------------------------------------
-int Variable_BindParameter(udt_Variable *self, udt_Cursor *cursor,
+int Variable_BindParameter(udt_Variable *self, ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT inputOutputType;

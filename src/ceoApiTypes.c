@@ -6,87 +6,54 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// declaration of methods used by the Python type
-//-----------------------------------------------------------------------------
-static void ApiType_Free(udt_ApiType*);
-static PyObject *ApiType_Repr(udt_ApiType*);
-static PyObject *ApiType_RichCompare(udt_ApiType*, PyObject*, int);
-
-
-//-----------------------------------------------------------------------------
-// declaration of members for the Python type
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "name", T_OBJECT, offsetof(udt_ApiType, name), READONLY },
-    { "types", T_OBJECT, offsetof(udt_ApiType, types), READONLY },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of the Python type
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeApiType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC._ApiType",
-    .tp_basicsize = sizeof(udt_ApiType),
-    .tp_dealloc = (destructor) ApiType_Free,
-    .tp_repr = (reprfunc) ApiType_Repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_richcompare = (richcmpfunc) ApiType_RichCompare,
-    .tp_members = ceoMembers
-};
-
-
-//-----------------------------------------------------------------------------
-// ApiType_Free()
+// ceoApiType_free()
 //   Deallocation routine.
 //-----------------------------------------------------------------------------
-static void ApiType_Free(udt_ApiType *self)
+static void ceoApiType_free(ceoApiType *apiType)
 {
-    Py_CLEAR(self->name);
-    Py_CLEAR(self->types);
-    Py_TYPE(self)->tp_free((PyObject*) self);
+    Py_CLEAR(apiType->name);
+    Py_CLEAR(apiType->types);
+    Py_TYPE(apiType)->tp_free((PyObject*) apiType);
 }
 
 
 //-----------------------------------------------------------------------------
-// ApiType_New()
+// ceoApiType_new()
 //   Create a new API type and register it with the given name.
 //-----------------------------------------------------------------------------
-udt_ApiType *ApiType_New(PyObject *module, const char *name)
+ceoApiType *ceoApiType_new(PyObject *module, const char *name)
 {
-    udt_ApiType *self;
+    ceoApiType *apiType;
 
-    self = PyObject_NEW(udt_ApiType, &ceoPyTypeApiType);
-    if (!self)
+    apiType = PyObject_NEW(ceoApiType, &ceoPyTypeApiType);
+    if (!apiType)
         return NULL;
-    self->name = ceString_FromAscii(name);
-    self->types = PyList_New(0);
-    if (!self->types || !self->name) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    if (PyModule_AddObject(module, name, (PyObject*) self) < 0) {
-        Py_DECREF(self);
+    apiType->name = ceString_FromAscii(name);
+    apiType->types = PyList_New(0);
+    if (!apiType->types || !apiType->name) {
+        Py_DECREF(apiType);
         return NULL;
     }
-    return self;
+    if (PyModule_AddObject(module, name, (PyObject*) apiType) < 0) {
+        Py_DECREF(apiType);
+        return NULL;
+    }
+    return apiType;
 }
 
 
 //-----------------------------------------------------------------------------
-// ApiType_Repr()
+// ceoApiType_repr()
 //   Return a string representation of the API type.
 //-----------------------------------------------------------------------------
-static PyObject *ApiType_Repr(udt_ApiType *self)
+static PyObject *ceoApiType_repr(ceoApiType *apiType)
 {
     PyObject *module, *name, *result;
 
-    if (ceoUtils_getModuleAndName(Py_TYPE(self), &module, &name) < 0)
+    if (ceoUtils_getModuleAndName(Py_TYPE(apiType), &module, &name) < 0)
         return NULL;
     result = ceoUtils_formatString("<%s.%s %s>",
-            PyTuple_Pack(3, module, name, self->name));
+            PyTuple_Pack(3, module, name, apiType->name));
     Py_DECREF(module);
     Py_DECREF(name);
     return result;
@@ -94,11 +61,11 @@ static PyObject *ApiType_Repr(udt_ApiType *self)
 
 
 //-----------------------------------------------------------------------------
-// ApiType_RichCompare()
+// ceoApiType_richCompare()
 //   Comparison routine. This routine allows the variable type objects
 // registered with the API type to match as equal as mandated by the DB API.
 //-----------------------------------------------------------------------------
-static PyObject *ApiType_RichCompare(udt_ApiType *self, PyObject *other,
+static PyObject *ceoApiType_richCompare(ceoApiType *apiType, PyObject *other,
         int comparisonType)
 {
     PyObject *result;
@@ -112,7 +79,7 @@ static PyObject *ApiType_RichCompare(udt_ApiType *self, PyObject *other,
     }
 
     // for all other cases check to see if the object is in the list of types
-    contains = PySequence_Contains(self->types, other);
+    contains = PySequence_Contains(apiType->types, other);
     if (contains < 0)
         return NULL;
     if (comparisonType == Py_EQ && contains)
@@ -124,3 +91,28 @@ static PyObject *ApiType_RichCompare(udt_ApiType *self, PyObject *other,
     Py_INCREF(result);
     return result;
 }
+
+
+//-----------------------------------------------------------------------------
+// declaration of members for the Python type
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "name", T_OBJECT, offsetof(ceoApiType, name), READONLY },
+    { "types", T_OBJECT, offsetof(ceoApiType, types), READONLY },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of the Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeApiType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC._ApiType",
+    .tp_basicsize = sizeof(ceoApiType),
+    .tp_dealloc = (destructor) ceoApiType_free,
+    .tp_repr = (reprfunc) ceoApiType_repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_richcompare = (richcmpfunc) ceoApiType_richCompare,
+    .tp_members = ceoMembers
+};

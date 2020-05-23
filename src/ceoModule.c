@@ -7,7 +7,7 @@
 
 // define macro for adding type objects
 #define CREATE_API_TYPE(apiTypeObject, name) \
-    apiTypeObject = ApiType_New(module, name); \
+    apiTypeObject = ceoApiType_new(module, name); \
     if (!apiTypeObject) \
         return NULL;
 
@@ -65,11 +65,11 @@ PyTypeObject *g_TimeType = NULL;
 //-----------------------------------------------------------------------------
 // API types
 //-----------------------------------------------------------------------------
-udt_ApiType *g_BinaryApiType = NULL;
-udt_ApiType *g_DateTimeApiType = NULL;
-udt_ApiType *g_NumberApiType = NULL;
-udt_ApiType *g_RowidApiType = NULL;
-udt_ApiType *g_StringApiType = NULL;
+ceoApiType *g_BinaryApiType = NULL;
+ceoApiType *g_DateTimeApiType = NULL;
+ceoApiType *g_NumberApiType = NULL;
+ceoApiType *g_RowidApiType = NULL;
+ceoApiType *g_StringApiType = NULL;
 
 
 //-----------------------------------------------------------------------------
@@ -93,7 +93,7 @@ ceoDbType *ceoDbTypeTimestamp = NULL;
 // ceoModule_dateFromTicks()
 //   Returns a date value suitable for binding.
 //-----------------------------------------------------------------------------
-static PyObject* ceoModule_dateFromTicks(PyObject* self, PyObject* args)
+static PyObject* ceoModule_dateFromTicks(PyObject* module, PyObject* args)
 {
     return ceoTransform_dateFromTicks(args);
 }
@@ -147,7 +147,7 @@ static int ceoModule_setException(PyObject *module, PyObject **exception,
 // ceoModule_timeFromTicks()
 //   Returns a time value suitable for binding.
 //-----------------------------------------------------------------------------
-static PyObject* ceoModule_timeFromTicks(PyObject* self, PyObject* args)
+static PyObject* ceoModule_timeFromTicks(PyObject* module, PyObject* args)
 {
     return ceoTransform_timeFromTicks(args);
 }
@@ -157,7 +157,7 @@ static PyObject* ceoModule_timeFromTicks(PyObject* self, PyObject* args)
 // ceoModule_timestampFromTicks()
 //   Returns a date value suitable for binding.
 //-----------------------------------------------------------------------------
-static PyObject* ceoModule_timestampFromTicks(PyObject* self, PyObject* args)
+static PyObject* ceoModule_timestampFromTicks(PyObject* module, PyObject* args)
 {
     return ceoTransform_timestampFromTicks(args);
 }

@@ -6,40 +6,6 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// declaration of functions
-//-----------------------------------------------------------------------------
-static void ceoDbType_free(ceoDbType*);
-static PyObject *ceoDbType_repr(ceoDbType*);
-static PyObject *ceoDbType_richCompare(ceoDbType*, PyObject*, int);
-static Py_hash_t ceoDbType_hash(ceoDbType*);
-
-
-//-----------------------------------------------------------------------------
-// declaration of members
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "name", T_STRING, offsetof(ceoDbType, name), READONLY },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// Python type declaration
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeDbType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC._DbType",
-    .tp_basicsize = sizeof(ceoDbType),
-    .tp_dealloc = (destructor) ceoDbType_free,
-    .tp_repr = (reprfunc) ceoDbType_repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_members = ceoMembers,
-    .tp_richcompare = (richcmpfunc) ceoDbType_richCompare,
-    .tp_hash = (hashfunc) ceoDbType_hash
-};
-
-
-//-----------------------------------------------------------------------------
 // ceoDbType_free()
 //   Free the database type object.
 //-----------------------------------------------------------------------------
@@ -145,7 +111,7 @@ ceoDbType *ceoDbType_fromPythonType(PyTypeObject *type)
 //-----------------------------------------------------------------------------
 ceoDbType *ceoDbType_fromType(PyObject *type)
 {
-    udt_ApiType *apiType;
+    ceoApiType *apiType;
     char message[250];
     int status;
 
@@ -161,7 +127,7 @@ ceoDbType *ceoDbType_fromType(PyObject *type)
     if (status < 0)
         return NULL;
     if (status == 1) {
-        apiType = (udt_ApiType*) type;
+        apiType = (ceoApiType*) type;
         return PyList_GET_ITEM(apiType->types, 0);
     }
 
@@ -252,7 +218,7 @@ static PyObject *ceoDbType_repr(ceoDbType *dbType)
 static PyObject *ceoDbType_richCompare(ceoDbType* dbType, PyObject* obj,
         int op)
 {
-    udt_ApiType *apiType;
+    ceoApiType *apiType;
     int status, equal;
 
     // only equality and inequality can be checked
@@ -272,7 +238,7 @@ static PyObject *ceoDbType_richCompare(ceoDbType* dbType, PyObject* obj,
         if (status < 0)
             return NULL;
         if (status == 1) {
-            apiType = (udt_ApiType*) obj;
+            apiType = (ceoApiType*) obj;
             status = PySequence_Contains(apiType->types, (PyObject*) dbType);
             if (status < 0)
                 return NULL;
@@ -296,3 +262,28 @@ static Py_hash_t ceoDbType_hash(ceoDbType *dbType)
 {
     return (Py_hash_t) dbType->sqlDataType;
 }
+
+
+//-----------------------------------------------------------------------------
+// declaration of members
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "name", T_STRING, offsetof(ceoDbType, name), READONLY },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// Python type declaration
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeDbType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC._DbType",
+    .tp_basicsize = sizeof(ceoDbType),
+    .tp_dealloc = (destructor) ceoDbType_free,
+    .tp_repr = (reprfunc) ceoDbType_repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_members = ceoMembers,
+    .tp_richcompare = (richcmpfunc) ceoDbType_richCompare,
+    .tp_hash = (hashfunc) ceoDbType_hash
+};

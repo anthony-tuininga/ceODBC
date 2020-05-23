@@ -6,6 +6,27 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
+// ceoUtils_findInString()
+//   Call the method "find" on the object and return the position in the
+// string where it is found.
+//-----------------------------------------------------------------------------
+int ceoUtils_findInString(PyObject *strObj, char *stringToFind, int startPos,
+        int *foundPos)
+{
+    PyObject *temp;
+
+    temp = PyObject_CallMethod(strObj, "find", "si", stringToFind, startPos);
+    if (!temp)
+        return -1;
+    *foundPos = PyLong_AsLong(temp);
+    Py_DECREF(temp);
+    if (PyErr_Occurred())
+        return -1;
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
 // ceoUtils_formatString()
 //   Return a Python string formatted using the given format string and
 // arguments. The arguments have a reference taken from them after they have

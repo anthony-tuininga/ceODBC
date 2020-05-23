@@ -6,130 +6,25 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// dependent function defintions
-//-----------------------------------------------------------------------------
-static void Cursor_Free(udt_Cursor*);
-
-
-//-----------------------------------------------------------------------------
-// functions for the Python type
-//-----------------------------------------------------------------------------
-static PyObject *Cursor_GetIter(udt_Cursor*);
-static PyObject *Cursor_GetNext(udt_Cursor*);
-static PyObject *Cursor_CallFunc(udt_Cursor*, PyObject*);
-static PyObject *Cursor_CallProc(udt_Cursor*, PyObject*);
-static PyObject *Cursor_Close(udt_Cursor*, PyObject*);
-static PyObject *Cursor_NextSet(udt_Cursor*, PyObject*);
-static PyObject *Cursor_ExecDirect(udt_Cursor*, PyObject*);
-static PyObject *Cursor_Execute(udt_Cursor*, PyObject*);
-static PyObject *Cursor_ExecuteMany(udt_Cursor*, PyObject*);
-static PyObject *Cursor_FetchOne(udt_Cursor*, PyObject*);
-static PyObject *Cursor_FetchMany(udt_Cursor*, PyObject*, PyObject*);
-static PyObject *Cursor_FetchAll(udt_Cursor*, PyObject*);
-static PyObject *Cursor_Prepare(udt_Cursor*, PyObject*);
-static PyObject *Cursor_SetInputSizes(udt_Cursor*, PyObject*);
-static PyObject *Cursor_SetOutputSize(udt_Cursor*, PyObject*);
-static PyObject *Cursor_GetDescription(udt_Cursor*, void*);
-static PyObject *Cursor_GetName(udt_Cursor*, void*);
-static int Cursor_SetName(udt_Cursor*, PyObject*, void*);
-static PyObject *Cursor_New(PyTypeObject*, PyObject*, PyObject*);
-static int Cursor_Init(udt_Cursor*, PyObject*, PyObject*);
-static PyObject *Cursor_Repr(udt_Cursor*);
-static PyObject *Cursor_Var(udt_Cursor*, PyObject*, PyObject*);
-
-
-//-----------------------------------------------------------------------------
-// declaration of methods for the Python type
-//-----------------------------------------------------------------------------
-static PyMethodDef ceoMethods[] = {
-    { "execute", (PyCFunction) Cursor_Execute, METH_VARARGS },
-    { "executemany", (PyCFunction) Cursor_ExecuteMany, METH_VARARGS },
-    { "fetchall", (PyCFunction) Cursor_FetchAll, METH_NOARGS },
-    { "fetchone", (PyCFunction) Cursor_FetchOne, METH_NOARGS },
-    { "fetchmany", (PyCFunction) Cursor_FetchMany,
-              METH_VARARGS | METH_KEYWORDS },
-    { "prepare", (PyCFunction) Cursor_Prepare, METH_VARARGS },
-    { "setinputsizes", (PyCFunction) Cursor_SetInputSizes, METH_VARARGS },
-    { "setoutputsize", (PyCFunction) Cursor_SetOutputSize, METH_VARARGS },
-    { "callfunc", (PyCFunction) Cursor_CallFunc, METH_VARARGS },
-    { "callproc", (PyCFunction) Cursor_CallProc, METH_VARARGS },
-    { "close", (PyCFunction) Cursor_Close, METH_NOARGS },
-    { "nextset", (PyCFunction) Cursor_NextSet, METH_NOARGS },
-    { "execdirect", (PyCFunction) Cursor_ExecDirect, METH_VARARGS },
-    { "var", (PyCFunction) Cursor_Var, METH_VARARGS | METH_KEYWORDS },
-    { NULL, NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of members for the Python type
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "arraysize", T_INT, offsetof(udt_Cursor, arraySize), 0 },
-    { "bindarraysize", T_INT, offsetof(udt_Cursor, bindArraySize), 0 },
-    { "logsql", T_INT, offsetof(udt_Cursor, logSql), 0 },
-    { "rowcount", T_INT, offsetof(udt_Cursor, rowCount), READONLY },
-    { "statement", T_OBJECT, offsetof(udt_Cursor, statement), READONLY },
-    { "connection", T_OBJECT_EX, offsetof(udt_Cursor, connection), READONLY },
-    { "rowfactory", T_OBJECT, offsetof(udt_Cursor, rowFactory), 0 },
-    { "inputtypehandler", T_OBJECT, offsetof(udt_Cursor, inputTypeHandler),
-            0 },
-    { "outputtypehandler", T_OBJECT, offsetof(udt_Cursor, outputTypeHandler),
-            0 },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of calculated members for the Python type
-//-----------------------------------------------------------------------------
-static PyGetSetDef ceoCalcMembers[] = {
-    { "description", (getter) Cursor_GetDescription, 0, 0, 0 },
-    { "name", (getter) Cursor_GetName, (setter) Cursor_SetName, 0, 0 },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of the Python type
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeCursor = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC.Cursor",
-    .tp_basicsize = sizeof(udt_Cursor),
-    .tp_dealloc = (destructor) Cursor_Free,
-    .tp_repr = (reprfunc) Cursor_Repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_iter = (getiterfunc) Cursor_GetIter,
-    .tp_iternext = (iternextfunc) Cursor_GetNext,
-    .tp_methods = ceoMethods,
-    .tp_members = ceoMembers,
-    .tp_getset = ceoCalcMembers,
-    .tp_init = (initproc) Cursor_Init,
-    .tp_new = Cursor_New
-};
-
-
-//-----------------------------------------------------------------------------
-// Cursor_IsOpen()
+// ceoCursor_isOpen()
 //   Determines if the cursor object is open and if so, if the connection is
 // also open.
 //-----------------------------------------------------------------------------
-static int Cursor_IsOpen(udt_Cursor *self)
+static int ceoCursor_isOpen(ceoCursor *cursor)
 {
-    if (!self->handle) {
+    if (!cursor->handle) {
         PyErr_SetString(g_InterfaceErrorException, "not open");
         return -1;
     }
-    return Connection_IsConnected(self->connection);
+    return ceoConnection_isConnected(cursor->connection);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_New()
+// ceoCursor_new()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_New(PyTypeObject *type, PyObject *args,
+static PyObject *ceoCursor_new(PyTypeObject *type, PyObject *args,
         PyObject *keywordArgs)
 {
     return type->tp_alloc(type, 0);
@@ -137,37 +32,38 @@ static PyObject *Cursor_New(PyTypeObject *type, PyObject *args,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalInit()
+// ceoCursor_internalInit()
 //   Internal method used for creating a new cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalInit(udt_Cursor *self, udt_Connection *connection)
+static int ceoCursor_internalInit(ceoCursor *cursor,
+        ceoConnection *connection)
 {
     SQLRETURN rc;
 
     // initialize members
-    self->handleType = SQL_HANDLE_STMT;
-    self->handle = SQL_NULL_HANDLE;
+    cursor->handleType = SQL_HANDLE_STMT;
+    cursor->handle = SQL_NULL_HANDLE;
     Py_INCREF(connection);
-    self->resultSetVars = NULL;
-    self->parameterVars = NULL;
-    self->statement = NULL;
-    self->rowFactory = NULL;
-    self->connection = connection;
-    self->arraySize = 1;
-    self->bindArraySize = 1;
-    self->logSql = connection->logSql;
-    self->setInputSizes = 0;
-    self->setOutputSize = 0;
-    self->setOutputSizeColumn = 0;
-    self->rowCount = 0;
-    self->actualRows = 0;
-    self->rowNum = 0;
+    cursor->resultSetVars = NULL;
+    cursor->parameterVars = NULL;
+    cursor->statement = NULL;
+    cursor->rowFactory = NULL;
+    cursor->connection = connection;
+    cursor->arraySize = 1;
+    cursor->bindArraySize = 1;
+    cursor->logSql = connection->logSql;
+    cursor->setInputSizes = 0;
+    cursor->setOutputSize = 0;
+    cursor->setOutputSizeColumn = 0;
+    cursor->rowCount = 0;
+    cursor->actualRows = 0;
+    cursor->rowNum = 0;
 
     // allocate handle
-    rc = SQLAllocHandle(self->handleType, self->connection->handle,
-            &self->handle);
-    if (CheckForError(self->connection, rc,
-            "Cursor_Init(): allocate statement handle") < 0)
+    rc = SQLAllocHandle(cursor->handleType, cursor->connection->handle,
+            &cursor->handle);
+    if (CheckForError(cursor->connection, rc,
+            "ceoCursor_init(): allocate statement handle") < 0)
         return -1;
 
     return 0;
@@ -175,44 +71,45 @@ static int Cursor_InternalInit(udt_Cursor *self, udt_Connection *connection)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalNew()
+// ceoCursor_internalNew()
 //   Internal method of creating a new cursor.
 //-----------------------------------------------------------------------------
-udt_Cursor *Cursor_InternalNew(udt_Connection *connection)
+ceoCursor *ceoCursor_internalNew(ceoConnection *connection)
 {
-    udt_Cursor *self;
+    ceoCursor *cursor;
 
-    self = PyObject_NEW(udt_Cursor, &ceoPyTypeCursor);
-    if (!self)
+    cursor = PyObject_NEW(ceoCursor, &ceoPyTypeCursor);
+    if (!cursor)
         return NULL;
-    if (Cursor_InternalInit(self, connection) < 0) {
-        Py_DECREF(self);
+    if (ceoCursor_internalInit(cursor, connection) < 0) {
+        Py_DECREF(cursor);
         return NULL;
     }
 
-    return self;
+    return cursor;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Init()
+// ceoCursor_init()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-static int Cursor_Init(udt_Cursor *self, PyObject *args, PyObject *keywordArgs)
+static int ceoCursor_init(ceoCursor *cursor, PyObject *args,
+        PyObject *keywordArgs)
 {
-    udt_Connection *connection;
+    ceoConnection *connection;
 
     if (!PyArg_ParseTuple(args, "O!", &ceoPyTypeConnection, &connection))
         return -1;
-    return Cursor_InternalInit(self, connection);
+    return ceoCursor_internalInit(cursor, connection);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Repr()
+// ceoCursor_repr()
 //   Return a string representation of the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Repr(udt_Cursor *cursor)
+static PyObject *ceoCursor_repr(ceoCursor *cursor)
 {
     PyObject *connectionRepr, *module, *name, *result;
 
@@ -233,30 +130,30 @@ static PyObject *Cursor_Repr(udt_Cursor *cursor)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Free()
+// ceoCursor_free()
 //   Deallocate the cursor.
 //-----------------------------------------------------------------------------
-static void Cursor_Free(udt_Cursor *self)
+static void ceoCursor_free(ceoCursor *cursor)
 {
-    if (self->handle && self->connection->isConnected)
-        SQLFreeHandle(self->handleType, self->handle);
-    Py_CLEAR(self->connection);
-    Py_CLEAR(self->resultSetVars);
-    Py_CLEAR(self->parameterVars);
-    Py_CLEAR(self->statement);
-    Py_CLEAR(self->rowFactory);
-    Py_CLEAR(self->inputTypeHandler);
-    Py_CLEAR(self->outputTypeHandler);
-    Py_TYPE(self)->tp_free((PyObject*) self);
+    if (cursor->handle && cursor->connection->isConnected)
+        SQLFreeHandle(cursor->handleType, cursor->handle);
+    Py_CLEAR(cursor->connection);
+    Py_CLEAR(cursor->resultSetVars);
+    Py_CLEAR(cursor->parameterVars);
+    Py_CLEAR(cursor->statement);
+    Py_CLEAR(cursor->rowFactory);
+    Py_CLEAR(cursor->inputTypeHandler);
+    Py_CLEAR(cursor->outputTypeHandler);
+    Py_TYPE(cursor)->tp_free((PyObject*) cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_MassageArgs()
+// ceoCursor_massageArgs()
 //   Massage the arguments. If one argument is passed and that argument is a
 // list or tuple, use that value instead of the arguments given.
 //-----------------------------------------------------------------------------
-static int Cursor_MassageArgs(PyObject **args, int *argsOffset)
+static int ceoCursor_massageArgs(PyObject **args, int *argsOffset)
 {
     PyObject *temp;
 
@@ -277,10 +174,10 @@ static int Cursor_MassageArgs(PyObject **args, int *argsOffset)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_PrepareResultSet()
+// ceoCursor_prepareResultSet()
 //   Prepare the result set for use.
 //-----------------------------------------------------------------------------
-static int Cursor_PrepareResultSet(udt_Cursor *self)
+static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 {
     SQLSMALLINT numColumns;
     SQLUSMALLINT position;
@@ -288,9 +185,9 @@ static int Cursor_PrepareResultSet(udt_Cursor *self)
     SQLRETURN rc;
 
     // determine the number of columns in the result set
-    rc = SQLNumResultCols(self->handle, &numColumns);
-    if (CheckForError(self, rc,
-            "Cursor_PrepareResultSet(): determine number of columns") < 0)
+    rc = SQLNumResultCols(cursor->handle, &numColumns);
+    if (CheckForError(cursor, rc,
+            "ceoCursor_prepareResultSet(): determine number of columns") < 0)
         return -1;
 
     // if the number returned is 0, that means this isn't a query
@@ -298,49 +195,49 @@ static int Cursor_PrepareResultSet(udt_Cursor *self)
         return 0;
 
     // set up the fetch array size
-    self->fetchArraySize = self->arraySize;
-    rc = SQLSetStmtAttr(self->handle, SQL_ATTR_ROW_ARRAY_SIZE,
-            (SQLPOINTER) self->fetchArraySize, SQL_IS_INTEGER);
-    if (CheckForError(self, rc,
-            "Cursor_PrepareResultSet(): set array size") < 0)
+    cursor->fetchArraySize = cursor->arraySize;
+    rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROW_ARRAY_SIZE,
+            (SQLPOINTER) cursor->fetchArraySize, SQL_IS_INTEGER);
+    if (CheckForError(cursor, rc,
+            "ceoCursor_prepareResultSet(): set array size") < 0)
         return -1;
 
     // set up the rows fetched pointer
-    rc = SQLSetStmtAttr(self->handle, SQL_ATTR_ROWS_FETCHED_PTR,
-            &self->actualRows, SQL_IS_POINTER);
-    if (CheckForError(self, rc,
-            "Cursor_PrepareResultSet(): set rows fetched pointer") < 0)
+    rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROWS_FETCHED_PTR,
+            &cursor->actualRows, SQL_IS_POINTER);
+    if (CheckForError(cursor, rc,
+            "ceoCursor_prepareResultSet(): set rows fetched pointer") < 0)
         return -1;
 
     // create a list corresponding to the number of items
-    self->resultSetVars = PyList_New(numColumns);
-    if (!self->resultSetVars)
+    cursor->resultSetVars = PyList_New(numColumns);
+    if (!cursor->resultSetVars)
         return -1;
 
     // create a variable for each column in the result set
     for (position = 0; position < numColumns; position++) {
-        var = Variable_NewForResultSet(self, position + 1);
+        var = Variable_NewForResultSet(cursor, position + 1);
         if (!var)
             return -1;
-        PyList_SET_ITEM(self->resultSetVars, position, (PyObject *) var);
+        PyList_SET_ITEM(cursor->resultSetVars, position, (PyObject *) var);
     }
 
     // set internal counters
-    self->rowCount = 0;
-    self->actualRows = -1;
-    self->rowNum = 0;
+    cursor->rowCount = 0;
+    cursor->actualRows = -1;
+    cursor->rowNum = 0;
 
     return 0;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_BindParameterHelper()
+// ceoCursor_bindParameterHelper()
 //   Helper for setting a bind variable.
 //-----------------------------------------------------------------------------
-static int Cursor_BindParameterHelper(udt_Cursor *self, unsigned numElements,
-        unsigned arrayPos, PyObject *value, udt_Variable *origVar,
-        udt_Variable **newVar, int deferTypeAssignment)
+static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
+        unsigned numElements, unsigned arrayPos, PyObject *value,
+        udt_Variable *origVar, udt_Variable **newVar, int deferTypeAssignment)
 {
     int isValueVar;
 
@@ -400,7 +297,7 @@ static int Cursor_BindParameterHelper(udt_Cursor *self, unsigned numElements,
 
         // otherwise, create a new variable
         } else if (value != Py_None || !deferTypeAssignment) {
-            *newVar = Variable_NewByValue(self, value, numElements);
+            *newVar = Variable_NewByValue(cursor, value, numElements);
             if (!*newVar)
                 return -1;
             if (Variable_SetValue(*newVar, arrayPos, value) < 0)
@@ -414,10 +311,10 @@ static int Cursor_BindParameterHelper(udt_Cursor *self, unsigned numElements,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_LogBindParameter()
+// ceoCursor_logBindParameter()
 //   Log the bind parameter.
 //-----------------------------------------------------------------------------
-static void Cursor_LogBindParameter(unsigned position, PyObject *value)
+static void ceoCursor_logBindParameter(unsigned position, PyObject *value)
 {
     PyObject *format, *formatArgs, *positionObj, *message;
 
@@ -458,10 +355,10 @@ static void Cursor_LogBindParameter(unsigned position, PyObject *value)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_BindParameters()
+// ceoCursor_bindParameters()
 //   Bind all parameters, creating new ones as needed.
 //-----------------------------------------------------------------------------
-static int Cursor_BindParameters(udt_Cursor *self, PyObject *parameters,
+static int ceoCursor_bindParameters(ceoCursor *cursor, PyObject *parameters,
         int parametersOffset, unsigned numElements, unsigned arrayPos,
         int deferTypeAssignment)
 {
@@ -471,55 +368,55 @@ static int Cursor_BindParameters(udt_Cursor *self, PyObject *parameters,
 
     // set up the list of parameters
     numParams = PyTuple_GET_SIZE(parameters) - parametersOffset;
-    if (self->parameterVars) {
-        origNumParams = PyList_GET_SIZE(self->parameterVars);
+    if (cursor->parameterVars) {
+        origNumParams = PyList_GET_SIZE(cursor->parameterVars);
     } else {
         origNumParams = 0;
-        self->parameterVars = PyList_New(numParams);
-        if (!self->parameterVars)
+        cursor->parameterVars = PyList_New(numParams);
+        if (!cursor->parameterVars)
             return -1;
     }
 
     // bind parameters
-    if (self->logSql)
+    if (cursor->logSql)
         LogMessageV(LOG_LEVEL_DEBUG, "BIND VARIABLES (%u)", arrayPos);
     for (i = 0; i < numParams; i++) {
         value = PySequence_GetItem(parameters, i + parametersOffset);
         if (!value)
             return -1;
         if (i < origNumParams) {
-            origVar = (udt_Variable*) PyList_GET_ITEM(self->parameterVars, i);
+            origVar = (udt_Variable*) PyList_GET_ITEM(cursor->parameterVars, i);
             if ( (PyObject*) origVar == Py_None)
                 origVar = NULL;
         } else origVar = NULL;
-        if (Cursor_BindParameterHelper(self, numElements, arrayPos, value,
+        if (ceoCursor_bindParameterHelper(cursor, numElements, arrayPos, value,
                 origVar, &newVar, deferTypeAssignment) < 0) {
             Py_DECREF(value);
             return -1;
         }
-        if (self->logSql)
-            Cursor_LogBindParameter(i + 1, value);
+        if (cursor->logSql)
+            ceoCursor_logBindParameter(i + 1, value);
         Py_DECREF(value);
         if (newVar) {
-            if (i < PyList_GET_SIZE(self->parameterVars)) {
-                if (PyList_SetItem(self->parameterVars, i,
+            if (i < PyList_GET_SIZE(cursor->parameterVars)) {
+                if (PyList_SetItem(cursor->parameterVars, i,
                         (PyObject*) newVar) < 0) {
                     Py_DECREF(newVar);
                     return -1;
                 }
             } else {
-                if (PyList_Append(self->parameterVars,
+                if (PyList_Append(cursor->parameterVars,
                         (PyObject*) newVar) < 0) {
                     Py_DECREF(newVar);
                     return -1;
                 }
                 Py_DECREF(newVar);
             }
-            if (Variable_BindParameter(newVar, self, i + 1) < 0)
+            if (Variable_BindParameter(newVar, cursor, i + 1) < 0)
                 return -1;
         }
         if (!newVar && origVar && origVar->position < 0) {
-            if (Variable_BindParameter(origVar, self, i + 1) < 0)
+            if (Variable_BindParameter(origVar, cursor, i + 1) < 0)
                 return -1;
         }
     }
@@ -529,77 +426,77 @@ static int Cursor_BindParameters(udt_Cursor *self, PyObject *parameters,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalCatalogHelper()
+// ceoCursor_internalCatalogHelper()
 //   Internal method used by the catalog methods in order to set up the result
 // set that is supposed to be returned.
 //-----------------------------------------------------------------------------
-PyObject *Cursor_InternalCatalogHelper(udt_Cursor *self)
+PyObject *ceoCursor_internalCatalogHelper(ceoCursor *cursor)
 {
-    if (Cursor_PrepareResultSet(self) < 0) {
-        Py_DECREF(self);
+    if (ceoCursor_prepareResultSet(cursor) < 0) {
+        Py_DECREF(cursor);
         return NULL;
     }
 
-    return (PyObject*) self;
+    return (PyObject*) cursor;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalExecuteHelper()
+// ceoCursor_internalExecuteHelper()
 //   Perform the work of executing a cursor and set the rowcount appropriately
 // regardless of whether an error takes place.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalExecuteHelper(udt_Cursor *self, SQLRETURN rc)
+static int ceoCursor_internalExecuteHelper(ceoCursor *cursor, SQLRETURN rc)
 {
     // SQL_NO_DATA is returned from statements which do not affect any rows
     if (rc == SQL_NO_DATA) {
-        self->rowCount = 0;
+        cursor->rowCount = 0;
         return 0;
     }
-    if (CheckForError(self, rc, "Cursor_InternalExecute()") < 0)
+    if (CheckForError(cursor, rc, "Cursor_InternalExecute()") < 0)
         return -1;
 
     // prepare result set, if necessary
-    if (!self->resultSetVars && Cursor_PrepareResultSet(self) < 0)
+    if (!cursor->resultSetVars && ceoCursor_prepareResultSet(cursor) < 0)
         return -1;
 
     // determine the value of the rowcount attribute
-    if (!self->resultSetVars) {
-        rc = SQLRowCount(self->handle, &self->rowCount);
-        if (CheckForError(self, rc, "Cursor_SetRowCount()") < 0)
+    if (!cursor->resultSetVars) {
+        rc = SQLRowCount(cursor->handle, &cursor->rowCount);
+        if (CheckForError(cursor, rc, "Cursor_SetRowCount()") < 0)
             return -1;
     }
 
     // reset input and output sizes
-    self->setInputSizes = 0;
-    self->setOutputSize = 0;
-    self->setOutputSizeColumn = 0;
+    cursor->setInputSizes = 0;
+    cursor->setOutputSize = 0;
+    cursor->setOutputSizeColumn = 0;
 
     return 0;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalExecute()
+// ceoCursor_internalExecute()
 //   Perform the work of executing a cursor and set the rowcount appropriately
 // regardless of whether an error takes place.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalExecute(udt_Cursor *self)
+static int ceoCursor_internalExecute(ceoCursor *cursor)
 {
     SQLRETURN rc;
 
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecute(self->handle);
+    rc = SQLExecute(cursor->handle);
     Py_END_ALLOW_THREADS
-    return Cursor_InternalExecuteHelper(self, rc);
+    return ceoCursor_internalExecuteHelper(cursor, rc);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_ItemDescription()
+// ceoCursor_itemDescription()
 //   Returns a tuple for the column as defined by the DB API.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ItemDescription(udt_Cursor *self,
+static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
@@ -611,12 +508,12 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeColW(self->handle, position, name, CEO_ARRAYSIZE(name),
+    rc = SQLDescribeColW(cursor->handle, position, name, CEO_ARRAYSIZE(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
     if (nameLength > CEO_ARRAYSIZE(name) - 1)
         nameLength = CEO_ARRAYSIZE(name) - 1;
-    if (CheckForError(self, rc,
-            "Cursor_ItemDescription(): get column info") < 0)
+    if (CheckForError(cursor, rc,
+            "ceoCursor_itemDescription(): get column info") < 0)
         return NULL;
 
     // determine variable type
@@ -674,34 +571,34 @@ static PyObject *Cursor_ItemDescription(udt_Cursor *self,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_GetDescription()
+// ceoCursor_getDescription()
 //   Return a list of 7-tuples consisting of the description of the define
 // variables.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetDescription(udt_Cursor *self, void *arg)
+static PyObject *ceoCursor_getDescription(ceoCursor *cursor, void *arg)
 {
     PyObject *results, *tuple;
     int numItems, index;
 
     // make sure the cursor is open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // if no statement has been executed yet, return None
-    if (!self->resultSetVars) {
+    if (!cursor->resultSetVars) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
     // create a list of the required length
-    numItems = PyList_GET_SIZE(self->resultSetVars);
+    numItems = PyList_GET_SIZE(cursor->resultSetVars);
     results = PyList_New(numItems);
     if (!results)
         return NULL;
 
     // create tuples corresponding to the select-items
     for (index = 0; index < numItems; index++) {
-        tuple = Cursor_ItemDescription(self, index + 1);
+        tuple = ceoCursor_itemDescription(cursor, index + 1);
         if (!tuple) {
             Py_DECREF(results);
             return NULL;
@@ -714,30 +611,30 @@ static PyObject *Cursor_GetDescription(udt_Cursor *self, void *arg)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_GetName()
+// ceoCursor_getName()
 //   Return the name associated with the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetName(udt_Cursor *self, void *arg)
+static PyObject *ceoCursor_getName(ceoCursor *cursor, void *arg)
 {
     SQLSMALLINT nameLength;
     SQLWCHAR name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorNameW(self->handle, name, CEO_ARRAYSIZE(name),
+    rc = SQLGetCursorNameW(cursor->handle, name, CEO_ARRAYSIZE(name),
             &nameLength);
     if (nameLength > CEO_ARRAYSIZE(name) - 1)
         nameLength = CEO_ARRAYSIZE(name) - 1;
-    if (CheckForError(self, rc, "Cursor_GetName()") < 0)
+    if (CheckForError(cursor, rc, "ceoCursor_getName()") < 0)
         return NULL;
     return ceString_FromStringAndSize(name, nameLength);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_SetName()
+// ceoCursor_setName()
 //   Set the name associated with the cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_SetName(udt_Cursor *self, PyObject *value, void *arg)
+static int ceoCursor_setName(ceoCursor *cursor, PyObject *value, void *arg)
 {
     udt_StringBuffer buffer;
     SQLRETURN rc;
@@ -745,10 +642,10 @@ static int Cursor_SetName(udt_Cursor *self, PyObject *value, void *arg)
     if (StringBuffer_FromString(&buffer, value,
                 "cursor name must be a string") < 0)
         return -1;
-    rc = SQLSetCursorNameW(self->handle, (SQLWCHAR*) buffer.ptr,
+    rc = SQLSetCursorNameW(cursor->handle, (SQLWCHAR*) buffer.ptr,
             buffer.size);
     StringBuffer_Clear(&buffer);
-    if (CheckForError(self, rc, "Cursor_SetName()") < 0)
+    if (CheckForError(cursor, rc, "ceoCursor_setName()") < 0)
         return -1;
 
     return 0;
@@ -756,22 +653,22 @@ static int Cursor_SetName(udt_Cursor *self, PyObject *value, void *arg)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Close()
+// ceoCursor_close()
 //   Close the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Close(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_close(ceoCursor *cursor, PyObject *args)
 {
     SQLRETURN rc;
 
     // make sure cursor is actually open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // close the cursor
-    rc = SQLFreeHandle(self->handleType, self->handle);
-    if (CheckForError(self, rc, "Cursor_Close()") < 0)
+    rc = SQLFreeHandle(cursor->handleType, cursor->handle);
+    if (CheckForError(cursor, rc, "ceoCursor_close()") < 0)
         return NULL;
-    self->handle = NULL;
+    cursor->handle = NULL;
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -779,59 +676,59 @@ static PyObject *Cursor_Close(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_NextSet()
+// ceoCursor_nextSet()
 //   Return the next result set for the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_NextSet(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_nextSet(ceoCursor *cursor, PyObject *args)
 {
     SQLRETURN rc;
 
     // make sure cursor is actually open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // get the next result set
-    rc = SQLMoreResults(self->handle);
+    rc = SQLMoreResults(cursor->handle);
     if (rc == SQL_NO_DATA) {
         Py_INCREF(Py_None);
         return Py_None;
     }
-    if (CheckForError(self, rc, "Cursor_NextSet()") < 0)
+    if (CheckForError(cursor, rc, "ceoCursor_nextSet()") < 0)
         return NULL;
 
     // set up result set
-    Py_CLEAR(self->resultSetVars);
-    if (Cursor_PrepareResultSet(self) < 0)
+    Py_CLEAR(cursor->resultSetVars);
+    if (ceoCursor_prepareResultSet(cursor) < 0)
         return NULL;
 
-    Py_INCREF(self);
-    return (PyObject*) self;
+    Py_INCREF(cursor);
+    return (PyObject*) cursor;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_CreateRow()
+// ceoCursor_createRow()
 //   Create an object for the row. The object created is a tuple unless a row
 // factory function has been defined in which case it is the result of the
 // row factory function called with the argument tuple that would otherwise be
 // returned.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CreateRow(udt_Cursor *self)
+static PyObject *ceoCursor_createRow(ceoCursor *cursor)
 {
     PyObject *tuple, *item, *result;
     int numItems, pos;
     udt_Variable *var;
 
     // create a new tuple
-    numItems = PyList_GET_SIZE(self->resultSetVars);
+    numItems = PyList_GET_SIZE(cursor->resultSetVars);
     tuple = PyTuple_New(numItems);
     if (!tuple)
         return NULL;
 
     // acquire the value for each item
     for (pos = 0; pos < numItems; pos++) {
-        var = (udt_Variable*) PyList_GET_ITEM(self->resultSetVars, pos);
-        item = Variable_GetValue(var, self->rowNum);
+        var = (udt_Variable*) PyList_GET_ITEM(cursor->resultSetVars, pos);
+        item = Variable_GetValue(var, cursor->rowNum);
         if (!item) {
             Py_DECREF(tuple);
             return NULL;
@@ -840,12 +737,12 @@ static PyObject *Cursor_CreateRow(udt_Cursor *self)
     }
 
     // increment row counters
-    self->rowNum++;
-    self->rowCount++;
+    cursor->rowNum++;
+    cursor->rowCount++;
 
     // if a row factory is defined, call it
-    if (self->rowFactory && self->rowFactory != Py_None) {
-        result = PyObject_CallObject(self->rowFactory, tuple);
+    if (cursor->rowFactory && cursor->rowFactory != Py_None) {
+        result = PyObject_CallObject(cursor->rowFactory, tuple);
         Py_DECREF(tuple);
         return result;
     }
@@ -855,35 +752,35 @@ static PyObject *Cursor_CreateRow(udt_Cursor *self)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalPrepare()
+// ceoCursor_internalPrepare()
 //   Internal method for preparing a statement for execution.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalPrepare(udt_Cursor *self, PyObject *statement)
+static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
 {
     PyObject *format, *formatArgs, *message;
     udt_StringBuffer buffer;
     SQLRETURN rc;
 
     // make sure we don't get a situation where nothing is to be executed
-    if (statement == Py_None && !self->statement) {
+    if (statement == Py_None && !cursor->statement) {
         PyErr_SetString(g_ProgrammingErrorException,
                 "no statement specified and no prior statement prepared");
         return -1;
     }
 
     // close original statement if necessary in order to discard results
-    if (self->statement)
-        SQLCloseCursor(self->handle);
+    if (cursor->statement)
+        SQLCloseCursor(cursor->handle);
 
     // keep track of statement
-    if (statement != Py_None && statement != self->statement) {
+    if (statement != Py_None && statement != cursor->statement) {
         Py_INCREF(statement);
-        Py_XDECREF(self->statement);
-        self->statement = statement;
+        Py_XDECREF(cursor->statement);
+        cursor->statement = statement;
     }
 
     // log the statement, if applicable
-    if (self->logSql) {
+    if (cursor->logSql) {
         format = ceString_FromAscii("SQL\n%s");
         if (!format)
             return -1;
@@ -901,26 +798,26 @@ static int Cursor_InternalPrepare(udt_Cursor *self, PyObject *statement)
     }
 
     // clear previous result set parameters
-    Py_XDECREF(self->resultSetVars);
-    self->resultSetVars = NULL;
-    Py_XDECREF(self->rowFactory);
-    self->rowFactory = NULL;
+    Py_XDECREF(cursor->resultSetVars);
+    cursor->resultSetVars = NULL;
+    Py_XDECREF(cursor->rowFactory);
+    cursor->rowFactory = NULL;
 
     // prepare statement
-    if (StringBuffer_FromString(&buffer, self->statement,
+    if (StringBuffer_FromString(&buffer, cursor->statement,
             "statement must be a string or None") < 0)
         return -1;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepareW(self->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
+    rc = SQLPrepareW(cursor->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
     StringBuffer_Clear(&buffer);
-    if (CheckForError(self, rc, "Cursor_InternalPrepare()") < 0)
+    if (CheckForError(cursor, rc, "ceoCursor_internalPrepare()") < 0)
         return -1;
 
     // clear parameters
-    if (!self->setInputSizes) {
-        Py_XDECREF(self->parameterVars);
-        self->parameterVars = NULL;
+    if (!cursor->setInputSizes) {
+        Py_XDECREF(cursor->parameterVars);
+        cursor->parameterVars = NULL;
     }
 
     return 0;
@@ -928,18 +825,18 @@ static int Cursor_InternalPrepare(udt_Cursor *self, PyObject *statement)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Prepare()
+// ceoCursor_prepare()
 //   Prepare the statement for execution.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Prepare(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_prepare(ceoCursor *cursor, PyObject *args)
 {
     PyObject *statement;
 
     if (!PyArg_ParseTuple(args, "O", &statement))
         return NULL;
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
-    if (Cursor_InternalPrepare(self, statement) < 0)
+    if (ceoCursor_internalPrepare(cursor, statement) < 0)
         return NULL;
 
     Py_INCREF(Py_None);
@@ -948,10 +845,10 @@ static PyObject *Cursor_Prepare(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_ExecDirect()
+// ceoCursor_execDirect()
 //   Execute the statement.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ExecDirect(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_execDirect(ceoCursor *cursor, PyObject *args)
 {
     PyObject *statement, *format, *formatArgs, *message;
     udt_StringBuffer buffer;
@@ -960,11 +857,11 @@ static PyObject *Cursor_ExecDirect(udt_Cursor *self, PyObject *args)
     // parse arguments
     if (!PyArg_ParseTuple(args, "O", &statement))
         return NULL;
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // log the statement, if applicable
-    if (self->logSql) {
+    if (cursor->logSql) {
         format = ceString_FromAscii("SQL\n%s");
         if (!format)
             return NULL;
@@ -982,32 +879,32 @@ static PyObject *Cursor_ExecDirect(udt_Cursor *self, PyObject *args)
     }
 
     // clear previous statement, if applicable
-    if (self->statement)
-        SQLCloseCursor(self->handle);
-    Py_XDECREF(self->statement);
-    self->statement = NULL;
-    Py_XDECREF(self->resultSetVars);
-    self->resultSetVars = NULL;
-    Py_XDECREF(self->rowFactory);
-    self->rowFactory = NULL;
-    Py_XDECREF(self->parameterVars);
-    self->parameterVars = NULL;
+    if (cursor->statement)
+        SQLCloseCursor(cursor->handle);
+    Py_XDECREF(cursor->statement);
+    cursor->statement = NULL;
+    Py_XDECREF(cursor->resultSetVars);
+    cursor->resultSetVars = NULL;
+    Py_XDECREF(cursor->rowFactory);
+    cursor->rowFactory = NULL;
+    Py_XDECREF(cursor->parameterVars);
+    cursor->parameterVars = NULL;
 
     // execute the statement
     if (StringBuffer_FromString(&buffer, statement,
             "statement must be a string") < 0)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecDirectW(self->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
+    rc = SQLExecDirectW(cursor->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
     Py_END_ALLOW_THREADS
     StringBuffer_Clear(&buffer);
-    if (Cursor_InternalExecuteHelper(self, rc) < 0)
+    if (ceoCursor_internalExecuteHelper(cursor, rc) < 0)
         return NULL;
 
     // for queries, return the cursor for convenience
-    if (self->resultSetVars) {
-        Py_INCREF(self);
-        return (PyObject*) self;
+    if (cursor->resultSetVars) {
+        Py_INCREF(cursor);
+        return (PyObject*) cursor;
     }
 
     Py_INCREF(Py_None);
@@ -1016,10 +913,10 @@ static PyObject *Cursor_ExecDirect(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Execute()
+// ceoCursor_execute()
 //   Execute the statement.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Execute(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_execute(ceoCursor *cursor, PyObject *args)
 {
     int numArgs, argsOffset;
     PyObject *statement;
@@ -1033,29 +930,29 @@ static PyObject *Cursor_Execute(udt_Cursor *self, PyObject *args)
     statement = PyTuple_GET_ITEM(args, 0);
 
     // prepare the statement for execution
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
-    if (Cursor_InternalPrepare(self, statement) < 0)
+    if (ceoCursor_internalPrepare(cursor, statement) < 0)
         return NULL;
 
     // bind the parameters
     argsOffset = 1;
-    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+    if (ceoCursor_massageArgs(&args, &argsOffset) < 0)
         return NULL;
-    if (Cursor_BindParameters(self, args, argsOffset, 1, 0, 0) < 0) {
+    if (ceoCursor_bindParameters(cursor, args, argsOffset, 1, 0, 0) < 0) {
         Py_DECREF(args);
         return NULL;
     }
     Py_DECREF(args);
 
     // actually execute the statement
-    if (Cursor_InternalExecute(self) < 0)
+    if (ceoCursor_internalExecute(cursor) < 0)
         return NULL;
 
     // for queries, return the cursor for convenience
-    if (self->resultSetVars) {
-        Py_INCREF(self);
-        return (PyObject*) self;
+    if (cursor->resultSetVars) {
+        Py_INCREF(cursor);
+        return (PyObject*) cursor;
     }
 
     Py_INCREF(Py_None);
@@ -1064,11 +961,11 @@ static PyObject *Cursor_Execute(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_ExecuteMany()
+// ceoCursor_executeMany()
 //   Execute the statement many times. The number of times is equivalent to the
 // number of elements in the array of dictionaries.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_ExecuteMany(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
 {
     PyObject *arguments, *listOfArguments, *statement;
     int i, numRows;
@@ -1080,11 +977,11 @@ static PyObject *Cursor_ExecuteMany(udt_Cursor *self, PyObject *args)
         return NULL;
 
     // make sure the cursor is open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // prepare the statement
-    if (Cursor_InternalPrepare(self, statement) < 0)
+    if (ceoCursor_internalPrepare(cursor, statement) < 0)
         return NULL;
 
     // perform binds
@@ -1096,19 +993,20 @@ static PyObject *Cursor_ExecuteMany(udt_Cursor *self, PyObject *args)
                     "expecting a list of sequences");
             return NULL;
         }
-        if (Cursor_BindParameters(self, arguments, 0, numRows, i,
+        if (ceoCursor_bindParameters(cursor, arguments, 0, numRows, i,
                 (i < numRows - 1)) < 0)
             return NULL;
     }
 
     // set the number of parameters bound
-    rc = SQLSetStmtAttr(self->handle, SQL_ATTR_PARAMSET_SIZE,
+    rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_PARAMSET_SIZE,
             (SQLPOINTER) numRows, SQL_IS_UINTEGER);
-    if (CheckForError(self, rc, "Cursor_ExecuteMany(): set paramset size") < 0)
+    if (CheckForError(cursor, rc,
+            "ceoCursor_executeMany(): set paramset size") < 0)
         return NULL;
 
     // execute the statement
-    if (Cursor_InternalExecute(self) < 0)
+    if (ceoCursor_internalExecute(cursor) < 0)
         return NULL;
 
     Py_INCREF(Py_None);
@@ -1117,11 +1015,11 @@ static PyObject *Cursor_ExecuteMany(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_CallBuildStatement()
+// ceoCursor_callBuildStatement()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int Cursor_CallBuildStatement(PyObject *name, udt_Variable *returnValue,
-        PyObject *args, PyObject **statementObj)
+static int ceoCursor_callBuildStatement(PyObject *name,
+        udt_Variable *returnValue, PyObject *args, PyObject **statementObj)
 {
     PyObject *format, *formatArgs;
     int numArgs, statementSize, i;
@@ -1175,16 +1073,16 @@ static int Cursor_CallBuildStatement(PyObject *name, udt_Variable *returnValue,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Call()
+// ceoCursor_call()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int Cursor_Call(udt_Cursor *self, udt_Variable *returnValueVar,
+static int ceoCursor_call(ceoCursor *cursor, udt_Variable *returnValueVar,
         PyObject *procedureName, PyObject *args, int argsOffset)
 {
     PyObject *statement, *temp;
 
     // determine the arguments to the procedure
-    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+    if (ceoCursor_massageArgs(&args, &argsOffset) < 0)
         return -1;
     if (argsOffset > 0) {
         temp = PyTuple_GetSlice(args, argsOffset, PyTuple_GET_SIZE(args));
@@ -1195,7 +1093,7 @@ static int Cursor_Call(udt_Cursor *self, udt_Variable *returnValueVar,
     }
 
     // build up the statement
-    if (Cursor_CallBuildStatement(procedureName, returnValueVar, args,
+    if (ceoCursor_callBuildStatement(procedureName, returnValueVar, args,
             &statement) < 0)
         return -1;
 
@@ -1213,7 +1111,7 @@ static int Cursor_Call(udt_Cursor *self, udt_Variable *returnValueVar,
     }
 
     // execute the statement on the cursor
-    temp = PyObject_CallMethod( (PyObject*) self, "execute", "OO", statement,
+    temp = PyObject_CallMethod( (PyObject*) cursor, "execute", "OO", statement,
             args);
     Py_DECREF(args);
     if (!temp)
@@ -1225,10 +1123,10 @@ static int Cursor_Call(udt_Cursor *self, udt_Variable *returnValueVar,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_CallFunc()
+// ceoCursor_callFunc()
 //   Call function, returning the returned value.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CallFunc(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_callFunc(ceoCursor *cursor, PyObject *args)
 {
     PyObject *functionName, *returnType, *results;
     udt_Variable *returnValueVar;
@@ -1249,14 +1147,14 @@ static PyObject *Cursor_CallFunc(udt_Cursor *self, PyObject *args)
     }
 
     // create the return value variable
-    returnValueVar = Variable_NewByType(self, returnType, 1);
+    returnValueVar = Variable_NewByType(cursor, returnType, 1);
     if (!returnValueVar)
         return NULL;
     returnValueVar->input = 0;
     returnValueVar->output = 1;
 
     // call the function
-    if (Cursor_Call(self, returnValueVar, functionName, args, 2) < 0)
+    if (ceoCursor_call(cursor, returnValueVar, functionName, args, 2) < 0)
         return NULL;
 
     // create the return value
@@ -1267,10 +1165,10 @@ static PyObject *Cursor_CallFunc(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_CallProc()
+// ceoCursor_callProc()
 //   Call procedure, return (possibly) modified set of values.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_CallProc(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_callProc(ceoCursor *cursor, PyObject *args)
 {
     PyObject *procedureName, *results, *var, *temp;
     int numArgs, i;
@@ -1288,16 +1186,16 @@ static PyObject *Cursor_CallProc(udt_Cursor *self, PyObject *args)
     }
 
     // call the procedure
-    if (Cursor_Call(self, NULL, procedureName, args, 1) < 0)
+    if (ceoCursor_call(cursor, NULL, procedureName, args, 1) < 0)
         return NULL;
 
     // create the return value
-    numArgs = PyList_GET_SIZE(self->parameterVars);
+    numArgs = PyList_GET_SIZE(cursor->parameterVars);
     results = PyList_New(numArgs);
     if (!results)
         return NULL;
     for (i = 0; i < numArgs; i++) {
-        var = PyList_GET_ITEM(self->parameterVars, i);
+        var = PyList_GET_ITEM(cursor->parameterVars, i);
         temp = Variable_GetValue((udt_Variable*) var, 0);
         if (!temp) {
             Py_DECREF(results);
@@ -1311,17 +1209,17 @@ static PyObject *Cursor_CallProc(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_VerifyFetch()
+// ceoCursor_verifyFetch()
 //   Verify that fetching may happen from this cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_VerifyFetch(udt_Cursor *self)
+static int ceoCursor_verifyFetch(ceoCursor *cursor)
 {
     // make sure the cursor is open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return -1;
 
     // make sure the cursor is for a query
-    if (!self->resultSetVars) {
+    if (!cursor->resultSetVars) {
         PyErr_SetString(g_InterfaceErrorException, "not a query");
         return -1;
     }
@@ -1331,25 +1229,25 @@ static int Cursor_VerifyFetch(udt_Cursor *self)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_InternalFetch()
+// ceoCursor_internalFetch()
 //   Performs the actual fetch from the database.
 //-----------------------------------------------------------------------------
-static int Cursor_InternalFetch(udt_Cursor *self)
+static int ceoCursor_internalFetch(ceoCursor *cursor)
 {
     SQLRETURN rc;
 
-    if (!self->resultSetVars) {
+    if (!cursor->resultSetVars) {
         PyErr_SetString(g_InterfaceErrorException, "query not executed");
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLFetch(self->handle);
+    rc = SQLFetch(cursor->handle);
     Py_END_ALLOW_THREADS
     if (rc == SQL_NO_DATA)
-        self->actualRows = 0;
-    else if (CheckForError(self, rc, "Cursor_InternalFetch(): fetch") < 0)
+        cursor->actualRows = 0;
+    else if (CheckForError(cursor, rc, "ceoCursor_internalFetch(): fetch") < 0)
         return -1;
-    self->rowNum = 0;
+    cursor->rowNum = 0;
     return 0;
 }
 
@@ -1359,14 +1257,15 @@ static int Cursor_InternalFetch(udt_Cursor *self)
 //   Returns an integer indicating if more rows can be retrieved from the
 // cursor.
 //-----------------------------------------------------------------------------
-static int Cursor_MoreRows(udt_Cursor *self)
+static int ceoCursor_moreRows(ceoCursor *cursor)
 {
-    if (self->rowNum >= self->actualRows) {
-        if (self->actualRows < 0 || self->actualRows == self->fetchArraySize) {
-            if (Cursor_InternalFetch(self) < 0)
+    if (cursor->rowNum >= cursor->actualRows) {
+        if (cursor->actualRows < 0 ||
+                cursor->actualRows == cursor->fetchArraySize) {
+            if (ceoCursor_internalFetch(cursor) < 0)
                 return -1;
         }
-        if (self->rowNum >= self->actualRows)
+        if (cursor->rowNum >= cursor->actualRows)
             return 0;
     }
     return 1;
@@ -1378,7 +1277,7 @@ static int Cursor_MoreRows(udt_Cursor *self)
 //   Return a list consisting of the remaining rows up to the given row limit
 // (if specified).
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_MultiFetch(udt_Cursor *self, int rowLimit)
+static PyObject *Cursor_MultiFetch(ceoCursor *cursor, int rowLimit)
 {
     PyObject *results, *row;
     int rowNum, rc;
@@ -1390,14 +1289,14 @@ static PyObject *Cursor_MultiFetch(udt_Cursor *self, int rowLimit)
 
     // fetch as many rows as possible
     for (rowNum = 0; rowLimit == 0 || rowNum < rowLimit; rowNum++) {
-        rc = Cursor_MoreRows(self);
+        rc = ceoCursor_moreRows(cursor);
         if (rc < 0) {
             Py_DECREF(results);
             return NULL;
         } else if (rc == 0) {
             break;
         } else {
-            row = Cursor_CreateRow(self);
+            row = ceoCursor_createRow(cursor);
             if (!row) {
                 Py_DECREF(results);
                 return NULL;
@@ -1415,23 +1314,23 @@ static PyObject *Cursor_MultiFetch(udt_Cursor *self, int rowLimit)
 }
 
 //-----------------------------------------------------------------------------
-// Cursor_FetchOne()
+// ceoCursor_fetchOne()
 //   Fetch a single row from the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchOne(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_fetchOne(ceoCursor *cursor, PyObject *args)
 {
     int rc;
 
     // verify fetch can be performed
-    if (Cursor_VerifyFetch(self) < 0)
+    if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
 
     // setup return value
-    rc = Cursor_MoreRows(self);
+    rc = ceoCursor_moreRows(cursor);
     if (rc < 0)
         return NULL;
     else if (rc > 0)
-        return Cursor_CreateRow(self);
+        return ceoCursor_createRow(cursor);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -1439,57 +1338,57 @@ static PyObject *Cursor_FetchOne(udt_Cursor *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_FetchMany()
+// ceoCursor_fetchMany()
 //   Fetch multiple rows from the cursor based on the arraysize.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchMany(udt_Cursor *self, PyObject *args,
+static PyObject *ceoCursor_fetchMany(ceoCursor *cursor, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "numRows", NULL };
     int rowLimit;
 
     // parse arguments -- optional rowlimit expected
-    rowLimit = self->arraySize;
+    rowLimit = cursor->arraySize;
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|i", keywordList,
             &rowLimit))
         return NULL;
 
     // verify fetch can be performed
-    if (Cursor_VerifyFetch(self) < 0)
+    if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
 
-    return Cursor_MultiFetch(self, rowLimit);
+    return Cursor_MultiFetch(cursor, rowLimit);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_FetchAll()
+// ceoCursor_fetchAll()
 //   Fetch all remaining rows from the cursor.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_FetchAll(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_fetchAll(ceoCursor *cursor, PyObject *args)
 {
-    if (Cursor_VerifyFetch(self) < 0)
+    if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
-    return Cursor_MultiFetch(self, 0);
+    return Cursor_MultiFetch(cursor, 0);
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_SetInputSizes()
+// ceoCursor_setInputSizes()
 //   Set the sizes of the bind variables.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_SetInputSizes(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_setInputSizes(ceoCursor *cursor, PyObject *args)
 {
     PyObject *parameterVars, *value, *inputValue;
     int numArgs, i, argsOffset;
 
     // make sure the cursor is open
-    if (Cursor_IsOpen(self) < 0)
+    if (ceoCursor_isOpen(cursor) < 0)
         return NULL;
 
     // massage the arguments
     argsOffset = 0;
-    if (Cursor_MassageArgs(&args, &argsOffset) < 0)
+    if (ceoCursor_massageArgs(&args, &argsOffset) < 0)
         return NULL;
 
     // initialization of parameter variables
@@ -1503,8 +1402,8 @@ static PyObject *Cursor_SetInputSizes(udt_Cursor *self, PyObject *args)
             Py_INCREF(Py_None);
             value = Py_None;
         } else {
-            value = (PyObject*) Variable_NewByType(self, inputValue,
-                    self->bindArraySize);
+            value = (PyObject*) Variable_NewByType(cursor, inputValue,
+                    cursor->bindArraySize);
             if (!value) {
                 Py_DECREF(parameterVars);
                 Py_DECREF(args);
@@ -1515,25 +1414,25 @@ static PyObject *Cursor_SetInputSizes(udt_Cursor *self, PyObject *args)
     }
 
     // overwrite existing parameter vars, if any
-    Py_XDECREF(self->parameterVars);
-    self->parameterVars = parameterVars;
-    self->setInputSizes = 1;
+    Py_XDECREF(cursor->parameterVars);
+    cursor->parameterVars = parameterVars;
+    cursor->setInputSizes = 1;
 
     Py_DECREF(args);
-    Py_INCREF(self->parameterVars);
-    return self->parameterVars;
+    Py_INCREF(cursor->parameterVars);
+    return cursor->parameterVars;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_SetOutputSize()
+// ceoCursor_setOutputSize()
 //   Set the size of all of the long columns or just one of them.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_SetOutputSize(udt_Cursor *self, PyObject *args)
+static PyObject *ceoCursor_setOutputSize(ceoCursor *cursor, PyObject *args)
 {
-    self->setOutputSizeColumn = 0;
-    if (!PyArg_ParseTuple(args, "i|i", &self->setOutputSize,
-            &self->setOutputSizeColumn))
+    cursor->setOutputSizeColumn = 0;
+    if (!PyArg_ParseTuple(args, "i|i", &cursor->setOutputSize,
+            &cursor->setOutputSizeColumn))
         return NULL;
 
     Py_INCREF(Py_None);
@@ -1545,7 +1444,7 @@ static PyObject *Cursor_SetOutputSize(udt_Cursor *self, PyObject *args)
 // Cursor_Var()
 //   Create a bind variable and return it.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
+static PyObject *Cursor_Var(ceoCursor *cursor, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "type", "size", "scale", "arraysize",
@@ -1560,7 +1459,7 @@ static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
     size = 0;
     input = 1;
     output = 0;
-    arraySize = self->bindArraySize;
+    arraySize = cursor->bindArraySize;
     inConverter = outConverter = NULL;
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O|iiiOOii",
             keywordList, &type, &size, &scale, &arraySize, &inConverter,
@@ -1590,34 +1489,106 @@ static PyObject *Cursor_Var(udt_Cursor *self, PyObject *args,
 
 
 //-----------------------------------------------------------------------------
-// Cursor_GetIter()
+// ceoCursor_getIter()
 //   Return a reference to the cursor which supports the iterator protocol.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetIter(udt_Cursor *self)
+static PyObject *ceoCursor_getIter(ceoCursor *cursor)
 {
-    if (Cursor_VerifyFetch(self) < 0)
+    if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
-    Py_INCREF(self);
-    return (PyObject*) self;
+    Py_INCREF(cursor);
+    return (PyObject*) cursor;
 }
 
 
 //-----------------------------------------------------------------------------
-// Cursor_GetNext()
+// ceoCursor_getNext()
 //   Return a reference to the cursor which supports the iterator protocol.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_GetNext(udt_Cursor *self)
+static PyObject *ceoCursor_getNext(ceoCursor *cursor)
 {
     int rc;
 
-    if (Cursor_VerifyFetch(self) < 0)
+    if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
-    rc = Cursor_MoreRows(self);
+    rc = ceoCursor_moreRows(cursor);
     if (rc < 0)
         return NULL;
     else if (rc > 0)
-        return Cursor_CreateRow(self);
+        return ceoCursor_createRow(cursor);
 
     // no more rows, return NULL without setting an exception
     return NULL;
 }
+
+
+//-----------------------------------------------------------------------------
+// declaration of methods for the Python type
+//-----------------------------------------------------------------------------
+static PyMethodDef ceoMethods[] = {
+    { "execute", (PyCFunction) ceoCursor_execute, METH_VARARGS },
+    { "executemany", (PyCFunction) ceoCursor_executeMany, METH_VARARGS },
+    { "fetchall", (PyCFunction) ceoCursor_fetchAll, METH_NOARGS },
+    { "fetchone", (PyCFunction) ceoCursor_fetchOne, METH_NOARGS },
+    { "fetchmany", (PyCFunction) ceoCursor_fetchMany,
+              METH_VARARGS | METH_KEYWORDS },
+    { "prepare", (PyCFunction) ceoCursor_prepare, METH_VARARGS },
+    { "setinputsizes", (PyCFunction) ceoCursor_setInputSizes, METH_VARARGS },
+    { "setoutputsize", (PyCFunction) ceoCursor_setOutputSize, METH_VARARGS },
+    { "callfunc", (PyCFunction) ceoCursor_callFunc, METH_VARARGS },
+    { "callproc", (PyCFunction) ceoCursor_callProc, METH_VARARGS },
+    { "close", (PyCFunction) ceoCursor_close, METH_NOARGS },
+    { "nextset", (PyCFunction) ceoCursor_nextSet, METH_NOARGS },
+    { "execdirect", (PyCFunction) ceoCursor_execDirect, METH_VARARGS },
+    { "var", (PyCFunction) Cursor_Var, METH_VARARGS | METH_KEYWORDS },
+    { NULL, NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of members for the Python type
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "arraysize", T_INT, offsetof(ceoCursor, arraySize), 0 },
+    { "bindarraysize", T_INT, offsetof(ceoCursor, bindArraySize), 0 },
+    { "logsql", T_INT, offsetof(ceoCursor, logSql), 0 },
+    { "rowcount", T_INT, offsetof(ceoCursor, rowCount), READONLY },
+    { "statement", T_OBJECT, offsetof(ceoCursor, statement), READONLY },
+    { "connection", T_OBJECT_EX, offsetof(ceoCursor, connection), READONLY },
+    { "rowfactory", T_OBJECT, offsetof(ceoCursor, rowFactory), 0 },
+    { "inputtypehandler", T_OBJECT, offsetof(ceoCursor, inputTypeHandler),
+            0 },
+    { "outputtypehandler", T_OBJECT, offsetof(ceoCursor, outputTypeHandler),
+            0 },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of calculated members for the Python type
+//-----------------------------------------------------------------------------
+static PyGetSetDef ceoCalcMembers[] = {
+    { "description", (getter) ceoCursor_getDescription, 0, 0, 0 },
+    { "name", (getter) ceoCursor_getName, (setter) ceoCursor_setName, 0, 0 },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of the Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeCursor = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC.Cursor",
+    .tp_basicsize = sizeof(ceoCursor),
+    .tp_dealloc = (destructor) ceoCursor_free,
+    .tp_repr = (reprfunc) ceoCursor_repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_iter = (getiterfunc) ceoCursor_getIter,
+    .tp_iternext = (iternextfunc) ceoCursor_getNext,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
+    .tp_getset = ceoCalcMembers,
+    .tp_init = (initproc) ceoCursor_init,
+    .tp_new = ceoCursor_new
+};

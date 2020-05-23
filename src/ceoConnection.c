@@ -6,113 +6,13 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// functions for the Python type "Connection"
-//-----------------------------------------------------------------------------
-static void Connection_Free(udt_Connection*);
-static PyObject *Connection_New(PyTypeObject*, PyObject*, PyObject*);
-static int Connection_Init(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_Repr(udt_Connection*);
-static PyObject *Connection_Close(udt_Connection*, PyObject*);
-static PyObject *Connection_Commit(udt_Connection*, PyObject*);
-static PyObject *Connection_Rollback(udt_Connection*, PyObject*);
-static PyObject *Connection_NewCursor(udt_Connection*, PyObject*);
-static PyObject *Connection_ContextManagerEnter(udt_Connection*, PyObject*);
-static PyObject *Connection_ContextManagerExit(udt_Connection*, PyObject*);
-static PyObject *Connection_Columns(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_ColumnPrivileges(udt_Connection*, PyObject*,
-        PyObject*);
-static PyObject *Connection_ForeignKeys(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_PrimaryKeys(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_Procedures(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_ProcedureColumns(udt_Connection*, PyObject*,
-        PyObject*);
-static PyObject *Connection_Tables(udt_Connection*, PyObject*, PyObject*);
-static PyObject *Connection_TablePrivileges(udt_Connection*, PyObject*,
-        PyObject*);
-static PyObject *Connection_GetAutoCommit(udt_Connection*, void*);
-static int Connection_SetAutoCommit(udt_Connection*, PyObject*, void*);
-
-
-//-----------------------------------------------------------------------------
-// declaration of methods for the Python type
-//-----------------------------------------------------------------------------
-static PyMethodDef ceoMethods[] = {
-    { "cursor", (PyCFunction) Connection_NewCursor, METH_NOARGS },
-    { "commit", (PyCFunction) Connection_Commit, METH_NOARGS },
-    { "rollback", (PyCFunction) Connection_Rollback, METH_NOARGS },
-    { "close", (PyCFunction) Connection_Close, METH_NOARGS },
-    { "columns", (PyCFunction) Connection_Columns,
-            METH_VARARGS | METH_KEYWORDS },
-    { "columnprivileges", (PyCFunction) Connection_ColumnPrivileges,
-            METH_VARARGS | METH_KEYWORDS },
-    { "foreignkeys", (PyCFunction) Connection_ForeignKeys,
-            METH_VARARGS | METH_KEYWORDS },
-    { "primarykeys", (PyCFunction) Connection_PrimaryKeys,
-            METH_VARARGS | METH_KEYWORDS },
-    { "procedures", (PyCFunction) Connection_Procedures,
-            METH_VARARGS | METH_KEYWORDS },
-    { "procedurecolumns", (PyCFunction) Connection_ProcedureColumns,
-            METH_VARARGS | METH_KEYWORDS },
-    { "tables", (PyCFunction) Connection_Tables,
-            METH_VARARGS | METH_KEYWORDS },
-    { "tableprivileges", (PyCFunction) Connection_TablePrivileges,
-            METH_VARARGS | METH_KEYWORDS },
-    { "__enter__", (PyCFunction) Connection_ContextManagerEnter, METH_NOARGS },
-    { "__exit__", (PyCFunction) Connection_ContextManagerExit, METH_VARARGS },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of members for the Python type
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "dsn", T_OBJECT, offsetof(udt_Connection, dsn), READONLY },
-    { "logsql", T_INT, offsetof(udt_Connection, logSql), 0 },
-    { "inputtypehandler", T_OBJECT,
-            offsetof(udt_Connection, inputTypeHandler), 0 },
-    { "outputtypehandler", T_OBJECT,
-            offsetof(udt_Connection, outputTypeHandler), 0 },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of calculated members for the Python type
-//-----------------------------------------------------------------------------
-static PyGetSetDef ceoCalcMembers[] = {
-    { "autocommit", (getter) Connection_GetAutoCommit,
-            (setter) Connection_SetAutoCommit, 0, 0 },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of the Python type
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeConnection = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC.Connection",
-    .tp_basicsize = sizeof(udt_Connection),
-    .tp_dealloc = (destructor) Connection_Free,
-    .tp_repr = (reprfunc) Connection_Repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_methods = ceoMethods,
-    .tp_members = ceoMembers,
-    .tp_getset = ceoCalcMembers,
-    .tp_init = (initproc) Connection_Init,
-    .tp_new = (newfunc) Connection_New
-};
-
-
-//-----------------------------------------------------------------------------
-// Connection_IsConnected()
+// ceoConnection_isConnected()
 //   Determines if the connection object is connected to the database. If not,
 // a Python exception is raised.
 //-----------------------------------------------------------------------------
-int Connection_IsConnected(udt_Connection *self)
+int ceoConnection_isConnected(ceoConnection *conn)
 {
-    if (!self->isConnected) {
+    if (!conn->isConnected) {
         PyErr_SetString(g_InterfaceErrorException, "not connected");
         return -1;
     }
@@ -121,66 +21,45 @@ int Connection_IsConnected(udt_Connection *self)
 
 
 //-----------------------------------------------------------------------------
-// Connection_New()
+// ceoConnection_new()
 //   Create a new connection object and return it.
 //-----------------------------------------------------------------------------
-static PyObject* Connection_New(PyTypeObject *type, PyObject *args,
+static PyObject* ceoConnection_new(PyTypeObject *type, PyObject *args,
         PyObject *keywordArgs)
 {
-    udt_Connection *self;
+    ceoConnection *conn;
 
     // create the object
-    self = (udt_Connection*) type->tp_alloc(type, 0);
-    if (!self)
+    conn = (ceoConnection*) type->tp_alloc(type, 0);
+    if (!conn)
         return NULL;
-    self->handleType = SQL_HANDLE_DBC;
-    self->handle = SQL_NULL_HANDLE;
-    self->environment = NULL;
-    self->dsn = NULL;
-    self->isConnected = 0;
+    conn->handleType = SQL_HANDLE_DBC;
+    conn->handle = SQL_NULL_HANDLE;
+    conn->env = NULL;
+    conn->dsn = NULL;
+    conn->isConnected = 0;
 #ifdef WITH_CX_LOGGING
-    self->logSql = 1;
+    conn->logSql = 1;
 #else
-    self->logSql = 0;
+    conn->logSql = 0;
 #endif
 
-    return (PyObject*) self;
+    return (PyObject*) conn;
 }
 
 
 //-----------------------------------------------------------------------------
-// FindInString()
-//   Call the method "find" on the object and return the position in the
-// string where it is found.
-//-----------------------------------------------------------------------------
-static int FindInString(PyObject *strObj, char *stringToFind, int startPos,
-        int *foundPos)
-{
-    PyObject *temp;
-
-    temp = PyObject_CallMethod(strObj, "find", "si", stringToFind, startPos);
-    if (!temp)
-        return -1;
-    *foundPos = PyLong_AsLong(temp);
-    Py_DECREF(temp);
-    if (PyErr_Occurred())
-        return -1;
-    return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Connection_RemovePasswordFromDsn()
+// ceoConnection_removePasswordFromDsn()
 //   Attempt to remove the password from the DSN for security reasons.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_RemovePasswordFromDsn(PyObject *dsnObj,
+static PyObject *ceoConnection_removePasswordFromDsn(PyObject *dsnObj,
         PyObject *upperDsnObj)
 {
     PyObject *firstPart, *lastPart, *result;
     int startPos, endPos, bracePos, length;
 
     // attempt to find PWD= in the DSN
-    if (FindInString(upperDsnObj, "PWD=", 0, &startPos) < 0)
+    if (ceoUtils_findInString(upperDsnObj, "PWD=", 0, &startPos) < 0)
         return NULL;
 
     // if not found, simply return the string unchanged
@@ -190,7 +69,7 @@ static PyObject *Connection_RemovePasswordFromDsn(PyObject *dsnObj,
     }
 
     // otherwise search for the semicolon
-    if (FindInString(upperDsnObj, ";", startPos, &endPos) < 0)
+    if (ceoUtils_findInString(upperDsnObj, ";", startPos, &endPos) < 0)
         return NULL;
     length = PySequence_Size(dsnObj);
     if (PyErr_Occurred())
@@ -199,16 +78,16 @@ static PyObject *Connection_RemovePasswordFromDsn(PyObject *dsnObj,
         endPos = length;
 
     // search for a brace as well since that escapes the semicolon if present
-    if (FindInString(upperDsnObj, "{", startPos, &bracePos) < 0)
+    if (ceoUtils_findInString(upperDsnObj, "{", startPos, &bracePos) < 0)
         return NULL;
     if (bracePos >= startPos && bracePos < endPos) {
-        if (FindInString(upperDsnObj, "}", bracePos, &bracePos) < 0)
+        if (ceoUtils_findInString(upperDsnObj, "}", bracePos, &bracePos) < 0)
             return NULL;
         if (bracePos < 0) {
             Py_INCREF(dsnObj);
             return dsnObj;
         }
-        if (FindInString(upperDsnObj, ";", bracePos, &endPos) < 0)
+        if (ceoUtils_findInString(upperDsnObj, ";", bracePos, &endPos) < 0)
             return NULL;
         if (endPos < 0)
             endPos = length;
@@ -233,10 +112,10 @@ static PyObject *Connection_RemovePasswordFromDsn(PyObject *dsnObj,
 
 
 //-----------------------------------------------------------------------------
-// Connection_Init()
+// ceoConnection_init()
 //   Initialize the connection members.
 //-----------------------------------------------------------------------------
-static int Connection_Init(udt_Connection *self, PyObject *args,
+static int ceoConnection_init(ceoConnection *conn, PyObject *args,
         PyObject *keywordArgs)
 {
     PyObject *autocommitObj, *dsnObj, *upperDsnObj;
@@ -259,49 +138,48 @@ static int Connection_Init(udt_Connection *self, PyObject *args,
         return -1;
 
     // set up the environment
-    self->environment = Environment_New();
-    if (!self->environment)
+    conn->env = ceoEnv_new();
+    if (!conn->env)
         return -1;
 
     // allocate handle for the connection
-    rc = SQLAllocHandle(SQL_HANDLE_DBC, self->environment->handle,
-            &self->handle);
-    if (CheckForError(self->environment, rc,
-            "Connection_Init(): allocate DBC handle") < 0)
+    rc = SQLAllocHandle(SQL_HANDLE_DBC, conn->env->handle, &conn->handle);
+    if (CheckForError(conn->env, rc,
+            "ceoConnection_init(): allocate DBC handle") < 0)
         return -1;
 
     // connecting to driver
     if (StringBuffer_FromString(&dsnBuffer, dsnObj,
                 "DSN must be a string") < 0)
         return -1;
-    rc = SQLDriverConnectW(self->handle, NULL, (SQLWCHAR*) dsnBuffer.ptr,
+    rc = SQLDriverConnectW(conn->handle, NULL, (SQLWCHAR*) dsnBuffer.ptr,
             dsnBuffer.size, actualDsnBuffer, CEO_ARRAYSIZE(actualDsnBuffer),
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
     if ((size_t) actualDsnLength > CEO_ARRAYSIZE(actualDsnBuffer) - 1)
         actualDsnLength = CEO_ARRAYSIZE(actualDsnBuffer) - 1;
     StringBuffer_Clear(&dsnBuffer);
-    if (CheckForError(self, rc,
-            "Connection_Init(): connecting to driver") < 0) {
-        self->handle = SQL_NULL_HANDLE;
+    if (CheckForError(conn, rc,
+            "ceoConnection_init(): connecting to driver") < 0) {
+        conn->handle = SQL_NULL_HANDLE;
         return -1;
     }
 
     // turn off autocommit
     if (!autocommit) {
-        rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+        rc = SQLSetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
                 (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
-        if (CheckForError(self, rc,
-                "Connection_Init(): turning off autocommit") < 0)
+        if (CheckForError(conn, rc,
+                "ceoConnection_init(): turning off autocommit") < 0)
             return -1;
     }
 
     // mark connection as connected
-    self->isConnected = 1;
+    conn->isConnected = 1;
 
     // save copy of constructed DSN
     dsnObj = ceString_FromStringAndSize(actualDsnBuffer, actualDsnLength);
     if (!dsnObj) {
-        Py_DECREF(self);
+        Py_DECREF(conn);
         return -1;
     }
 
@@ -309,14 +187,14 @@ static int Connection_Init(udt_Connection *self, PyObject *args,
     upperDsnObj = PyObject_CallMethod(dsnObj, "upper", "");
     if (!upperDsnObj) {
         Py_DECREF(dsnObj);
-        Py_DECREF(self);
+        Py_DECREF(conn);
         return -1;
     }
-    self->dsn = Connection_RemovePasswordFromDsn(dsnObj, upperDsnObj);
+    conn->dsn = ceoConnection_removePasswordFromDsn(dsnObj, upperDsnObj);
     Py_DECREF(dsnObj);
     Py_DECREF(upperDsnObj);
-    if (!self->dsn) {
-        Py_DECREF(self);
+    if (!conn->dsn) {
+        Py_DECREF(conn);
         return -1;
     }
 
@@ -325,34 +203,34 @@ static int Connection_Init(udt_Connection *self, PyObject *args,
 
 
 //-----------------------------------------------------------------------------
-// Connection_Free()
+// ceoConnection_free()
 //   Deallocate the connection, disconnecting from the database if necessary.
 //-----------------------------------------------------------------------------
-static void Connection_Free(udt_Connection *self)
+static void ceoConnection_free(ceoConnection *conn)
 {
-    if (self->isConnected) {
+    if (conn->isConnected) {
         Py_BEGIN_ALLOW_THREADS
-        SQLEndTran(self->handleType, self->handle, SQL_ROLLBACK);
-        SQLDisconnect(self->handle);
-        SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
+        SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
+        SQLDisconnect(conn->handle);
+        SQLFreeHandle(SQL_HANDLE_DBC, conn->handle);
         Py_END_ALLOW_THREADS
-        self->handle = NULL;
+        conn->handle = NULL;
     }
-    if (self->handle)
-        SQLFreeHandle(SQL_HANDLE_DBC, self->handle);
-    Py_CLEAR(self->environment);
-    Py_CLEAR(self->dsn);
-    Py_CLEAR(self->inputTypeHandler);
-    Py_CLEAR(self->outputTypeHandler);
-    Py_TYPE(self)->tp_free((PyObject*) self);
+    if (conn->handle)
+        SQLFreeHandle(SQL_HANDLE_DBC, conn->handle);
+    Py_CLEAR(conn->env);
+    Py_CLEAR(conn->dsn);
+    Py_CLEAR(conn->inputTypeHandler);
+    Py_CLEAR(conn->outputTypeHandler);
+    Py_TYPE(conn)->tp_free((PyObject*) conn);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_Repr()
+// ceoConnection_repr()
 //   Return a string representation of the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Repr(udt_Connection *connection)
+static PyObject *ceoConnection_repr(ceoConnection *connection)
 {
     PyObject *module, *name, *result;
 
@@ -372,33 +250,33 @@ static PyObject *Connection_Repr(udt_Connection *connection)
 
 
 //-----------------------------------------------------------------------------
-// Connection_Close()
+// ceoConnection_close()
 //   Close the connection, disconnecting from the database.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Close(udt_Connection *self, PyObject *args)
+static PyObject *ceoConnection_close(ceoConnection *conn, PyObject *args)
 {
     SQLRETURN rc;
 
     // make sure we are actually connected
-    if (Connection_IsConnected(self) < 0)
+    if (ceoConnection_isConnected(conn) < 0)
         return NULL;
 
     // perform a rollback first
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(self->handleType, self->handle, SQL_ROLLBACK);
+    rc = SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
     Py_END_ALLOW_THREADS
-    if (CheckForError(self, rc, "Connection_Close(): rollback") < 0)
+    if (CheckForError(conn, rc, "ceoConnection_close(): rollback") < 0)
         return NULL;
 
     // disconnect from the server
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLDisconnect(self->handle);
+    rc = SQLDisconnect(conn->handle);
     Py_END_ALLOW_THREADS
-    if (CheckForError(self, rc, "Connection_Close(): disconnect") < 0)
+    if (CheckForError(conn, rc, "ceoConnection_close(): disconnect") < 0)
         return NULL;
 
     // mark connection as no longer connected
-    self->isConnected = 0;
+    conn->isConnected = 0;
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -406,22 +284,22 @@ static PyObject *Connection_Close(udt_Connection *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Connection_Commit()
+// ceoConnection_commit()
 //   Commit the transaction on the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Commit(udt_Connection *self, PyObject *args)
+static PyObject *ceoConnection_commit(ceoConnection *conn, PyObject *args)
 {
     SQLRETURN rc;
 
     // make sure we are actually connected
-    if (Connection_IsConnected(self) < 0)
+    if (ceoConnection_isConnected(conn) < 0)
         return NULL;
 
     // perform the commit
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(self->handleType, self->handle, SQL_COMMIT);
+    rc = SQLEndTran(conn->handleType, conn->handle, SQL_COMMIT);
     Py_END_ALLOW_THREADS
-    if (CheckForError(self, rc, "Connection_Commit()") < 0)
+    if (CheckForError(conn, rc, "ceoConnection_commit()") < 0)
         return NULL;
     LogMessage(LOG_LEVEL_DEBUG, "transaction committed");
 
@@ -431,22 +309,22 @@ static PyObject *Connection_Commit(udt_Connection *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Connection_Rollback()
+// ceoConnection_rollback()
 //   Rollback the transaction on the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Rollback(udt_Connection *self, PyObject *args)
+static PyObject *ceoConnection_rollback(ceoConnection *conn, PyObject *args)
 {
     SQLRETURN rc;
 
     // make sure we are actually connected
-    if (Connection_IsConnected(self) < 0)
+    if (ceoConnection_isConnected(conn) < 0)
         return NULL;
 
     // perform the rollback
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(self->handleType, self->handle, SQL_ROLLBACK);
+    rc = SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
     Py_END_ALLOW_THREADS
-    if (CheckForError(self, rc, "Connection_Commit()") < 0)
+    if (CheckForError(conn, rc, "ceoConnection_commit()") < 0)
         return NULL;
     LogMessage(LOG_LEVEL_DEBUG, "transaction rolled back");
 
@@ -456,18 +334,18 @@ static PyObject *Connection_Rollback(udt_Connection *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Connection_NewCursor()
+// ceoConnection_newCursor()
 //   Create a new cursor (statement) referencing the connection.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_NewCursor(udt_Connection *self, PyObject *args)
+static PyObject *ceoConnection_newCursor(ceoConnection *conn, PyObject *args)
 {
     PyObject *createArgs, *result;
 
     createArgs = PyTuple_New(1);
     if (!createArgs)
         return NULL;
-    Py_INCREF(self);
-    PyTuple_SET_ITEM(createArgs, 0, (PyObject*) self);
+    Py_INCREF(conn);
+    PyTuple_SET_ITEM(createArgs, 0, (PyObject*) conn);
     result = PyObject_Call( (PyObject*) &ceoPyTypeCursor, createArgs, NULL);
     Py_DECREF(createArgs);
     return result;
@@ -475,24 +353,24 @@ static PyObject *Connection_NewCursor(udt_Connection *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Connection_ContextManagerEnter()
+// ceoConnection_contextManagerEnter()
 //   Called when the connection is used as a context manager and simply returns
-// itself as a convenience to the caller.
+// itconn as a convenience to the caller.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ContextManagerEnter(udt_Connection *self,
+static PyObject *ceoConnection_contextManagerEnter(ceoConnection *conn,
         PyObject* args)
 {
-    Py_INCREF(self);
-    return (PyObject*) self;
+    Py_INCREF(conn);
+    return (PyObject*) conn;
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_ContextManagerExit()
+// ceoConnection_contextManagerExit()
 //   Called when the connection is used as a context manager and if any
 // exception a rollback takes place; otherwise, a commit takes place.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ContextManagerExit(udt_Connection *self,
+static PyObject *ceoConnection_contextManagerExit(ceoConnection *conn,
         PyObject* args)
 {
     PyObject *excType, *excValue, *excTraceback, *result;
@@ -503,7 +381,7 @@ static PyObject *Connection_ContextManagerExit(udt_Connection *self,
     if (excType == Py_None && excValue == Py_None && excTraceback == Py_None)
         methodName = "commit";
     else methodName = "rollback";
-    result = PyObject_CallMethod((PyObject*) self, methodName, "");
+    result = PyObject_CallMethod((PyObject*) conn, methodName, "");
     if (!result)
         return NULL;
     Py_DECREF(result);
@@ -514,17 +392,17 @@ static PyObject *Connection_ContextManagerExit(udt_Connection *self,
 
 
 //-----------------------------------------------------------------------------
-// Connection_Columns()
+// ceoConnection_columns()
 //   Return columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Columns(udt_Connection *self, PyObject *args,
+static PyObject *ceoConnection_columns(ceoConnection *conn, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "column", NULL };
     int catalogLength, schemaLength, tableLength, columnLength;
     SQLCHAR *catalog, *schema, *table, *column;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -536,34 +414,34 @@ static PyObject *Connection_Columns(udt_Connection *self, PyObject *args,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLColumns(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength, column, columnLength);
-    if (CheckForError(cursor, rc, "Connection_Columns()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_columns()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_ColumnPrivileges()
+// ceoConnection_columnPrivileges()
 //   Return column privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ColumnPrivileges(udt_Connection *self,
+static PyObject *ceoConnection_columnPrivileges(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "column", NULL };
     int catalogLength, schemaLength, tableLength, columnLength;
     SQLCHAR *catalog, *schema, *table, *column;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -575,27 +453,27 @@ static PyObject *Connection_ColumnPrivileges(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLColumnPrivileges(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength, column, columnLength);
-    if (CheckForError(cursor, rc, "Connection_ColumnPrivileges()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_columnPrivileges()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_ForeignKeys()
+// ceoConnection_foreignKeys()
 //   Return foreign keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ForeignKeys(udt_Connection *self,
+static PyObject *ceoConnection_foreignKeys(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "pkcatalog", "pkschema", "pktable",
@@ -603,7 +481,7 @@ static PyObject *Connection_ForeignKeys(udt_Connection *self,
     SQLCHAR *pkCatalog, *pkSchema, *pkTable, *fkCatalog, *fkSchema, *fkTable;
     int pkCatalogLength, pkSchemaLength, pkTableLength, fkCatalogLength;
     int fkSchemaLength, fkTableLength;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -618,7 +496,7 @@ static PyObject *Connection_ForeignKeys(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
@@ -626,26 +504,26 @@ static PyObject *Connection_ForeignKeys(udt_Connection *self,
     rc = SQLForeignKeys(cursor->handle, pkCatalog, pkCatalogLength, pkSchema,
             pkSchemaLength, pkTable, pkTableLength, fkCatalog, fkCatalogLength,
             fkSchema, fkSchemaLength, fkTable, fkTableLength);
-    if (CheckForError(cursor, rc, "Connection_ForeignKeys()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_foreignKeys()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_PrimaryKeys()
+// ceoConnection_primaryKeys()
 //   Return primary keys from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_PrimaryKeys(udt_Connection *self,
+static PyObject *ceoConnection_primaryKeys(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "catalog", "schema", "table", NULL };
     int catalogLength, schemaLength, tableLength;
     SQLCHAR *catalog, *schema, *table;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -657,33 +535,33 @@ static PyObject *Connection_PrimaryKeys(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLPrimaryKeys(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength);
-    if (CheckForError(cursor, rc, "Connection_PrimaryKeys()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_primaryKeys()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_Procedures()
+// ceoConnection_procedures()
 //   Return procedures from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Procedures(udt_Connection *self,
+static PyObject *ceoConnection_procedures(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] = { "catalog", "schema", "proc", NULL };
     int catalogLength, schemaLength, procLength;
     SQLCHAR *catalog, *schema, *proc;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -695,34 +573,34 @@ static PyObject *Connection_Procedures(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLProcedures(cursor->handle, catalog, catalogLength, schema,
             schemaLength, proc, procLength);
-    if (CheckForError(cursor, rc, "Connection_Procedures()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_procedures()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_ProcedureColumns()
+// ceoConnection_procedureColumns()
 //   Return procedure columns from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_ProcedureColumns(udt_Connection *self,
+static PyObject *ceoConnection_procedureColumns(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "proc", "column", NULL };
     int catalogLength, schemaLength, procLength, columnLength;
     SQLCHAR *catalog, *schema, *proc, *column;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -734,34 +612,34 @@ static PyObject *Connection_ProcedureColumns(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLProcedureColumns(cursor->handle, catalog, catalogLength, schema,
             schemaLength, proc, procLength, column, columnLength);
-    if (CheckForError(cursor, rc, "Connection_ProcedureColumns()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_procedureColumns()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_Tables()
+// ceoConnection_tables()
 //   Return tables from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_Tables(udt_Connection *self, PyObject *args,
+static PyObject *ceoConnection_tables(ceoConnection *conn, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", "type", NULL };
     int catalogLength, schemaLength, tableLength, typeLength;
     SQLCHAR *catalog, *schema, *table, *type;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -773,34 +651,34 @@ static PyObject *Connection_Tables(udt_Connection *self, PyObject *args,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLTables(cursor->handle, catalog, catalogLength, schema, schemaLength,
             table, tableLength, type, typeLength);
-    if (CheckForError(cursor, rc, "Connection_Tables()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_tables()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_TablePrivileges()
+// ceoConnection_tablePrivileges()
 //   Return table privileges from the catalog for the data source.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_TablePrivileges(udt_Connection *self,
+static PyObject *ceoConnection_tablePrivileges(ceoConnection *conn,
         PyObject *args, PyObject *keywordArgs)
 {
     static char *keywordList[] =
             { "catalog", "schema", "table", NULL };
     int catalogLength, schemaLength, tableLength;
     SQLCHAR *catalog, *schema, *table;
-    udt_Cursor *cursor;
+    ceoCursor *cursor;
     SQLRETURN rc;
 
     // parse arguments
@@ -812,35 +690,35 @@ static PyObject *Connection_TablePrivileges(udt_Connection *self,
         return NULL;
 
     // create cursor
-    cursor = Cursor_InternalNew(self);
+    cursor = ceoCursor_internalNew(conn);
     if (!cursor)
         return NULL;
 
     // call catalog method
     rc = SQLTablePrivileges(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength);
-    if (CheckForError(cursor, rc, "Connection_TablePrivileges()") < 0) {
+    if (CheckForError(cursor, rc, "ceoConnection_tablePrivileges()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
 
-    return Cursor_InternalCatalogHelper(cursor);
+    return ceoCursor_internalCatalogHelper(cursor);
 }
 
 
 //-----------------------------------------------------------------------------
-// Connection_GetAutoCommit()
+// ceoConnection_getAutoCommit()
 //   Return the value of the autocommit flag.
 //-----------------------------------------------------------------------------
-static PyObject *Connection_GetAutoCommit(udt_Connection *self, void* arg)
+static PyObject *ceoConnection_getAutoCommit(ceoConnection *conn, void* arg)
 {
     SQLUINTEGER autocommit;
     PyObject *result;
     SQLRETURN rc;
 
-    rc = SQLGetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+    rc = SQLGetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
             &autocommit, SQL_IS_UINTEGER, NULL);
-    if (CheckForError(self, rc, "Connection_GetAutoCommit()") < 0)
+    if (CheckForError(conn, rc, "ceoConnection_getAutoCommit()") < 0)
         return NULL;
     if (autocommit)
         result = Py_True;
@@ -851,13 +729,11 @@ static PyObject *Connection_GetAutoCommit(udt_Connection *self, void* arg)
 
 
 //-----------------------------------------------------------------------------
-// Connection_SetAutoCommit()
+// ceoConnection_setAutoCommit()
 //   Set the value of the autocommit flag.
 //-----------------------------------------------------------------------------
-static int Connection_SetAutoCommit(
-    udt_Connection *self,               // connection to set value on
-    PyObject *value,                    // value to set
-    void* arg)                          // argument (unused)
+static int ceoConnection_setAutoCommit(ceoConnection *conn, PyObject *value,
+        void* arg)
 {
     SQLUINTEGER sqlValue;
     SQLRETURN rc;
@@ -870,10 +746,84 @@ static int Connection_SetAutoCommit(
         sqlValue = SQL_AUTOCOMMIT_ON;
     else sqlValue = SQL_AUTOCOMMIT_OFF;
 
-    rc = SQLSetConnectAttr(self->handle, SQL_ATTR_AUTOCOMMIT,
+    rc = SQLSetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
             (SQLPOINTER) sqlValue, SQL_IS_UINTEGER);
-    if (CheckForError(self, rc,
-            "Connection_Init(): turning off autocommit") < 0)
+    if (CheckForError(conn, rc,
+            "ceoConnection_init(): turning off autocommit") < 0)
         return -1;
     return 0;
 }
+
+
+//-----------------------------------------------------------------------------
+// declaration of methods for the Python type
+//-----------------------------------------------------------------------------
+static PyMethodDef ceoMethods[] = {
+    { "cursor", (PyCFunction) ceoConnection_newCursor, METH_NOARGS },
+    { "commit", (PyCFunction) ceoConnection_commit, METH_NOARGS },
+    { "rollback", (PyCFunction) ceoConnection_rollback, METH_NOARGS },
+    { "close", (PyCFunction) ceoConnection_close, METH_NOARGS },
+    { "columns", (PyCFunction) ceoConnection_columns,
+            METH_VARARGS | METH_KEYWORDS },
+    { "columnprivileges", (PyCFunction) ceoConnection_columnPrivileges,
+            METH_VARARGS | METH_KEYWORDS },
+    { "foreignkeys", (PyCFunction) ceoConnection_foreignKeys,
+            METH_VARARGS | METH_KEYWORDS },
+    { "primarykeys", (PyCFunction) ceoConnection_primaryKeys,
+            METH_VARARGS | METH_KEYWORDS },
+    { "procedures", (PyCFunction) ceoConnection_procedures,
+            METH_VARARGS | METH_KEYWORDS },
+    { "procedurecolumns", (PyCFunction) ceoConnection_procedureColumns,
+            METH_VARARGS | METH_KEYWORDS },
+    { "tables", (PyCFunction) ceoConnection_tables,
+            METH_VARARGS | METH_KEYWORDS },
+    { "tableprivileges", (PyCFunction) ceoConnection_tablePrivileges,
+            METH_VARARGS | METH_KEYWORDS },
+    { "__enter__", (PyCFunction) ceoConnection_contextManagerEnter,
+            METH_NOARGS },
+    { "__exit__", (PyCFunction) ceoConnection_contextManagerExit,
+            METH_VARARGS },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of members for the Python type
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "dsn", T_OBJECT, offsetof(ceoConnection, dsn), READONLY },
+    { "logsql", T_INT, offsetof(ceoConnection, logSql), 0 },
+    { "inputtypehandler", T_OBJECT,
+            offsetof(ceoConnection, inputTypeHandler), 0 },
+    { "outputtypehandler", T_OBJECT,
+            offsetof(ceoConnection, outputTypeHandler), 0 },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of calculated members for the Python type
+//-----------------------------------------------------------------------------
+static PyGetSetDef ceoCalcMembers[] = {
+    { "autocommit", (getter) ceoConnection_getAutoCommit,
+            (setter) ceoConnection_setAutoCommit, 0, 0 },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of the Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeConnection = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC.Connection",
+    .tp_basicsize = sizeof(ceoConnection),
+    .tp_dealloc = (destructor) ceoConnection_free,
+    .tp_repr = (reprfunc) ceoConnection_repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
+    .tp_getset = ceoCalcMembers,
+    .tp_init = (initproc) ceoConnection_init,
+    .tp_new = (newfunc) ceoConnection_new
+};
