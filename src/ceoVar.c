@@ -406,8 +406,8 @@ udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
     // retrieve information about the column
     rc = SQLDescribeColW(cursor->handle, position, name, CEO_ARRAYSIZE(name),
             &length, &dataType, &size, &scale, &nullable);
-    if (CheckForError(cursor, rc,
-                "Variable_NewForResultSet(): get column info") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "Variable_NewForResultSet(): get column info") < 0)
         return NULL;
 
     // determine data type
@@ -454,7 +454,8 @@ udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
     var->position = position;
     rc = SQLBindCol(cursor->handle, position, var->type->cDataType,
             var->data.asRaw, var->bufferSize, var->lengthOrIndicator);
-    if (CheckForError(cursor, rc, "Variable_NewForResultSet(): bind()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "Variable_NewForResultSet(): bind()") < 0) {
         Py_DECREF(var);
         return NULL;
     }
@@ -483,7 +484,7 @@ int Variable_BindParameter(udt_Variable *self, ceoCursor *cursor,
             self->type->cDataType, self->type->sqlDataType, self->size,
             self->scale, self->data.asRaw, self->bufferSize,
             self->lengthOrIndicator);
-    if (CheckForError(cursor, rc, "Variable_BindParameter()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "Variable_BindParameter()") < 0)
         return -1;
 
     return 0;

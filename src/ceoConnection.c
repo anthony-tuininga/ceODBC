@@ -33,9 +33,7 @@ static PyObject* ceoConnection_new(PyTypeObject *type, PyObject *args,
     conn = (ceoConnection*) type->tp_alloc(type, 0);
     if (!conn)
         return NULL;
-    conn->handleType = SQL_HANDLE_DBC;
     conn->handle = SQL_NULL_HANDLE;
-    conn->env = NULL;
     conn->dsn = NULL;
     conn->isConnected = 0;
 #ifdef WITH_CX_LOGGING
@@ -135,15 +133,25 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
             &dsn, &dsnLength, &autocommit))
         return -1;
 
-    // set up the environment
-    conn->env = ceoEnv_new();
-    if (!conn->env)
+    // create the environment handle
+    rc = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &conn->envHandle);
+    if (rc != SQL_SUCCESS) {
+        PyErr_SetString(PyExc_RuntimeError,
+                "Unable to acquire environment handle");
+        return -1;
+    }
+
+    // set the attribute specifying which ODBC version to use
+    rc = SQLSetEnvAttr(conn->envHandle, SQL_ATTR_ODBC_VERSION,
+            (SQLPOINTER) SQL_OV_ODBC3, 0);
+    if (ceoError_check(SQL_HANDLE_ENV, conn->envHandle, rc,
+                "set ODBC version attribute") < 0)
         return -1;
 
     // allocate handle for the connection
-    rc = SQLAllocHandle(SQL_HANDLE_DBC, conn->env->handle, &conn->handle);
-    if (CheckForError(conn->env, rc,
-            "ceoConnection_init(): allocate DBC handle") < 0)
+    rc = SQLAllocHandle(SQL_HANDLE_DBC, conn->envHandle, &conn->handle);
+    if (ceoError_check(SQL_HANDLE_ENV, conn->envHandle, rc,
+                "allocate DBC handle") < 0)
         return -1;
 
     // connecting to driver
@@ -152,7 +160,7 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
     if ((size_t) actualDsnLength > CEO_ARRAYSIZE(actualDsnBuffer) - 1)
         actualDsnLength = CEO_ARRAYSIZE(actualDsnBuffer) - 1;
-    if (CheckForError(conn, rc,
+    if (CEO_CONN_CHECK_ERROR(conn, rc,
             "ceoConnection_init(): connecting to driver") < 0) {
         conn->handle = SQL_NULL_HANDLE;
         return -1;
@@ -162,7 +170,7 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
     if (!autocommit) {
         rc = SQLSetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
                 (SQLPOINTER) SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
-        if (CheckForError(conn, rc,
+        if (CEO_CONN_CHECK_ERROR(conn, rc,
                 "ceoConnection_init(): turning off autocommit") < 0)
             return -1;
     }
@@ -204,7 +212,7 @@ static void ceoConnection_free(ceoConnection *conn)
 {
     if (conn->isConnected) {
         Py_BEGIN_ALLOW_THREADS
-        SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
+        SQLEndTran(SQL_HANDLE_DBC, conn->handle, SQL_ROLLBACK);
         SQLDisconnect(conn->handle);
         SQLFreeHandle(SQL_HANDLE_DBC, conn->handle);
         Py_END_ALLOW_THREADS
@@ -212,7 +220,8 @@ static void ceoConnection_free(ceoConnection *conn)
     }
     if (conn->handle)
         SQLFreeHandle(SQL_HANDLE_DBC, conn->handle);
-    Py_CLEAR(conn->env);
+    if (conn->envHandle)
+        SQLFreeHandle(SQL_HANDLE_ENV, conn->envHandle);
     Py_CLEAR(conn->dsn);
     Py_CLEAR(conn->inputTypeHandler);
     Py_CLEAR(conn->outputTypeHandler);
@@ -257,16 +266,17 @@ static PyObject *ceoConnection_close(ceoConnection *conn, PyObject *args)
 
     // perform a rollback first
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
+    rc = SQLEndTran(SQL_HANDLE_DBC, conn->handle, SQL_ROLLBACK);
     Py_END_ALLOW_THREADS
-    if (CheckForError(conn, rc, "ceoConnection_close(): rollback") < 0)
+    if (CEO_CONN_CHECK_ERROR(conn, rc, "ceoConnection_close(): rollback") < 0)
         return NULL;
 
     // disconnect from the server
     Py_BEGIN_ALLOW_THREADS
     rc = SQLDisconnect(conn->handle);
     Py_END_ALLOW_THREADS
-    if (CheckForError(conn, rc, "ceoConnection_close(): disconnect") < 0)
+    if (CEO_CONN_CHECK_ERROR(conn, rc,
+            "ceoConnection_close(): disconnect") < 0)
         return NULL;
 
     // mark connection as no longer connected
@@ -291,9 +301,9 @@ static PyObject *ceoConnection_commit(ceoConnection *conn, PyObject *args)
 
     // perform the commit
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(conn->handleType, conn->handle, SQL_COMMIT);
+    rc = SQLEndTran(SQL_HANDLE_DBC, conn->handle, SQL_COMMIT);
     Py_END_ALLOW_THREADS
-    if (CheckForError(conn, rc, "ceoConnection_commit()") < 0)
+    if (CEO_CONN_CHECK_ERROR(conn, rc, "ceoConnection_commit()") < 0)
         return NULL;
     LogMessage(LOG_LEVEL_DEBUG, "transaction committed");
 
@@ -316,9 +326,9 @@ static PyObject *ceoConnection_rollback(ceoConnection *conn, PyObject *args)
 
     // perform the rollback
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLEndTran(conn->handleType, conn->handle, SQL_ROLLBACK);
+    rc = SQLEndTran(SQL_HANDLE_DBC, conn->handle, SQL_ROLLBACK);
     Py_END_ALLOW_THREADS
-    if (CheckForError(conn, rc, "ceoConnection_commit()") < 0)
+    if (CEO_CONN_CHECK_ERROR(conn, rc, "ceoConnection_commit()") < 0)
         return NULL;
     LogMessage(LOG_LEVEL_DEBUG, "transaction rolled back");
 
@@ -415,7 +425,7 @@ static PyObject *ceoConnection_columns(ceoConnection *conn, PyObject *args,
     // call catalog method
     rc = SQLColumns(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength, column, columnLength);
-    if (CheckForError(cursor, rc, "ceoConnection_columns()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoConnection_columns()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -454,7 +464,8 @@ static PyObject *ceoConnection_columnPrivileges(ceoConnection *conn,
     // call catalog method
     rc = SQLColumnPrivileges(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength, column, columnLength);
-    if (CheckForError(cursor, rc, "ceoConnection_columnPrivileges()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoConnection_columnPrivileges()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -498,7 +509,8 @@ static PyObject *ceoConnection_foreignKeys(ceoConnection *conn,
     rc = SQLForeignKeys(cursor->handle, pkCatalog, pkCatalogLength, pkSchema,
             pkSchemaLength, pkTable, pkTableLength, fkCatalog, fkCatalogLength,
             fkSchema, fkSchemaLength, fkTable, fkTableLength);
-    if (CheckForError(cursor, rc, "ceoConnection_foreignKeys()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoConnection_foreignKeys()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -536,7 +548,8 @@ static PyObject *ceoConnection_primaryKeys(ceoConnection *conn,
     // call catalog method
     rc = SQLPrimaryKeys(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength);
-    if (CheckForError(cursor, rc, "ceoConnection_primaryKeys()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoConnection_primaryKeys()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -574,7 +587,7 @@ static PyObject *ceoConnection_procedures(ceoConnection *conn,
     // call catalog method
     rc = SQLProcedures(cursor->handle, catalog, catalogLength, schema,
             schemaLength, proc, procLength);
-    if (CheckForError(cursor, rc, "ceoConnection_procedures()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoConnection_procedures()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -613,7 +626,8 @@ static PyObject *ceoConnection_procedureColumns(ceoConnection *conn,
     // call catalog method
     rc = SQLProcedureColumns(cursor->handle, catalog, catalogLength, schema,
             schemaLength, proc, procLength, column, columnLength);
-    if (CheckForError(cursor, rc, "ceoConnection_procedureColumns()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoConnection_procedureColumns()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -652,7 +666,7 @@ static PyObject *ceoConnection_tables(ceoConnection *conn, PyObject *args,
     // call catalog method
     rc = SQLTables(cursor->handle, catalog, catalogLength, schema, schemaLength,
             table, tableLength, type, typeLength);
-    if (CheckForError(cursor, rc, "ceoConnection_tables()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoConnection_tables()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -691,7 +705,8 @@ static PyObject *ceoConnection_tablePrivileges(ceoConnection *conn,
     // call catalog method
     rc = SQLTablePrivileges(cursor->handle, catalog, catalogLength, schema,
             schemaLength, table, tableLength);
-    if (CheckForError(cursor, rc, "ceoConnection_tablePrivileges()") < 0) {
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoConnection_tablePrivileges()") < 0) {
         Py_DECREF(cursor);
         return NULL;
     }
@@ -712,7 +727,7 @@ static PyObject *ceoConnection_getAutoCommit(ceoConnection *conn, void* arg)
 
     rc = SQLGetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
             &autocommit, SQL_IS_UINTEGER, NULL);
-    if (CheckForError(conn, rc, "ceoConnection_getAutoCommit()") < 0)
+    if (CEO_CONN_CHECK_ERROR(conn, rc, "ceoConnection_getAutoCommit()") < 0)
         return NULL;
     if (autocommit)
         result = Py_True;
@@ -742,7 +757,7 @@ static int ceoConnection_setAutoCommit(ceoConnection *conn, PyObject *value,
 
     rc = SQLSetConnectAttr(conn->handle, SQL_ATTR_AUTOCOMMIT,
             (SQLPOINTER) sqlValue, SQL_IS_UINTEGER);
-    if (CheckForError(conn, rc,
+    if (CEO_CONN_CHECK_ERROR(conn, rc,
             "ceoConnection_init(): turning off autocommit") < 0)
         return -1;
     return 0;

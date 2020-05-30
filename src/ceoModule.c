@@ -208,7 +208,6 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     MAKE_TYPE_READY(&ceoPyTypeConnection)
     MAKE_TYPE_READY(&ceoPyTypeCursor)
     MAKE_TYPE_READY(&ceoPyTypeDbType)
-    MAKE_TYPE_READY(&ceoPyTypeEnvironment)
     MAKE_TYPE_READY(&ceoPyTypeError)
     MAKE_TYPE_READY(&ceoPyTypeVar)
 

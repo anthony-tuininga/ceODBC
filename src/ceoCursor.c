@@ -41,7 +41,6 @@ static int ceoCursor_internalInit(ceoCursor *cursor,
     SQLRETURN rc;
 
     // initialize members
-    cursor->handleType = SQL_HANDLE_STMT;
     cursor->handle = SQL_NULL_HANDLE;
     Py_INCREF(connection);
     cursor->resultSetVars = NULL;
@@ -60,9 +59,9 @@ static int ceoCursor_internalInit(ceoCursor *cursor,
     cursor->rowNum = 0;
 
     // allocate handle
-    rc = SQLAllocHandle(cursor->handleType, cursor->connection->handle,
+    rc = SQLAllocHandle(SQL_HANDLE_STMT, cursor->connection->handle,
             &cursor->handle);
-    if (CheckForError(cursor->connection, rc,
+    if (CEO_CONN_CHECK_ERROR(cursor->connection, rc,
             "ceoCursor_init(): allocate statement handle") < 0)
         return -1;
 
@@ -136,7 +135,7 @@ static PyObject *ceoCursor_repr(ceoCursor *cursor)
 static void ceoCursor_free(ceoCursor *cursor)
 {
     if (cursor->handle && cursor->connection->isConnected)
-        SQLFreeHandle(cursor->handleType, cursor->handle);
+        SQLFreeHandle(SQL_HANDLE_STMT, cursor->handle);
     Py_CLEAR(cursor->connection);
     Py_CLEAR(cursor->resultSetVars);
     Py_CLEAR(cursor->parameterVars);
@@ -186,7 +185,7 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 
     // determine the number of columns in the result set
     rc = SQLNumResultCols(cursor->handle, &numColumns);
-    if (CheckForError(cursor, rc,
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_prepareResultSet(): determine number of columns") < 0)
         return -1;
 
@@ -198,14 +197,14 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
     cursor->fetchArraySize = cursor->arraySize;
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROW_ARRAY_SIZE,
             (SQLPOINTER) cursor->fetchArraySize, SQL_IS_INTEGER);
-    if (CheckForError(cursor, rc,
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_prepareResultSet(): set array size") < 0)
         return -1;
 
     // set up the rows fetched pointer
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROWS_FETCHED_PTR,
             &cursor->actualRows, SQL_IS_POINTER);
-    if (CheckForError(cursor, rc,
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_prepareResultSet(): set rows fetched pointer") < 0)
         return -1;
 
@@ -333,7 +332,7 @@ static void ceoCursor_logBindParameter(unsigned position, PyObject *value)
                 position);
         return;
     }
-    format = ceString_FromAscii("    %s => %r");
+    format = CEO_STR_FROM_ASCII("    %s => %r");
     if (!format) {
         Py_DECREF(formatArgs);
         LogMessageV(LOG_LEVEL_DEBUG, "    %d => cannot build format",
@@ -453,7 +452,7 @@ static int ceoCursor_internalExecuteHelper(ceoCursor *cursor, SQLRETURN rc)
         cursor->rowCount = 0;
         return 0;
     }
-    if (CheckForError(cursor, rc, "Cursor_InternalExecute()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "Cursor_InternalExecute()") < 0)
         return -1;
 
     // prepare result set, if necessary
@@ -463,7 +462,7 @@ static int ceoCursor_internalExecuteHelper(ceoCursor *cursor, SQLRETURN rc)
     // determine the value of the rowcount attribute
     if (!cursor->resultSetVars) {
         rc = SQLRowCount(cursor->handle, &cursor->rowCount);
-        if (CheckForError(cursor, rc, "Cursor_SetRowCount()") < 0)
+        if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "Cursor_SetRowCount()") < 0)
             return -1;
     }
 
@@ -512,7 +511,7 @@ static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
             &nameLength, &dataType, &precision, &scale, &nullable);
     if (nameLength > CEO_ARRAYSIZE(name) - 1)
         nameLength = CEO_ARRAYSIZE(name) - 1;
-    if (CheckForError(cursor, rc,
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_itemDescription(): get column info") < 0)
         return NULL;
 
@@ -624,7 +623,7 @@ static PyObject *ceoCursor_getName(ceoCursor *cursor, void *arg)
             &nameLength);
     if (nameLength > CEO_ARRAYSIZE(name) - 1)
         nameLength = CEO_ARRAYSIZE(name) - 1;
-    if (CheckForError(cursor, rc, "ceoCursor_getName()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_getName()") < 0)
         return NULL;
     return ceString_FromStringAndSize(name, nameLength);
 }
@@ -645,7 +644,7 @@ static int ceoCursor_setName(ceoCursor *cursor, PyObject *value, void *arg)
     rc = SQLSetCursorNameW(cursor->handle, (SQLWCHAR*) buffer.ptr,
             buffer.size);
     StringBuffer_Clear(&buffer);
-    if (CheckForError(cursor, rc, "ceoCursor_setName()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_setName()") < 0)
         return -1;
 
     return 0;
@@ -665,8 +664,8 @@ static PyObject *ceoCursor_close(ceoCursor *cursor, PyObject *args)
         return NULL;
 
     // close the cursor
-    rc = SQLFreeHandle(cursor->handleType, cursor->handle);
-    if (CheckForError(cursor, rc, "ceoCursor_close()") < 0)
+    rc = SQLFreeHandle(SQL_HANDLE_STMT, cursor->handle);
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_close()") < 0)
         return NULL;
     cursor->handle = NULL;
 
@@ -693,7 +692,7 @@ static PyObject *ceoCursor_nextSet(ceoCursor *cursor, PyObject *args)
         Py_INCREF(Py_None);
         return Py_None;
     }
-    if (CheckForError(cursor, rc, "ceoCursor_nextSet()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_nextSet()") < 0)
         return NULL;
 
     // set up result set
@@ -758,7 +757,8 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
 static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
 {
     PyObject *format, *formatArgs, *message;
-    udt_StringBuffer buffer;
+    Py_ssize_t sqlLength;
+    const char *sql;
     SQLRETURN rc;
 
     // make sure we don't get a situation where nothing is to be executed
@@ -781,7 +781,7 @@ static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
 
     // log the statement, if applicable
     if (cursor->logSql) {
-        format = ceString_FromAscii("SQL\n%s");
+        format = CEO_STR_FROM_ASCII("SQL\n%s");
         if (!format)
             return -1;
         formatArgs = PyTuple_Pack(1, statement);
@@ -804,14 +804,13 @@ static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
     cursor->rowFactory = NULL;
 
     // prepare statement
-    if (StringBuffer_FromString(&buffer, cursor->statement,
-            "statement must be a string or None") < 0)
+    sql = PyUnicode_AsUTF8AndSize(cursor->statement, &sqlLength);
+    if (!sql)
         return -1;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepareW(cursor->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
+    rc = SQLPrepareA(cursor->handle, sql, sqlLength);
     Py_END_ALLOW_THREADS
-    StringBuffer_Clear(&buffer);
-    if (CheckForError(cursor, rc, "ceoCursor_internalPrepare()") < 0)
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_internalPrepare()") < 0)
         return -1;
 
     // clear parameters
@@ -862,7 +861,7 @@ static PyObject *ceoCursor_execDirect(ceoCursor *cursor, PyObject *args)
 
     // log the statement, if applicable
     if (cursor->logSql) {
-        format = ceString_FromAscii("SQL\n%s");
+        format = CEO_STR_FROM_ASCII("SQL\n%s");
         if (!format)
             return NULL;
         formatArgs = PyTuple_Pack(1, statement);
@@ -1001,7 +1000,7 @@ static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
     // set the number of parameters bound
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_PARAMSET_SIZE,
             (SQLPOINTER) numRows, SQL_IS_UINTEGER);
-    if (CheckForError(cursor, rc,
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_executeMany(): set paramset size") < 0)
         return NULL;
 
@@ -1053,7 +1052,7 @@ static int ceoCursor_callBuildStatement(PyObject *name,
     *ptr = '\0';
 
     // create statement object
-    format = ceString_FromAscii(statement);
+    format = CEO_STR_FROM_ASCII(statement);
     PyMem_Free(statement);
     if (!format)
         return -1;
@@ -1243,10 +1242,12 @@ static int ceoCursor_internalFetch(ceoCursor *cursor)
     Py_BEGIN_ALLOW_THREADS
     rc = SQLFetch(cursor->handle);
     Py_END_ALLOW_THREADS
-    if (rc == SQL_NO_DATA)
+    if (rc == SQL_NO_DATA) {
         cursor->actualRows = 0;
-    else if (CheckForError(cursor, rc, "ceoCursor_internalFetch(): fetch") < 0)
+    } else if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
+            "ceoCursor_internalFetch(): fetch") < 0) {
         return -1;
+    }
     cursor->rowNum = 0;
     return 0;
 }

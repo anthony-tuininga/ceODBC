@@ -35,13 +35,18 @@
 // define macro for determining the number of elements in an array
 #define CEO_ARRAYSIZE(A) (sizeof(A)/sizeof((A)[0]))
 
-// define macro for checking for errors
-#define CheckForError(obj, rc, context) \
-        Error_CheckForError((udt_ObjectWithHandle*) obj, rc, context)
+// define macro for transforming ASCII strings
+#define CEO_STR_FROM_ASCII(str) \
+    PyUnicode_DecodeASCII(str, strlen(str), NULL)
+
+// define macros for checking errors
+#define CEO_CONN_CHECK_ERROR(conn, rc, context) \
+    ceoError_check(SQL_HANDLE_DBC, conn->handle, rc, context)
+
+#define CEO_CURSOR_CHECK_ERROR(cursor, rc, context) \
+    ceoError_check(SQL_HANDLE_STMT, cursor->handle, rc, context)
 
 // define macros for managing strings
-#define ceString_FromAscii(str) \
-    PyUnicode_DecodeASCII(str, strlen(str), NULL)
 #ifdef Py_UNICODE_WIDE
     #define ceString_FromStringAndSize(buffer, size) \
         PyUnicode_DecodeUTF16(buffer, (size) * 2, NULL, NULL)
@@ -54,12 +59,6 @@
         PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) / 2)
 #endif
 
-// define macro for defining objects with handles
-#define ObjectWithHandle_HEAD \
-    PyObject_HEAD \
-    SQLSMALLINT handleType; \
-    SQLHANDLE handle;
-
 
 //-----------------------------------------------------------------------------
 // Forward Declarations
@@ -69,8 +68,6 @@ typedef struct ceoConnection ceoConnection;
 typedef struct ceoCursor ceoCursor;
 typedef struct ceoDbType ceoDbType;
 typedef struct udt_Error udt_Error;
-typedef struct ceoEnv ceoEnv;
-typedef struct udt_ObjectWithHandle udt_ObjectWithHandle;
 typedef struct udt_StringBuffer udt_StringBuffer;
 typedef struct udt_Variable udt_Variable;
 
@@ -117,7 +114,6 @@ extern PyTypeObject ceoPyTypeApiType;
 extern PyTypeObject ceoPyTypeConnection;
 extern PyTypeObject ceoPyTypeCursor;
 extern PyTypeObject ceoPyTypeDbType;
-extern PyTypeObject ceoPyTypeEnvironment;
 extern PyTypeObject ceoPyTypeError;
 extern PyTypeObject ceoPyTypeVar;
 
@@ -163,8 +159,9 @@ struct ceoApiType {
 };
 
 struct ceoConnection {
-    ObjectWithHandle_HEAD
-    ceoEnv *env;
+    PyObject_HEAD
+    SQLHANDLE handle;
+    SQLHANDLE envHandle;
     PyObject *inputTypeHandler;
     PyObject *outputTypeHandler;
     int isConnected;
@@ -173,7 +170,8 @@ struct ceoConnection {
 };
 
 struct ceoCursor {
-    ObjectWithHandle_HEAD
+    PyObject_HEAD
+    SQLHANDLE handle;
     ceoConnection *connection;
     PyObject *statement;
     PyObject *resultSetVars;
@@ -202,18 +200,10 @@ struct ceoDbType {
     SQLUINTEGER bytesMultiplier;
 };
 
-struct ceoEnv {
-    ObjectWithHandle_HEAD
-};
-
 struct udt_Error {
     PyObject_HEAD
     PyObject *message;
     const char *context;
-};
-
-struct udt_ObjectWithHandle {
-    ObjectWithHandle_HEAD
 };
 
 struct udt_StringBuffer {
@@ -255,10 +245,8 @@ ceoDbType *ceoDbType_fromSqlDataType(SQLSMALLINT sqlDataType);
 ceoDbType *ceoDbType_fromType(PyObject *type);
 ceoDbType *ceoDbType_fromValue(PyObject *value, SQLUINTEGER *size);
 
-ceoEnv *ceoEnv_new(void);
-
-int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
-        const char *context);
+int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
+        SQLRETURN rcToCheck, const char *context);
 int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
         const char *context);
 

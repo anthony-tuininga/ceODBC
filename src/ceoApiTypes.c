@@ -28,7 +28,7 @@ ceoApiType *ceoApiType_new(PyObject *module, const char *name)
     apiType = PyObject_NEW(ceoApiType, &ceoPyTypeApiType);
     if (!apiType)
         return NULL;
-    apiType->name = ceString_FromAscii(name);
+    apiType->name = CEO_STR_FROM_ASCII(name);
     apiType->types = PyList_New(0);
     if (!apiType->types || !apiType->name) {
         Py_DECREF(apiType);

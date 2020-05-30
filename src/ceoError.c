@@ -6,41 +6,10 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// forward declarations
+// ceoError_free()
+//   Deallocation routine.
 //-----------------------------------------------------------------------------
-static void Error_Free(udt_Error*);
-static PyObject *Error_Str(udt_Error*);
-
-
-//-----------------------------------------------------------------------------
-// declaration of members for Python type
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "message", T_OBJECT, offsetof(udt_Error, message), READONLY },
-    { "context", T_STRING, offsetof(udt_Error, context), READONLY },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of Python type
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeError = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC._Error",
-    .tp_basicsize = sizeof(udt_Error),
-    .tp_dealloc = (destructor) Error_Free,
-    .tp_str = (reprfunc) Error_Str,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_members = ceoMembers
-};
-
-
-//-----------------------------------------------------------------------------
-// Error_Free()
-//   Deallocate the environment, disconnecting from the database if necessary.
-//-----------------------------------------------------------------------------
-static void Error_Free(udt_Error *self)
+static void ceoError_free(udt_Error *self)
 {
     Py_CLEAR(self->message);
     Py_TYPE(self)->tp_free((PyObject*) self);
@@ -48,30 +17,30 @@ static void Error_Free(udt_Error *self)
 
 
 //-----------------------------------------------------------------------------
-// Error_Str()
+// ceoError_str()
 //   Return a string representation of the error variable.
 //-----------------------------------------------------------------------------
-static PyObject *Error_Str(udt_Error *self)
+static PyObject *ceoError_str(udt_Error *self)
 {
     if (self->message) {
         Py_INCREF(self->message);
         return self->message;
     }
-    return ceString_FromAscii("");
+    return CEO_STR_FROM_ASCII("");
 }
 
 
 //-----------------------------------------------------------------------------
-// Error_CheckForError()
+// ceoError_check()
 //   Check for an error in the last call and if an error has occurred, raise a
 // Python exception.
 //-----------------------------------------------------------------------------
-int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
-        const char *context)
+int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
+        SQLRETURN rcToCheck, const char *context)
 {
     PyObject *errorMessages, *temp, *separator;
-    SQLWCHAR buffer[1024];
     SQLINTEGER numRecords;
+    SQLCHAR buffer[1024];
     SQLSMALLINT length;
     udt_Error *error;
     SQLRETURN rc;
@@ -92,16 +61,16 @@ int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
     error->context = context;
 
     // determine number of diagnostic records available
-    rc = SQLGetDiagFieldW(obj->handleType, obj->handle, 0, SQL_DIAG_NUMBER,
-            &numRecords, SQL_IS_INTEGER, NULL);
+    rc = SQLGetDiagFieldA(handleType, handle, 0, SQL_DIAG_NUMBER, &numRecords,
+            SQL_IS_INTEGER, NULL);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-        error->message = ceString_FromAscii("cannot get number of " \
+        error->message = CEO_STR_FROM_ASCII("cannot get number of " \
                 "diagnostic records");
 
     // determine error text
     } else if (numRecords == 0) {
-        error->message = ceString_FromAscii("no diagnostic message text " \
-                "available");
+        error->message =
+                CEO_STR_FROM_ASCII("no diagnostic message text available");
     } else {
         error->message = NULL;
         errorMessages = PyList_New(numRecords);
@@ -110,16 +79,16 @@ int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
             return -1;
         }
         for (i = 1; i <= numRecords; i++) {
-            rc = SQLGetDiagFieldW(obj->handleType, obj->handle, i,
-                    SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &length);
-            if (length > sizeof(buffer) - sizeof(SQLWCHAR))
-                length = sizeof(buffer) - sizeof(SQLWCHAR);
+            rc = SQLGetDiagFieldA(handleType, handle, i, SQL_DIAG_MESSAGE_TEXT,
+                    buffer, sizeof(buffer), &length);
+            if (length > sizeof(buffer) - sizeof(SQLCHAR))
+                length = sizeof(buffer) - sizeof(SQLCHAR);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-                error->message = ceString_FromAscii("cannot get " \
+                error->message = CEO_STR_FROM_ASCII("cannot get " \
                         "diagnostic message text");
                 break;
             }
-            temp = ceString_FromStringAndSizeInBytes(buffer, length);
+            temp = PyUnicode_DecodeUTF8(buffer, length, NULL);
             if (!temp) {
                 Py_DECREF(error);
                 Py_DECREF(errorMessages);
@@ -128,7 +97,7 @@ int Error_CheckForError(udt_ObjectWithHandle *obj, SQLRETURN rcToCheck,
             PyList_SET_ITEM(errorMessages, i - 1, temp);
         }
         if (!error->message) {
-            separator = ceString_FromAscii("\n");
+            separator = CEO_STR_FROM_ASCII("\n");
             if (!separator) {
                 Py_DECREF(error);
                 Py_DECREF(errorMessages);
@@ -174,3 +143,27 @@ int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
     Py_DECREF(error);
     return -1;
 }
+
+
+//-----------------------------------------------------------------------------
+// declaration of members for Python type
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "message", T_OBJECT, offsetof(udt_Error, message), READONLY },
+    { "context", T_STRING, offsetof(udt_Error, context), READONLY },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeError = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC._Error",
+    .tp_basicsize = sizeof(udt_Error),
+    .tp_dealloc = (destructor) ceoError_free,
+    .tp_str = (reprfunc) ceoError_str,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_members = ceoMembers
+};
