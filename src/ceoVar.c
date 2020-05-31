@@ -398,14 +398,13 @@ udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
 {
     SQLSMALLINT dataType, length, scale, nullable;
     ceoDbType *dbType;
-    SQLWCHAR name[1];
     udt_Variable *var;
     SQLULEN size;
     SQLRETURN rc;
 
     // retrieve information about the column
-    rc = SQLDescribeColW(cursor->handle, position, name, CEO_ARRAYSIZE(name),
-            &length, &dataType, &size, &scale, &nullable);
+    rc = SQLDescribeColA(cursor->handle, position, NULL, 0, &length, &dataType,
+            &size, &scale, &nullable);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "Variable_NewForResultSet(): get column info") < 0)
         return NULL;
@@ -546,20 +545,15 @@ PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
             return PyLong_FromLongLong(var->data.asBigInt[pos]);
         case SQL_DOUBLE:
             return PyFloat_FromDouble(var->data.asDouble[pos]);
-        case SQL_WVARCHAR:
-        case SQL_WLONGVARCHAR:
+        case SQL_VARCHAR:
+        case SQL_LONGVARCHAR:
             ptr = (char*) var->data.asString + pos * var->bufferSize;
-#ifdef Py_UNICODE_WIDE
-            return PyUnicode_DecodeUTF16(ptr, var->lengthOrIndicator[pos],
-                    NULL, NULL);
-#else
-            return PyUnicode_FromUnicode((Py_UNICODE*) ptr,
-                    var->lengthOrIndicator[pos] / 2);
-#endif
-        case SQL_WCHAR:
+            return PyUnicode_DecodeUTF8(ptr, var->lengthOrIndicator[pos],
+                    NULL);
+        case SQL_CHAR:
             ptr = (char*) var->data.asString + pos * var->bufferSize;
-            obj = ceString_FromStringAndSizeInBytes(ptr,
-                    var->lengthOrIndicator[pos]);
+            obj = PyUnicode_DecodeUTF8(ptr, var->lengthOrIndicator[pos],
+                    NULL);
             if (!obj)
                 return NULL;
             result = PyObject_CallFunctionObjArgs(g_DecimalType, obj, NULL);
@@ -629,8 +623,9 @@ PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 //-----------------------------------------------------------------------------
 int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
 {
-    udt_StringBuffer buffer;
+    Py_ssize_t tempLength;
     PyObject *textValue;
+    const char *temp;
     char message[250];
 
     switch (var->type->sqlDataType) {
@@ -640,19 +635,16 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
                 PyErr_SetString(PyExc_TypeError, "expecting bytes data");
                 return -1;
             }
-            if (StringBuffer_FromBinary(&buffer, value) < 0)
-                return -1;
-            if (buffer.size > var->size) {
-                if (Variable_Resize(var, buffer.size) < 0) {
-                    StringBuffer_Clear(&buffer);
+            temp = PyBytes_AS_STRING(value);
+            tempLength = PyBytes_GET_SIZE(value);
+            if (tempLength > var->size) {
+                if (Variable_Resize(var, tempLength) < 0)
                     return -1;
-                }
             }
-            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.size;
-            if (buffer.size)
-                memcpy(var->data.asBinary + var->bufferSize * pos, buffer.ptr,
-                        buffer.size);
-            StringBuffer_Clear(&buffer);
+            var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
+            if (tempLength)
+                memcpy(var->data.asBinary + var->bufferSize * pos, temp,
+                        tempLength);
             return 0;
         case SQL_BIT:
             if (!PyBool_Check(value)) {
@@ -688,7 +680,7 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
             if (PyErr_Occurred())
                 return -1;
             return 0;
-        case SQL_WCHAR:
+        case SQL_CHAR:
             if (Py_TYPE(value) != (PyTypeObject*) g_DecimalType) {
                 PyErr_SetString(PyExc_TypeError, "expecting decimal object");
                 return -1;
@@ -696,35 +688,31 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
             textValue = PyObject_Str(value);
             if (!textValue)
                 return -1;
-            if (StringBuffer_FromUnicode(&buffer, textValue) < 0) {
-                Py_DECREF(textValue);
-                return -1;
-            }
+            temp = PyUnicode_AsUTF8AndSize(textValue, &tempLength);
             Py_DECREF(textValue);
-            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
-            memcpy(var->data.asString + var->bufferSize * pos, buffer.ptr,
-                    buffer.sizeInBytes);
-            StringBuffer_Clear(&buffer);
+            if (!temp)
+                return -1;
+            var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
+            memcpy(var->data.asString + var->bufferSize * pos, temp,
+                    tempLength);
             return 0;
-        case SQL_WVARCHAR:
-        case SQL_WLONGVARCHAR:
+        case SQL_VARCHAR:
+        case SQL_LONGVARCHAR:
             if (!PyUnicode_Check(value)) {
                 PyErr_SetString(PyExc_TypeError, "expecting string");
                 return -1;
             }
-            if (StringBuffer_FromUnicode(&buffer, value) < 0)
+            temp = PyUnicode_AsUTF8AndSize(value, &tempLength);
+            if (!temp)
                 return -1;
-            if (buffer.size > var->size) {
-                if (Variable_Resize((udt_Variable*) var, buffer.size) < 0) {
-                    StringBuffer_Clear(&buffer);
+            if (tempLength > var->size) {
+                if (Variable_Resize((udt_Variable*) var, tempLength) < 0)
                     return -1;
-                }
             }
-            var->lengthOrIndicator[pos] = (SQLINTEGER) buffer.sizeInBytes;
-            if (buffer.sizeInBytes)
-                memcpy(var->data.asString + var->bufferSize * pos, buffer.ptr,
-                        buffer.sizeInBytes);
-            StringBuffer_Clear(&buffer);
+            var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
+            if (tempLength)
+                memcpy(var->data.asString + var->bufferSize * pos, temp,
+                        tempLength);
             return 0;
         case SQL_INTEGER:
             if (!PyLong_Check(value)) {

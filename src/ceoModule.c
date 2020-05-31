@@ -278,8 +278,8 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
             sizeof(unsigned char), 0)
     CEO_ADD_DB_TYPE(&ceoDbTypeDate, "DB_TYPE_DATE", SQL_TYPE_DATE,
             SQL_C_TYPE_DATE, sizeof(DATE_STRUCT), 0)
-    CEO_ADD_DB_TYPE(&ceoDbTypeDecimal, "DB_TYPE_DECIMAL", SQL_WCHAR,
-            SQL_C_WCHAR, 40, 0)
+    CEO_ADD_DB_TYPE(&ceoDbTypeDecimal, "DB_TYPE_DECIMAL", SQL_CHAR,
+            SQL_C_CHAR, 40, 0)
     CEO_ADD_DB_TYPE(&ceoDbTypeDouble, "DB_TYPE_DOUBLE", SQL_DOUBLE,
             SQL_C_DOUBLE, sizeof(SQLDOUBLE), 0)
     CEO_ADD_DB_TYPE(&ceoDbTypeInt, "DB_TYPE_INT", SQL_INTEGER, SQL_C_LONG,
@@ -287,9 +287,9 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     CEO_ADD_DB_TYPE(&ceoDbTypeLongBinary, "DB_TYPE_LONG_BINARY",
             SQL_LONGVARBINARY, SQL_C_BINARY, 0, 1)
     CEO_ADD_DB_TYPE(&ceoDbTypeLongString, "DB_TYPE_LONG_STRING",
-            SQL_WLONGVARCHAR, SQL_C_WCHAR, 0, 2)
-    CEO_ADD_DB_TYPE(&ceoDbTypeString, "DB_TYPE_STRING", SQL_WVARCHAR,
-            SQL_C_WCHAR, 0, 2)
+            SQL_LONGVARCHAR, SQL_C_CHAR, 0, 2)
+    CEO_ADD_DB_TYPE(&ceoDbTypeString, "DB_TYPE_STRING", SQL_VARCHAR,
+            SQL_C_CHAR, 0, 2)
     CEO_ADD_DB_TYPE(&ceoDbTypeTime, "DB_TYPE_TIME", SQL_TYPE_TIME,
             SQL_C_TYPE_TIME, sizeof(TIME_STRUCT), 00)
     CEO_ADD_DB_TYPE(&ceoDbTypeTimestamp, "DB_TYPE_TIMESTAMP",

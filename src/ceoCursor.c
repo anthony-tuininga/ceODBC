@@ -500,17 +500,17 @@ static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
 {
     SQLSMALLINT dataType, nameLength, scale, nullable;
     SQLULEN precision, size, displaySize;
-    SQLWCHAR name[256];
+    SQLCHAR name[256];
     ceoDbType *dbType;
     PyObject *tuple;
     SQLRETURN rc;
     int i;
 
     // retrieve information about the column
-    rc = SQLDescribeColW(cursor->handle, position, name, CEO_ARRAYSIZE(name),
+    rc = SQLDescribeColA(cursor->handle, position, name, sizeof(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
-    if (nameLength > CEO_ARRAYSIZE(name) - 1)
-        nameLength = CEO_ARRAYSIZE(name) - 1;
+    if (nameLength > sizeof(name) - 1)
+        nameLength = sizeof(name) - 1;
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_itemDescription(): get column info") < 0)
         return NULL;
@@ -548,8 +548,7 @@ static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
 
     // set each of the items in the tuple
     Py_INCREF((PyObject*) dbType);
-    PyTuple_SET_ITEM(tuple, 0, 
-            ceString_FromStringAndSize(name, nameLength));
+    PyTuple_SET_ITEM(tuple, 0, PyUnicode_DecodeUTF8(name, nameLength, NULL));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) dbType);
     PyTuple_SET_ITEM(tuple, 2, PyLong_FromLong(displaySize));
     PyTuple_SET_ITEM(tuple, 3, PyLong_FromLong(size));
@@ -616,16 +615,16 @@ static PyObject *ceoCursor_getDescription(ceoCursor *cursor, void *arg)
 static PyObject *ceoCursor_getName(ceoCursor *cursor, void *arg)
 {
     SQLSMALLINT nameLength;
-    SQLWCHAR name[255];
+    SQLCHAR name[255];
     SQLRETURN rc;
 
-    rc = SQLGetCursorNameW(cursor->handle, name, CEO_ARRAYSIZE(name),
+    rc = SQLGetCursorNameA(cursor->handle, name, sizeof(name),
             &nameLength);
-    if (nameLength > CEO_ARRAYSIZE(name) - 1)
-        nameLength = CEO_ARRAYSIZE(name) - 1;
+    if (nameLength > sizeof(name) - 1)
+        nameLength = sizeof(name) - 1;
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_getName()") < 0)
         return NULL;
-    return ceString_FromStringAndSize(name, nameLength);
+    return PyUnicode_DecodeUTF8(name, nameLength, NULL);
 }
 
 
@@ -635,15 +634,14 @@ static PyObject *ceoCursor_getName(ceoCursor *cursor, void *arg)
 //-----------------------------------------------------------------------------
 static int ceoCursor_setName(ceoCursor *cursor, PyObject *value, void *arg)
 {
-    udt_StringBuffer buffer;
+    Py_ssize_t nameLength;
+    const char *name;
     SQLRETURN rc;
 
-    if (StringBuffer_FromString(&buffer, value,
-                "cursor name must be a string") < 0)
+    name = PyUnicode_AsUTF8AndSize(value, &nameLength);
+    if (!name)
         return -1;
-    rc = SQLSetCursorNameW(cursor->handle, (SQLWCHAR*) buffer.ptr,
-            buffer.size);
-    StringBuffer_Clear(&buffer);
+    rc = SQLSetCursorNameA(cursor->handle, (SQLCHAR*) name, nameLength);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_setName()") < 0)
         return -1;
 
@@ -850,7 +848,8 @@ static PyObject *ceoCursor_prepare(ceoCursor *cursor, PyObject *args)
 static PyObject *ceoCursor_execDirect(ceoCursor *cursor, PyObject *args)
 {
     PyObject *statement, *format, *formatArgs, *message;
-    udt_StringBuffer buffer;
+    Py_ssize_t sqlTextLength;
+    const char *sqlText;
     SQLRETURN rc;
 
     // parse arguments
@@ -890,13 +889,12 @@ static PyObject *ceoCursor_execDirect(ceoCursor *cursor, PyObject *args)
     cursor->parameterVars = NULL;
 
     // execute the statement
-    if (StringBuffer_FromString(&buffer, statement,
-            "statement must be a string") < 0)
+    sqlText = PyUnicode_AsUTF8AndSize(statement, &sqlTextLength);
+    if (!sqlText)
         return NULL;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLExecDirectW(cursor->handle, (SQLWCHAR*) buffer.ptr, buffer.size);
+    rc = SQLExecDirectA(cursor->handle, (SQLCHAR*) sqlText, sqlTextLength);
     Py_END_ALLOW_THREADS
-    StringBuffer_Clear(&buffer);
     if (ceoCursor_internalExecuteHelper(cursor, rc) < 0)
         return NULL;
 

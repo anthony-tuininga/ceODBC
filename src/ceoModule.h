@@ -46,19 +46,6 @@
 #define CEO_CURSOR_CHECK_ERROR(cursor, rc, context) \
     ceoError_check(SQL_HANDLE_STMT, cursor->handle, rc, context)
 
-// define macros for managing strings
-#ifdef Py_UNICODE_WIDE
-    #define ceString_FromStringAndSize(buffer, size) \
-        PyUnicode_DecodeUTF16(buffer, (size) * 2, NULL, NULL)
-    #define ceString_FromStringAndSizeInBytes(buffer, size) \
-        PyUnicode_DecodeUTF16(buffer, (size), NULL, NULL)
-#else
-    #define ceString_FromStringAndSize(buffer, size) \
-        PyUnicode_FromUnicode((Py_UNICODE*) (buffer), size)
-    #define ceString_FromStringAndSizeInBytes(buffer, size) \
-        PyUnicode_FromUnicode((Py_UNICODE*) (buffer), (size) / 2)
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Forward Declarations
@@ -68,7 +55,6 @@ typedef struct ceoConnection ceoConnection;
 typedef struct ceoCursor ceoCursor;
 typedef struct ceoDbType ceoDbType;
 typedef struct udt_Error udt_Error;
-typedef struct udt_StringBuffer udt_StringBuffer;
 typedef struct udt_Variable udt_Variable;
 
 
@@ -206,13 +192,6 @@ struct udt_Error {
     const char *context;
 };
 
-struct udt_StringBuffer {
-    const void *ptr;
-    Py_ssize_t size;
-    Py_ssize_t sizeInBytes;
-    PyObject *encodedString;
-};
-
 struct udt_Variable {
     PyObject_HEAD
     SQLSMALLINT position;
@@ -249,12 +228,6 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
         SQLRETURN rcToCheck, const char *context);
 int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
         const char *context);
-
-void StringBuffer_Clear(udt_StringBuffer *buf);
-int StringBuffer_FromBinary(udt_StringBuffer *buf, PyObject *obj);
-int StringBuffer_FromString(udt_StringBuffer *buf, PyObject *obj,
-        const char *message);
-int StringBuffer_FromUnicode(udt_StringBuffer *buf, PyObject *obj);
 
 PyObject *ceoTransform_dateFromSqlValue(DATE_STRUCT *sqlValue);
 PyObject *ceoTransform_dateFromTicks(PyObject *args);
