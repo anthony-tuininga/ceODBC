@@ -84,3 +84,18 @@ class TestStringVar(BaseTestCase):
         self.failUnlessEqual(self.cursor.fetchone(), self.dataByKey[4])
         self.failUnlessEqual(self.cursor.fetchone(), None)
 
+    def testSupplementalCharacters(self):
+        "test binding and fetching supplemental characters"
+        supplementalChars = "𠜎 𠜱 𠝹 𠱓 𠱸 𠲖 𠳏 𠳕 𠴕 𠵼 𠵿 𠸎 𠸏 𠹷 𠺝 " \
+                "𠺢 𠻗 𠻹 𠻺 𠼭 𠼮 𠽌 𠾴 𠾼 𠿪 𡁜 𡁯 𡁵 𡁶 𡁻 𡃁 𡃉 𡇙 𢃇 " \
+                "𢞵 𢫕 𢭃 𢯊 𢱑 𢱕 𢳂 𢴈 𢵌 𢵧 𢺳 𣲷 𤓓 𤶸 𤷪 𥄫 𦉘 𦟌 𦧲 " \
+                "𦧺 𧨾 𨅝 𨈇 𨋢 𨳊 𨳍 𨳒 𩶘"
+        self.cursor.execute("truncate table TestTempTable")
+        self.cursor.execute("""
+                insert into TestTempTable (IntCol, StringCol)
+                values (?, ?)""",
+                (1, supplementalChars))
+        self.connection.commit()
+        self.cursor.execute("select StringCol from TestTempTable")
+        value, = self.cursor.fetchone()
+        self.assertEqual(value, supplementalChars)

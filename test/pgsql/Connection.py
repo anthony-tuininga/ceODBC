@@ -25,15 +25,15 @@ class TestConnection(TestCase):
         "connection rolls back before close"
         connection = ceODBC.connect(self.dsn)
         cursor = connection.cursor()
-        cursor.execute("delete from TestExecuteMany")
+        cursor.execute("delete from TestTempTable")
         connection.commit()
-        cursor.execute("select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestTempTable")
         otherConnection = ceODBC.connect(self.dsn)
         otherCursor = otherConnection.cursor()
-        otherCursor.execute("insert into TestExecuteMany (IntCol) values (1)")
-        otherCursor.execute("insert into TestExecuteMany (IntCol) values (2)")
+        otherCursor.execute("insert into TestTempTable (IntCol) values (1)")
+        otherCursor.execute("insert into TestTempTable (IntCol) values (2)")
         otherConnection.close()
-        cursor.execute("select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestTempTable")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 
@@ -41,16 +41,16 @@ class TestConnection(TestCase):
         "connection rolls back before destruction"
         connection = ceODBC.connect(self.dsn)
         cursor = connection.cursor()
-        cursor.execute("delete from TestExecuteMany")
+        cursor.execute("delete from TestTempTable")
         connection.commit()
         otherConnection = ceODBC.connect(self.dsn)
         otherCursor = otherConnection.cursor()
-        otherCursor.execute("insert into TestExecuteMany (IntCol) values (1)")
-        otherCursor.execute("insert into TestExecuteMany (IntCol) values (2)")
-        otherCursor.execute("insert into TestExecuteMany (IntCol) values (3)")
+        otherCursor.execute("insert into TestTempTable (IntCol) values (1)")
+        otherCursor.execute("insert into TestTempTable (IntCol) values (2)")
+        otherCursor.execute("insert into TestTempTable (IntCol) values (3)")
         del otherCursor
         del otherConnection
-        cursor.execute("select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestTempTable")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 

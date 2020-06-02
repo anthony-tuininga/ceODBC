@@ -120,11 +120,8 @@ class test(distutils.core.Command):
         buildCommand = self.distribution.get_command_obj("build")
         sys.path.insert(0, os.path.abspath(os.path.join("test", self.subdir)))
         sys.path.insert(0, os.path.abspath(buildCommand.build_lib))
-        if sys.version_info[0] < 3:
-            execfile(os.path.join("test", self.subdir, "test.py"))
-        else:
-            fileName = os.path.join("test", self.subdir, "test3k.py")
-            exec(open(fileName).read())
+        fileName = os.path.join("test", self.subdir, "test.py")
+        exec(open(fileName).read())
 
 
 class test_pgsql(test):

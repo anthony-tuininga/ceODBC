@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
  * SetupTest.sql
  *   Creates the objects used for testing ceODBC with a PostgreSQL database.
- /---------------------------------------------------------------------------*/
+ *---------------------------------------------------------------------------*/
 
 create table TestNumbers (
     IntCol              integer not null,
@@ -15,12 +15,12 @@ create table TestStrings (
     NullableCol         varchar(50)
 );
 
-create table TestExecuteMany (
+create table TestTempTable (
     IntCol              integer not null,
-    StringCol           varchar(50)
+    StringCol           varchar(255)
 );
 
-alter table TestExecuteMany add constraint TestExecuteMany_pk
+alter table TestTempTable add constraint TestTempTable_pk
 primary key (IntCol);
 
 create function sp_Test (
@@ -68,6 +68,3 @@ values (3, 'String 3XX', null);
 
 insert into TestStrings
 values (4, 'String 4YYY', 'Nullable Two');
-
-commit;
-

@@ -111,14 +111,6 @@ extern PyTypeObject *g_TimeType;
 
 
 //-----------------------------------------------------------------------------
-// Function Types
-//-----------------------------------------------------------------------------
-typedef int (*SetValueProc)(udt_Variable*, unsigned, PyObject*);
-typedef PyObject * (*GetValueProc)(udt_Variable*, unsigned);
-typedef SQLUINTEGER (*GetBufferSizeProc)(udt_Variable*, SQLUINTEGER);
-
-
-//-----------------------------------------------------------------------------
 // Unions
 //-----------------------------------------------------------------------------
 typedef union {

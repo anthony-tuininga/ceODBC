@@ -287,11 +287,11 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     CEO_ADD_DB_TYPE(&ceoDbTypeLongBinary, "DB_TYPE_LONG_BINARY",
             SQL_LONGVARBINARY, SQL_C_BINARY, 0, 1)
     CEO_ADD_DB_TYPE(&ceoDbTypeLongString, "DB_TYPE_LONG_STRING",
-            SQL_LONGVARCHAR, SQL_C_CHAR, 0, 2)
+            SQL_LONGVARCHAR, SQL_C_CHAR, 0, 4)
     CEO_ADD_DB_TYPE(&ceoDbTypeString, "DB_TYPE_STRING", SQL_VARCHAR,
-            SQL_C_CHAR, 0, 2)
+            SQL_C_CHAR, 0, 4)
     CEO_ADD_DB_TYPE(&ceoDbTypeTime, "DB_TYPE_TIME", SQL_TYPE_TIME,
-            SQL_C_TYPE_TIME, sizeof(TIME_STRUCT), 00)
+            SQL_C_TYPE_TIME, sizeof(TIME_STRUCT), 0)
     CEO_ADD_DB_TYPE(&ceoDbTypeTimestamp, "DB_TYPE_TIMESTAMP",
             SQL_TYPE_TIMESTAMP, SQL_C_TYPE_TIMESTAMP, sizeof(TIMESTAMP_STRUCT),
             0)

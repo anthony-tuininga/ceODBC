@@ -496,13 +496,11 @@ int Variable_BindParameter(udt_Variable *self, ceoCursor *cursor,
 //-----------------------------------------------------------------------------
 int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 {
-    SQLUINTEGER newBufferSize;
     char *newData, *oldData;
     SQLINTEGER i;
 
     // allocate new memory for the larger size
-    newBufferSize = newSize * self->type->bytesMultiplier;
-    newData = (char*) PyMem_Malloc(self->numElements * newBufferSize);
+    newData = (char*) PyMem_Malloc(self->numElements * newSize);
     if (!newData) {
         PyErr_NoMemory();
         return -1;
@@ -511,12 +509,12 @@ int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
     // copy the data from the original array to the new array
     oldData = (char*) self->data.asRaw;
     for (i = 0; i < self->numElements; i++)
-        memcpy(newData + newBufferSize * i, oldData + self->bufferSize * i,
+        memcpy(newData + newSize * i, oldData + self->bufferSize * i,
                 self->bufferSize);
     PyMem_Free(self->data.asRaw);
     self->data.asRaw = newData;
     self->size = newSize;
-    self->bufferSize = newBufferSize;
+    self->bufferSize = newSize;
 
     // force rebinding
     self->position = -1;

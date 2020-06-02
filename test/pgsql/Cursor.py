@@ -28,45 +28,45 @@ class TestCursor(BaseTestCase):
 
     def testExecuteMany(self):
         """test executing a statement multiple times"""
-        self.cursor.execute("delete from TestExecuteMany")
+        self.cursor.execute("delete from TestTempTable")
         rows = [ [n] for n in range(230) ]
         self.cursor.arraysize = 500
-        statement = "insert into TestExecuteMany (IntCol) values (?)"
+        statement = "insert into TestTempTable (IntCol) values (?)"
         self.cursor.executemany(statement, rows)
         self.connection.commit()
-        self.cursor.execute("select count(*) from TestExecuteMany")
+        self.cursor.execute("select count(*) from TestTempTable")
         count, = self.cursor.fetchone()
         self.failUnlessEqual(count, len(rows))
 
     def testExecuteManyWithPrepare(self):
         """test executing a statement multiple times (with prepare)"""
-        self.cursor.execute("delete from TestExecuteMany")
+        self.cursor.execute("delete from TestTempTable")
         rows = [ [n] for n in range(225) ]
         self.cursor.arraysize = 100
-        statement = "insert into TestExecuteMany (IntCol) values (?)"
+        statement = "insert into TestTempTable (IntCol) values (?)"
         self.cursor.prepare(statement)
         self.cursor.executemany(None, rows)
         self.connection.commit()
-        self.cursor.execute("select count(*) from TestExecuteMany")
+        self.cursor.execute("select count(*) from TestTempTable")
         count, = self.cursor.fetchone()
         self.failUnlessEqual(count, len(rows))
 
     def testExecuteManyWithRebind(self):
         """test executing a statement multiple times (with rebind)"""
-        self.cursor.execute("delete from TestExecuteMany")
+        self.cursor.execute("delete from TestTempTable")
         rows = [ [n] for n in range(235) ]
         self.cursor.arraysize = 100
-        statement = "insert into TestExecuteMany (IntCol) values (?)"
+        statement = "insert into TestTempTable (IntCol) values (?)"
         self.cursor.executemany(statement, rows[:50])
         self.cursor.executemany(statement, rows[50:])
         self.connection.commit()
-        self.cursor.execute("select count(*) from TestExecuteMany")
+        self.cursor.execute("select count(*) from TestTempTable")
         count, = self.cursor.fetchone()
         self.failUnlessEqual(count, len(rows))
 
     def testExecuteManyWithResize(self):
         """test executing a statement multiple times (with resize)"""
-        self.cursor.execute("delete from TestExecuteMany")
+        self.cursor.execute("delete from TestTempTable")
         rows = [ ( 1, "First" ),
                  ( 2, "Second" ),
                  ( 3, "Third" ),
@@ -76,19 +76,19 @@ class TestCursor(BaseTestCase):
                  ( 7, "Seventh" ) ]
         self.cursor.bindarraysize = 5
         self.cursor.setinputsizes(int, 100)
-        sql = "insert into TestExecuteMany (IntCol, StringCol) values (?, ?)"
+        sql = "insert into TestTempTable (IntCol, StringCol) values (?, ?)"
         self.cursor.executemany(sql, rows)
-        self.cursor.execute("select count(*) from TestExecuteMany")
+        self.cursor.execute("select count(*) from TestTempTable")
         count, = self.cursor.fetchone()
         self.failUnlessEqual(count, len(rows))
 
     def testExecuteManyWithExecption(self):
         """test executing a statement multiple times (with exception)"""
         cursor = self.connection.cursor()
-        cursor.execute("delete from TestExecuteMany")
+        cursor.execute("delete from TestTempTable")
         self.connection.commit()
         rows = [(1,), (2,), (3,), (2,), (5,)]
-        statement = "insert into TestExecuteMany (IntCol) values (?)"
+        statement = "insert into TestTempTable (IntCol) values (?)"
         self.failUnlessRaises(ceODBC.DatabaseError, self.cursor.executemany,
                 statement, rows)
 
@@ -128,7 +128,7 @@ class TestCursor(BaseTestCase):
 
     def testIteratorsInterrupted(self):
         """test iterators (with intermediate execute)"""
-        self.cursor.execute("delete from TestExecuteMany")
+        self.cursor.execute("delete from TestTempTable")
         self.cursor.execute("""
                 select IntCol
                 from TestNumbers
@@ -139,7 +139,7 @@ class TestCursor(BaseTestCase):
             value, = next(testIter)
         else:
             value, = testIter.next()
-        self.cursor.execute("insert into TestExecuteMany (IntCol) values (1)")
+        self.cursor.execute("insert into TestTempTable (IntCol) values (1)")
         if sys.version_info[0] >= 3:
             self.failUnlessRaises(ceODBC.InterfaceError, next, testIter) 
         else:
