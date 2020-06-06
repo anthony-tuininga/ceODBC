@@ -239,26 +239,15 @@ PyObject *ceoUtils_formatString(const char *format, PyObject *args);
 int ceoUtils_getModuleAndName(PyTypeObject *type, PyObject **module,
         PyObject **name);
 
-int Variable_BindParameter(ceoVar *self, ceoCursor *cursor,
+int ceoVar_bindParameter(ceoVar *self, ceoCursor *cursor,
         SQLUSMALLINT position);
-int Variable_DefaultInit(ceoVar *var, PyObject *args,
-        PyObject *keywordArgs);
-void Variable_Free(ceoVar *var);
-PyObject *Variable_GetValue(ceoVar *self, unsigned arrayPos);
-int Variable_InitWithScale(ceoVar *self, PyObject *args,
-        PyObject *keywordArgs);
-int Variable_InitWithSize(ceoVar *var, PyObject *args,
-        PyObject *keywordArgs);
-ceoVar *Variable_InternalNew(unsigned numElements,
-        ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale);
-PyObject *Variable_New(PyTypeObject *type, PyObject *args,
-        PyObject *keywordArgs);
-ceoVar *Variable_NewByType(ceoCursor *cursor, PyObject *value,
+PyObject *ceoVar_getValue(ceoVar *self, unsigned arrayPos);
+ceoVar *ceoVar_internalNew(unsigned numElements, ceoDbType *type,
+        SQLUINTEGER size, SQLSMALLINT scale);
+ceoVar *ceoVar_newByType(ceoCursor *cursor, PyObject *value,
         unsigned numElements);
-ceoVar *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
+ceoVar *ceoVar_newByValue(ceoCursor *cursor, PyObject *value,
         unsigned numElements);
-ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
-        SQLUSMALLINT position);
-PyObject *Variable_Repr(ceoVar *var);
-int Variable_Resize(ceoVar *var, SQLUINTEGER newSize);
-int Variable_SetValue(ceoVar *self, unsigned arrayPos, PyObject *value);
+ceoVar *ceoVar_newForResultSet(ceoCursor *cursor, SQLUSMALLINT position);
+int ceoVar_resize(ceoVar *var, SQLUINTEGER newSize);
+int ceoVar_setValue(ceoVar *self, unsigned arrayPos, PyObject *value);

@@ -6,63 +6,10 @@
 #include "ceoModule.h"
 
 //-----------------------------------------------------------------------------
-// Declaration of common variable functions.
-//-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalGetValue(ceoVar*, PyObject*,
-        PyObject*);
-static PyObject *Variable_ExternalSetValue(ceoVar*, PyObject*);
-
-
-//-----------------------------------------------------------------------------
-// Declaration of variable members
-//-----------------------------------------------------------------------------
-static PyMemberDef ceoMembers[] = {
-    { "bufferSize", T_INT, offsetof(ceoVar, bufferSize), READONLY },
-    { "inconverter", T_OBJECT, offsetof(ceoVar, inConverter), 0 },
-    { "input", T_INT, offsetof(ceoVar, input), 0 },
-    { "numElements", T_INT, offsetof(ceoVar, numElements), READONLY },
-    { "outconverter", T_OBJECT, offsetof(ceoVar, outConverter), 0 },
-    { "output", T_INT, offsetof(ceoVar, output), 0 },
-    { "scale", T_INT, offsetof(ceoVar, scale), READONLY },
-    { "size", T_INT, offsetof(ceoVar, size), READONLY },
-    { "type", T_OBJECT, offsetof(ceoVar, type), READONLY },
-    { NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// Declaration of variable methods
-//-----------------------------------------------------------------------------
-static PyMethodDef ceoMethods[] = {
-    { "getvalue", (PyCFunction) Variable_ExternalGetValue,
-            METH_VARARGS  | METH_KEYWORDS },
-    { "setvalue", (PyCFunction) Variable_ExternalSetValue, METH_VARARGS },
-    { NULL, NULL }
-};
-
-
-//-----------------------------------------------------------------------------
-// declaration of the Python type
-//-----------------------------------------------------------------------------
-PyTypeObject ceoPyTypeVar = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "ceODBC.Var",
-    .tp_basicsize = sizeof(ceoVar),
-    .tp_dealloc = (destructor) Variable_Free,
-    .tp_repr = (reprfunc) Variable_Repr,
-    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_methods = ceoMethods,
-    .tp_members = ceoMembers,
-    .tp_init = (initproc) Variable_DefaultInit,
-    .tp_new = Variable_New
-};
-
-
-//-----------------------------------------------------------------------------
-// Variable_InternalInit()
+// ceoVar_internalInit()
 //   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
-static int Variable_InternalInit(ceoVar *var, unsigned numElements,
+static int ceoVar_internalInit(ceoVar *var, unsigned numElements,
         ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale,
         PyObject *value, int input, int output)
 {
@@ -103,7 +50,7 @@ static int Variable_InternalInit(ceoVar *var, unsigned numElements,
         var->lengthOrIndicator[i] = SQL_NULL_DATA;
 
     // set value, if applicable
-    if (value && Variable_SetValue(var, 0, value) < 0)
+    if (value && ceoVar_setValue(var, 0, value) < 0)
         return -1;
 
     return 0;
@@ -111,99 +58,34 @@ static int Variable_InternalInit(ceoVar *var, unsigned numElements,
 
 
 //-----------------------------------------------------------------------------
-// Variable_DefaultInit()
-//   Default constructor.
+// ceoVar_init()
+//   Constructor.
 //-----------------------------------------------------------------------------
-int Variable_DefaultInit(ceoVar *self, PyObject *args,
-        PyObject *keywordArgs)
+static int ceoVar_init(ceoVar *var, PyObject *args, PyObject *keywordArgs)
 {
+    PyObject *type, *value;
     ceoDbType *dbType;
-    PyObject *value;
     int numElements;
 
-    static char *keywordList[] = { "value", "numElements", NULL };
+    static char *keywordList[] = { "type", "value", "numElements", NULL };
 
-    value = NULL;
+    type = value = NULL;
     numElements = 1;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oi", keywordList,
-            &value, &numElements))
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "O|Oi", keywordList,
+            &type, &value, &numElements))
         return -1;
-    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
+    dbType = ceoDbType_fromType(type);
     if (!dbType)
         return -1;
-    if (Variable_InternalInit(self, numElements, dbType, 0, 0, value, 1,
-            1) < 0)
-        return -1;
-
-    return 0;
+    return ceoVar_internalInit(var, numElements, dbType, 0, 0, value, 1, 1);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_InitWithScale()
-//   Constructor which accepts scale as an argument as well.
-//-----------------------------------------------------------------------------
-int Variable_InitWithScale(ceoVar *self, PyObject *args,
-        PyObject *keywordArgs)
-{
-    ceoDbType *dbType;
-    int numElements, scale;
-    PyObject *value;
-
-    static char *keywordList[] = { "value", "scale", "numElements", NULL };
-
-    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
-    if (!dbType)
-        return -1;
-    value = NULL;
-    scale = 0;
-    numElements = 1;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
-            &value, &scale, &numElements))
-        return -1;
-    if (Variable_InternalInit(self, numElements, dbType, 0, scale, value, 1,
-            1) < 0)
-        return -1;
-
-    return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_InitWithSize()
-//   Constructor which accepts scale as an argument as well.
-//-----------------------------------------------------------------------------
-int Variable_InitWithSize(ceoVar *self, PyObject *args,
-        PyObject *keywordArgs)
-{
-    ceoDbType *dbType;
-    int numElements, size;
-    PyObject *value;
-
-    static char *keywordList[] = { "value", "size", "numElements", NULL };
-
-    dbType = ceoDbType_fromPythonType(Py_TYPE(self));
-    if (!dbType)
-        return -1;
-    value = NULL;
-    numElements = 1;
-    size = 0;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|Oii", keywordList,
-            &value, &size, &numElements))
-        return -1;
-    if (Variable_InternalInit(self, numElements, dbType, size, 0, value, 1,
-            1) < 0)
-        return -1;
-
-    return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Variable_InternalNew()
+// ceoVar_internalNew()
 //   Internal method of creating a new variable.
 //-----------------------------------------------------------------------------
-ceoVar *Variable_InternalNew(unsigned numElements,
+ceoVar *ceoVar_internalNew(unsigned numElements,
         ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale)
 {
     ceoVar *var;
@@ -211,7 +93,7 @@ ceoVar *Variable_InternalNew(unsigned numElements,
     var = (ceoVar*) ceoPyTypeVar.tp_alloc(&ceoPyTypeVar, 0);
     if (!var)
         return NULL;
-    if (Variable_InternalInit(var, numElements, type, size, scale,
+    if (ceoVar_internalInit(var, numElements, type, size, scale,
             NULL, 1, 0) < 0) {
         Py_DECREF(var);
         return NULL;
@@ -222,10 +104,10 @@ ceoVar *Variable_InternalNew(unsigned numElements,
 
 
 //-----------------------------------------------------------------------------
-// Variable_New()
+// ceoVar_new()
 //   Create a new cursor object.
 //-----------------------------------------------------------------------------
-PyObject *Variable_New(PyTypeObject *type, PyObject *args,
+static PyObject *ceoVar_new(PyTypeObject *type, PyObject *args,
         PyObject *keywordArgs)
 {
     return type->tp_alloc(type, 0);
@@ -233,26 +115,26 @@ PyObject *Variable_New(PyTypeObject *type, PyObject *args,
 
 
 //-----------------------------------------------------------------------------
-// Variable_Free()
+// ceoVar_free()
 //   Free an existing variable.
 //-----------------------------------------------------------------------------
-void Variable_Free(ceoVar *self)
+static void ceoVar_free(ceoVar *var)
 {
-    if (self->lengthOrIndicator)
-        PyMem_Free(self->lengthOrIndicator);
-    if (self->data.asRaw)
-        PyMem_Free(self->data.asRaw);
-    Py_CLEAR(self->inConverter);
-    Py_CLEAR(self->outConverter);
-    Py_TYPE(self)->tp_free((PyObject*) self);
+    if (var->lengthOrIndicator)
+        PyMem_Free(var->lengthOrIndicator);
+    if (var->data.asRaw)
+        PyMem_Free(var->data.asRaw);
+    Py_CLEAR(var->inConverter);
+    Py_CLEAR(var->outConverter);
+    Py_TYPE(var)->tp_free((PyObject*) var);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_DefaultNewByValue()
+// ceoVar_defaultNewByValue()
 //   Default method for determining the type of variable to use for the data.
 //-----------------------------------------------------------------------------
-static ceoVar *Variable_DefaultNewByValue(ceoCursor *cursor,
+static ceoVar *ceoVar_defaultNewByValue(ceoCursor *cursor,
         PyObject *value, unsigned numElements)
 {
     ceoDbType *dbType;
@@ -261,17 +143,17 @@ static ceoVar *Variable_DefaultNewByValue(ceoCursor *cursor,
     dbType = ceoDbType_fromValue(value, &size);
     if (!dbType)
         return NULL;
-    return Variable_InternalNew(numElements, dbType, size, 0);
+    return ceoVar_internalNew(numElements, dbType, size, 0);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_NewByInputTypeHandler()
+// ceoVar_newByInputTypeHandler()
 //   Allocate a new variable by calling an input type handler. If the input
 // type handler does not return anything, the default variable type is
 // returned as usual.
 //-----------------------------------------------------------------------------
-static ceoVar *Variable_NewByInputTypeHandler(ceoCursor *cursor,
+static ceoVar *ceoVar_newByInputTypeHandler(ceoCursor *cursor,
         PyObject *inputTypeHandler, PyObject *value, unsigned numElements)
 {
     PyObject *result;
@@ -290,33 +172,33 @@ static ceoVar *Variable_NewByInputTypeHandler(ceoCursor *cursor,
         return (ceoVar*) result;
     }
     Py_DECREF(result);
-    return Variable_DefaultNewByValue(cursor, value, numElements);
+    return ceoVar_defaultNewByValue(cursor, value, numElements);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_NewByValue()
+// ceoVar_newByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
-ceoVar *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
+ceoVar *ceoVar_newByValue(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
-        return Variable_NewByInputTypeHandler(cursor, cursor->inputTypeHandler,
+        return ceoVar_newByInputTypeHandler(cursor, cursor->inputTypeHandler,
                 value, numElements);
     if (cursor->connection->inputTypeHandler &&
             cursor->connection->inputTypeHandler != Py_None)
-        return Variable_NewByInputTypeHandler(cursor,
+        return ceoVar_newByInputTypeHandler(cursor,
                 cursor->connection->inputTypeHandler, value, numElements);
-    return Variable_DefaultNewByValue(cursor, value, numElements);
+    return ceoVar_defaultNewByValue(cursor, value, numElements);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_NewByType()
+// ceoVar_newByType()
 //   Allocate a new variable by looking at the Python data type.
 //-----------------------------------------------------------------------------
-ceoVar *Variable_NewByType(ceoCursor *cursor, PyObject *value,
+ceoVar *ceoVar_newByType(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     ceoDbType *dbType;
@@ -327,7 +209,7 @@ ceoVar *Variable_NewByType(ceoCursor *cursor, PyObject *value,
         size = PyLong_AsLong(value);
         if (PyErr_Occurred())
             return NULL;
-        return Variable_InternalNew(numElements, ceoDbTypeString, size, 0);
+        return ceoVar_internalNew(numElements, ceoDbTypeString, size, 0);
     }
 
     // handle directly bound variables
@@ -340,15 +222,15 @@ ceoVar *Variable_NewByType(ceoCursor *cursor, PyObject *value,
     dbType = ceoDbType_fromType(value);
     if (!dbType)
         return NULL;
-    return Variable_InternalNew(numElements, dbType, 0, 0);
+    return ceoVar_internalNew(numElements, dbType, 0, 0);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_NewByOutputTypeHandler()
+// ceoVar_newByOutputTypeHandler()
 //   Create a new variable by calling the output type handler.
 //-----------------------------------------------------------------------------
-static ceoVar *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
+static ceoVar *ceoVar_newByOutputTypeHandler(ceoCursor *cursor,
         PyObject *outputTypeHandler, ceoDbType *dbType,
         SQLUINTEGER size, SQLSMALLINT scale, unsigned numElements)
 {
@@ -364,7 +246,7 @@ static ceoVar *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
     // if result is None, assume default behavior
     if (result == Py_None) {
         Py_DECREF(result);
-        return Variable_InternalNew(numElements, dbType, size, scale);
+        return ceoVar_internalNew(numElements, dbType, size, scale);
     }
 
     // otherwise, verify that the result is an actual variable
@@ -389,11 +271,11 @@ static ceoVar *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
 
 
 //-----------------------------------------------------------------------------
-// Variable_NewForResultSet()
+// ceoVar_newForResultSet()
 //   Create a new variable for the given position in the result set. The new
 // variable is immediately bound to the statement as well.
 //-----------------------------------------------------------------------------
-ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
+ceoVar *ceoVar_newForResultSet(ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
@@ -406,7 +288,7 @@ ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
     rc = SQLDescribeColA(cursor->handle, position, NULL, 0, &length, &dataType,
             &size, &scale, &nullable);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
-            "Variable_NewForResultSet(): get column info") < 0)
+            "ceoVar_newForResultSet(): get column info") < 0)
         return NULL;
 
     // determine data type
@@ -436,15 +318,15 @@ ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
 
     // create a variable of the correct type
     if (cursor->outputTypeHandler && cursor->outputTypeHandler != Py_None)
-        var = Variable_NewByOutputTypeHandler(cursor, 
+        var = ceoVar_newByOutputTypeHandler(cursor, 
                 cursor->outputTypeHandler, dbType, size, scale,
                 cursor->fetchArraySize);
     else if (cursor->connection->outputTypeHandler &&
             cursor->connection->outputTypeHandler != Py_None)
-        var = Variable_NewByOutputTypeHandler(cursor,
+        var = ceoVar_newByOutputTypeHandler(cursor,
                 cursor->connection->outputTypeHandler, dbType, size, scale,
                 cursor->fetchArraySize);
-    else var = Variable_InternalNew(cursor->fetchArraySize, dbType, size,
+    else var = ceoVar_internalNew(cursor->fetchArraySize, dbType, size,
             scale);
     if (!var)
         return NULL;
@@ -454,7 +336,7 @@ ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
     rc = SQLBindCol(cursor->handle, position, var->type->cDataType,
             var->data.asRaw, var->bufferSize, var->lengthOrIndicator);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
-            "Variable_NewForResultSet(): bind()") < 0) {
+            "ceoVar_newForResultSet(): bind()") < 0) {
         Py_DECREF(var);
         return NULL;
     }
@@ -464,26 +346,26 @@ ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
 
 
 //-----------------------------------------------------------------------------
-// Variable_BindParameter()
+// ceoVar_bindParameter()
 //   Allocate a variable and bind it to the given statement.
 //-----------------------------------------------------------------------------
-int Variable_BindParameter(ceoVar *self, ceoCursor *cursor,
+int ceoVar_bindParameter(ceoVar *var, ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT inputOutputType;
     SQLRETURN rc;
 
-    self->position = position;
-    if (self->input && self->output)
+    var->position = position;
+    if (var->input && var->output)
         inputOutputType = SQL_PARAM_INPUT_OUTPUT;
-    else if (self->output)
+    else if (var->output)
         inputOutputType = SQL_PARAM_OUTPUT;
     else inputOutputType = SQL_PARAM_INPUT;
     rc = SQLBindParameter(cursor->handle, position, inputOutputType,
-            self->type->cDataType, self->type->sqlDataType, self->size,
-            self->scale, self->data.asRaw, self->bufferSize,
-            self->lengthOrIndicator);
-    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "Variable_BindParameter()") < 0)
+            var->type->cDataType, var->type->sqlDataType, var->size,
+            var->scale, var->data.asRaw, var->bufferSize,
+            var->lengthOrIndicator);
+    if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoVar_bindParameter()") < 0)
         return -1;
 
     return 0;
@@ -491,33 +373,33 @@ int Variable_BindParameter(ceoVar *self, ceoCursor *cursor,
 
 
 //-----------------------------------------------------------------------------
-// Variable_Resize()
+// ceoVar_resize()
 //   Resize the variable.
 //-----------------------------------------------------------------------------
-int Variable_Resize(ceoVar *self, SQLUINTEGER newSize)
+int ceoVar_resize(ceoVar *var, SQLUINTEGER newSize)
 {
     char *newData, *oldData;
     SQLINTEGER i;
 
     // allocate new memory for the larger size
-    newData = (char*) PyMem_Malloc(self->numElements * newSize);
+    newData = (char*) PyMem_Malloc(var->numElements * newSize);
     if (!newData) {
         PyErr_NoMemory();
         return -1;
     }
 
     // copy the data from the original array to the new array
-    oldData = (char*) self->data.asRaw;
-    for (i = 0; i < self->numElements; i++)
-        memcpy(newData + newSize * i, oldData + self->bufferSize * i,
-                self->bufferSize);
-    PyMem_Free(self->data.asRaw);
-    self->data.asRaw = newData;
-    self->size = newSize;
-    self->bufferSize = newSize;
+    oldData = (char*) var->data.asRaw;
+    for (i = 0; i < var->numElements; i++)
+        memcpy(newData + newSize * i, oldData + var->bufferSize * i,
+                var->bufferSize);
+    PyMem_Free(var->data.asRaw);
+    var->data.asRaw = newData;
+    var->size = newSize;
+    var->bufferSize = newSize;
 
     // force rebinding
-    self->position = -1;
+    var->position = -1;
 
     return 0;
 }
@@ -576,37 +458,37 @@ PyObject *ceoVar_getValueHelper(ceoVar *var, unsigned pos)
 
 
 //-----------------------------------------------------------------------------
-// Variable_GetValue()
+// ceoVar_getValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-PyObject *Variable_GetValue(ceoVar *self, unsigned arrayPos)
+PyObject *ceoVar_getValue(ceoVar *var, unsigned arrayPos)
 {
     PyObject *value, *result;
 
     // ensure we do not exceed the number of allocated elements
-    if (arrayPos >= self->numElements) {
+    if (arrayPos >= var->numElements) {
         PyErr_SetString(PyExc_IndexError,
-                "Variable_GetSingleValue: array size exceeded");
+                "ceoVar_getValue(): array size exceeded");
         return NULL;
     }
 
     // check for a NULL value
-    if (self->lengthOrIndicator[arrayPos] == SQL_NULL_DATA) {
+    if (var->lengthOrIndicator[arrayPos] == SQL_NULL_DATA) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
     // check for truncation
-    if (self->lengthOrIndicator[arrayPos] > self->bufferSize)
+    if (var->lengthOrIndicator[arrayPos] > var->bufferSize)
         return PyErr_Format(ceoExceptionDatabaseError,
                 "column %d (%d) truncated (need %ld, have %ld)",
-                self->position, arrayPos, self->lengthOrIndicator[arrayPos],
-                self->bufferSize);
+                var->position, arrayPos, var->lengthOrIndicator[arrayPos],
+                var->bufferSize);
 
     // calculate value to return
-    value = ceoVar_getValueHelper(self, arrayPos);
-    if (value && self->outConverter && self->outConverter != Py_None) {
-        result = PyObject_CallFunctionObjArgs(self->outConverter, value, NULL);
+    value = ceoVar_getValueHelper(var, arrayPos);
+    if (value && var->outConverter && var->outConverter != Py_None) {
+        result = PyObject_CallFunctionObjArgs(var->outConverter, value, NULL);
         Py_DECREF(value);
         return result;
     }
@@ -636,7 +518,7 @@ int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
             temp = PyBytes_AS_STRING(value);
             tempLength = PyBytes_GET_SIZE(value);
             if (tempLength > var->size) {
-                if (Variable_Resize(var, tempLength) < 0)
+                if (ceoVar_resize(var, tempLength) < 0)
                     return -1;
             }
             var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
@@ -704,7 +586,7 @@ int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
             if (!temp)
                 return -1;
             if (tempLength > var->size) {
-                if (Variable_Resize((ceoVar*) var, tempLength) < 0)
+                if (ceoVar_resize((ceoVar*) var, tempLength) < 0)
                     return -1;
             }
             var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
@@ -742,24 +624,24 @@ int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
 
 
 //-----------------------------------------------------------------------------
-// Variable_SetValue()
+// ceoVar_setValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-int Variable_SetValue(ceoVar *self, unsigned arrayPos, PyObject *value)
+int ceoVar_setValue(ceoVar *var, unsigned arrayPos, PyObject *value)
 {
     PyObject *convertedValue = NULL;
     int result;
 
     // ensure we do not exceed the number of allocated elements
-    if (arrayPos >= self->numElements) {
+    if (arrayPos >= var->numElements) {
         PyErr_SetString(PyExc_IndexError,
-                "Variable_SetSingleValue: array size exceeded");
+                "ceoVar_setValue(): array size exceeded");
         return -1;
     }
 
     // convert value, if necessary
-    if (self->inConverter && self->inConverter != Py_None) {
-        convertedValue = PyObject_CallFunctionObjArgs(self->inConverter, value,
+    if (var->inConverter && var->inConverter != Py_None) {
+        convertedValue = PyObject_CallFunctionObjArgs(var->inConverter, value,
                 NULL);
         if (!convertedValue)
             return -1;
@@ -768,23 +650,23 @@ int Variable_SetValue(ceoVar *self, unsigned arrayPos, PyObject *value)
 
     // check for a NULL value
     if (value == Py_None) {
-        self->lengthOrIndicator[arrayPos] = SQL_NULL_DATA;
+        var->lengthOrIndicator[arrayPos] = SQL_NULL_DATA;
         Py_XDECREF(convertedValue);
         return 0;
     }
 
-    self->lengthOrIndicator[arrayPos] = 0;
-    result = ceoVar_setValueHelper(self, arrayPos, value);
+    var->lengthOrIndicator[arrayPos] = 0;
+    result = ceoVar_setValueHelper(var, arrayPos, value);
     Py_XDECREF(convertedValue);
     return result;
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_ExternalGetValue()
+// ceoVar_externalGetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalGetValue(ceoVar *self, PyObject *args,
+static PyObject *ceoVar_externalGetValue(ceoVar *var, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "pos", NULL };
@@ -793,22 +675,22 @@ static PyObject *Variable_ExternalGetValue(ceoVar *self, PyObject *args,
     if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|i", keywordList,
             &pos))
         return NULL;
-    return Variable_GetValue(self, pos);
+    return ceoVar_getValue(var, pos);
 }
 
 
 //-----------------------------------------------------------------------------
-// Variable_ExternalSetValue()
+// ceoVar_externalSetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalSetValue(ceoVar *self, PyObject *args)
+static PyObject *ceoVar_externalSetValue(ceoVar *var, PyObject *args)
 {
     PyObject *value;
     unsigned pos;
 
     if (!PyArg_ParseTuple(args, "iO", &pos, &value))
       return NULL;
-    if (Variable_SetValue(self, pos, value) < 0)
+    if (ceoVar_setValue(var, pos, value) < 0)
       return NULL;
 
     Py_INCREF(Py_None);
@@ -817,21 +699,21 @@ static PyObject *Variable_ExternalSetValue(ceoVar *self, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Variable_Repr()
+// ceoVar_repr()
 //   Return a string representation of the variable.
 //-----------------------------------------------------------------------------
-PyObject *Variable_Repr(ceoVar *self)
+static PyObject *ceoVar_repr(ceoVar *var)
 {
     PyObject *valueRepr, *value, *module, *name, *result;
 
-    value = Variable_GetValue(self, 0);
+    value = ceoVar_getValue(var, 0);
     if (!value)
         return NULL;
     valueRepr = PyObject_Repr(value);
     Py_DECREF(value);
     if (!valueRepr)
         return NULL;
-    if (ceoUtils_getModuleAndName(Py_TYPE(self), &module, &name) < 0) {
+    if (ceoUtils_getModuleAndName(Py_TYPE(var), &module, &name) < 0) {
         Py_DECREF(valueRepr);
         return NULL;
     }
@@ -842,3 +724,48 @@ PyObject *Variable_Repr(ceoVar *self)
     Py_DECREF(valueRepr);
     return result;
 }
+
+
+//-----------------------------------------------------------------------------
+// Declaration of variable members
+//-----------------------------------------------------------------------------
+static PyMemberDef ceoMembers[] = {
+    { "bufferSize", T_INT, offsetof(ceoVar, bufferSize), READONLY },
+    { "inconverter", T_OBJECT, offsetof(ceoVar, inConverter), 0 },
+    { "input", T_INT, offsetof(ceoVar, input), 0 },
+    { "numElements", T_INT, offsetof(ceoVar, numElements), READONLY },
+    { "outconverter", T_OBJECT, offsetof(ceoVar, outConverter), 0 },
+    { "output", T_INT, offsetof(ceoVar, output), 0 },
+    { "scale", T_INT, offsetof(ceoVar, scale), READONLY },
+    { "size", T_INT, offsetof(ceoVar, size), READONLY },
+    { "type", T_OBJECT, offsetof(ceoVar, type), READONLY },
+    { NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// Declaration of variable methods
+//-----------------------------------------------------------------------------
+static PyMethodDef ceoMethods[] = {
+    { "getvalue", (PyCFunction) ceoVar_externalGetValue,
+            METH_VARARGS  | METH_KEYWORDS },
+    { "setvalue", (PyCFunction) ceoVar_externalSetValue, METH_VARARGS },
+    { NULL, NULL }
+};
+
+
+//-----------------------------------------------------------------------------
+// declaration of the Python type
+//-----------------------------------------------------------------------------
+PyTypeObject ceoPyTypeVar = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "ceODBC.Var",
+    .tp_basicsize = sizeof(ceoVar),
+    .tp_dealloc = (destructor) ceoVar_free,
+    .tp_repr = (reprfunc) ceoVar_repr,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
+    .tp_init = (initproc) ceoVar_init,
+    .tp_new = ceoVar_new
+};

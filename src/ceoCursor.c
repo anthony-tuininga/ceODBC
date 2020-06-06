@@ -215,7 +215,7 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 
     // create a variable for each column in the result set
     for (position = 0; position < numColumns; position++) {
-        var = Variable_NewForResultSet(cursor, position + 1);
+        var = ceoVar_newForResultSet(cursor, position + 1);
         if (!var)
             return -1;
         PyList_SET_ITEM(cursor->resultSetVars, position, (PyObject *) var);
@@ -259,15 +259,15 @@ static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
         // this is only necessary for executemany() since execute() always
         // passes a value of 1 for the number of elements
         } else if (numElements > origVar->numElements) {
-            *newVar = Variable_InternalNew(numElements, origVar->type,
+            *newVar = ceoVar_internalNew(numElements, origVar->type,
                     origVar->size, origVar->scale);
             if (!*newVar)
                 return -1;
-            if (Variable_SetValue(*newVar, arrayPos, value) < 0)
+            if (ceoVar_setValue(*newVar, arrayPos, value) < 0)
                 return -1;
 
         // otherwise, attempt to set the value
-        } else if (Variable_SetValue(origVar, arrayPos, value) < 0) {
+        } else if (ceoVar_setValue(origVar, arrayPos, value) < 0) {
 
             // executemany() should simply fail after the first element
             if (arrayPos > 0)
@@ -296,10 +296,10 @@ static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
 
         // otherwise, create a new variable
         } else if (value != Py_None || !deferTypeAssignment) {
-            *newVar = Variable_NewByValue(cursor, value, numElements);
+            *newVar = ceoVar_newByValue(cursor, value, numElements);
             if (!*newVar)
                 return -1;
-            if (Variable_SetValue(*newVar, arrayPos, value) < 0)
+            if (ceoVar_setValue(*newVar, arrayPos, value) < 0)
                 return -1;
         }
 
@@ -411,11 +411,11 @@ static int ceoCursor_bindParameters(ceoCursor *cursor, PyObject *parameters,
                 }
                 Py_DECREF(newVar);
             }
-            if (Variable_BindParameter(newVar, cursor, i + 1) < 0)
+            if (ceoVar_bindParameter(newVar, cursor, i + 1) < 0)
                 return -1;
         }
         if (!newVar && origVar && origVar->position < 0) {
-            if (Variable_BindParameter(origVar, cursor, i + 1) < 0)
+            if (ceoVar_bindParameter(origVar, cursor, i + 1) < 0)
                 return -1;
         }
     }
@@ -725,7 +725,7 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
     // acquire the value for each item
     for (pos = 0; pos < numItems; pos++) {
         var = (ceoVar*) PyList_GET_ITEM(cursor->resultSetVars, pos);
-        item = Variable_GetValue(var, cursor->rowNum);
+        item = ceoVar_getValue(var, cursor->rowNum);
         if (!item) {
             Py_DECREF(tuple);
             return NULL;
@@ -1144,7 +1144,7 @@ static PyObject *ceoCursor_callFunc(ceoCursor *cursor, PyObject *args)
     }
 
     // create the return value variable
-    returnValueVar = Variable_NewByType(cursor, returnType, 1);
+    returnValueVar = ceoVar_newByType(cursor, returnType, 1);
     if (!returnValueVar)
         return NULL;
     returnValueVar->input = 0;
@@ -1155,7 +1155,7 @@ static PyObject *ceoCursor_callFunc(ceoCursor *cursor, PyObject *args)
         return NULL;
 
     // create the return value
-    results = Variable_GetValue(returnValueVar, 0);
+    results = ceoVar_getValue(returnValueVar, 0);
     Py_DECREF(returnValueVar);
     return results;
 }
@@ -1193,7 +1193,7 @@ static PyObject *ceoCursor_callProc(ceoCursor *cursor, PyObject *args)
         return NULL;
     for (i = 0; i < numArgs; i++) {
         var = PyList_GET_ITEM(cursor->parameterVars, i);
-        temp = Variable_GetValue((ceoVar*) var, 0);
+        temp = ceoVar_getValue((ceoVar*) var, 0);
         if (!temp) {
             Py_DECREF(results);
             return NULL;
@@ -1252,7 +1252,7 @@ static int ceoCursor_internalFetch(ceoCursor *cursor)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_MoreRows()
+// ceoCursor_moreRows()
 //   Returns an integer indicating if more rows can be retrieved from the
 // cursor.
 //-----------------------------------------------------------------------------
@@ -1272,11 +1272,11 @@ static int ceoCursor_moreRows(ceoCursor *cursor)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_MultiFetch()
+// ceoCursor_multiFetch()
 //   Return a list consisting of the remaining rows up to the given row limit
 // (if specified).
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_MultiFetch(ceoCursor *cursor, int rowLimit)
+static PyObject *ceoCursor_multiFetch(ceoCursor *cursor, int rowLimit)
 {
     PyObject *results, *row;
     int rowNum, rc;
@@ -1356,7 +1356,7 @@ static PyObject *ceoCursor_fetchMany(ceoCursor *cursor, PyObject *args,
     if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
 
-    return Cursor_MultiFetch(cursor, rowLimit);
+    return ceoCursor_multiFetch(cursor, rowLimit);
 }
 
 
@@ -1368,7 +1368,7 @@ static PyObject *ceoCursor_fetchAll(ceoCursor *cursor, PyObject *args)
 {
     if (ceoCursor_verifyFetch(cursor) < 0)
         return NULL;
-    return Cursor_MultiFetch(cursor, 0);
+    return ceoCursor_multiFetch(cursor, 0);
 }
 
 
@@ -1401,7 +1401,7 @@ static PyObject *ceoCursor_setInputSizes(ceoCursor *cursor, PyObject *args)
             Py_INCREF(Py_None);
             value = Py_None;
         } else {
-            value = (PyObject*) Variable_NewByType(cursor, inputValue,
+            value = (PyObject*) ceoVar_newByType(cursor, inputValue,
                     cursor->bindArraySize);
             if (!value) {
                 Py_DECREF(parameterVars);
@@ -1440,10 +1440,10 @@ static PyObject *ceoCursor_setOutputSize(ceoCursor *cursor, PyObject *args)
 
 
 //-----------------------------------------------------------------------------
-// Cursor_Var()
+// ceoCursor_var()
 //   Create a bind variable and return it.
 //-----------------------------------------------------------------------------
-static PyObject *Cursor_Var(ceoCursor *cursor, PyObject *args,
+static PyObject *ceoCursor_var(ceoCursor *cursor, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "type", "size", "scale", "arraysize",
@@ -1471,7 +1471,7 @@ static PyObject *Cursor_Var(ceoCursor *cursor, PyObject *args,
         return NULL;
 
     // create the variable
-    var = Variable_InternalNew(arraySize, dbType, size, scale);
+    var = ceoVar_internalNew(arraySize, dbType, size, scale);
     if (!var)
         return NULL;
 
@@ -1539,7 +1539,7 @@ static PyMethodDef ceoMethods[] = {
     { "close", (PyCFunction) ceoCursor_close, METH_NOARGS },
     { "nextset", (PyCFunction) ceoCursor_nextSet, METH_NOARGS },
     { "execdirect", (PyCFunction) ceoCursor_execDirect, METH_VARARGS },
-    { "var", (PyCFunction) Cursor_Var, METH_VARARGS | METH_KEYWORDS },
+    { "var", (PyCFunction) ceoCursor_var, METH_VARARGS | METH_KEYWORDS },
     { NULL, NULL }
 };
 
