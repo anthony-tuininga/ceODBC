@@ -62,7 +62,7 @@ ceoDbType *ceoDbType_fromSqlDataType(SQLSMALLINT sqlDataType)
     }
 
     sprintf(buffer, "unsupported SQL data type %d", sqlDataType);
-    PyErr_SetString(g_NotSupportedErrorException, buffer);
+    PyErr_SetString(ceoExceptionNotSupportedError, buffer);
     return NULL;
 }
 
@@ -84,21 +84,21 @@ ceoDbType *ceoDbType_fromPythonType(PyTypeObject *type)
         return ceoDbTypeDouble;
     if (type == &PyLong_Type)
         return ceoDbTypeInt;
-    if (type == g_DecimalType)
+    if (type == ceoPyTypeDecimal)
         return ceoDbTypeDecimal;
     if (type == &PyBool_Type)
         return ceoDbTypeBit;
-    if (type == g_DateType)
+    if (type == ceoPyTypeDate)
         return ceoDbTypeDate;
-    if (type == g_DateTimeType)
+    if (type == ceoPyTypeDateTime)
         return ceoDbTypeTimestamp;
-    if (type == g_TimeType)
+    if (type == ceoPyTypeTime)
         return ceoDbTypeTime;
 
     // no valid type specified
     snprintf(message, sizeof(message), "Python type %s not supported.",
             type->tp_name);
-    ceoError_raiseFromString(g_NotSupportedErrorException, message, __func__);
+    ceoError_raiseFromString(ceoExceptionNotSupportedError, message, __func__);
     return NULL;
 }
 
@@ -168,18 +168,18 @@ ceoDbType *ceoDbType_fromValue(PyObject *value, SQLUINTEGER *size)
         return ceoDbTypeBigInt;
     if (PyFloat_Check(value))
         return ceoDbTypeDouble;
-    if (Py_TYPE(value) == g_DecimalType)
+    if (Py_TYPE(value) == ceoPyTypeDecimal)
         return ceoDbTypeDecimal;
-    if (Py_TYPE(value) == g_TimeType)
+    if (Py_TYPE(value) == ceoPyTypeTime)
         return ceoDbTypeTime;
-    if (Py_TYPE(value) == g_DateTimeType)
+    if (Py_TYPE(value) == ceoPyTypeDateTime)
         return ceoDbTypeTimestamp;
-    if (Py_TYPE(value) == g_DateType)
+    if (Py_TYPE(value) == ceoPyTypeDate)
         return ceoDbTypeDate;
 
     snprintf(message, sizeof(message), "Python value of type %s not supported",
             Py_TYPE(value)->tp_name);
-    ceoError_raiseFromString(g_NotSupportedErrorException, message, __func__);
+    ceoError_raiseFromString(ceoExceptionNotSupportedError, message, __func__);
     return NULL;
 }
 

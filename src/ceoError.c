@@ -9,7 +9,7 @@
 // ceoError_free()
 //   Deallocation routine.
 //-----------------------------------------------------------------------------
-static void ceoError_free(udt_Error *self)
+static void ceoError_free(ceoError *self)
 {
     Py_CLEAR(self->message);
     Py_TYPE(self)->tp_free((PyObject*) self);
@@ -20,7 +20,7 @@ static void ceoError_free(udt_Error *self)
 // ceoError_str()
 //   Return a string representation of the error variable.
 //-----------------------------------------------------------------------------
-static PyObject *ceoError_str(udt_Error *self)
+static PyObject *ceoError_str(ceoError *self)
 {
     if (self->message) {
         Py_INCREF(self->message);
@@ -42,7 +42,7 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
     SQLINTEGER numRecords;
     SQLCHAR buffer[1024];
     SQLSMALLINT length;
-    udt_Error *error;
+    ceoError *error;
     SQLRETURN rc;
     int i;
 
@@ -50,12 +50,12 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
     if (rcToCheck == SQL_SUCCESS || rcToCheck == SQL_SUCCESS_WITH_INFO)
         return 0;
     if (rcToCheck == SQL_INVALID_HANDLE) {
-        PyErr_SetString(g_DatabaseErrorException, "Invalid handle!");
+        PyErr_SetString(ceoExceptionDatabaseError, "Invalid handle!");
         return -1;
     }
 
     // create new error object
-    error = PyObject_NEW(udt_Error, &ceoPyTypeError);
+    error = PyObject_NEW(ceoError, &ceoPyTypeError);
     if (!error)
         return -1;
     error->context = context;
@@ -114,7 +114,7 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
         return -1;
     }
 
-    PyErr_SetObject(g_DatabaseErrorException, (PyObject*) error);
+    PyErr_SetObject(ceoExceptionDatabaseError, (PyObject*) error);
     Py_DECREF(error);
     return -1;
 }
@@ -128,9 +128,9 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
 int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
         const char *context)
 {
-    udt_Error *error;
+    ceoError *error;
 
-    error = (udt_Error*) ceoPyTypeError.tp_alloc(&ceoPyTypeError, 0);
+    error = (ceoError*) ceoPyTypeError.tp_alloc(&ceoPyTypeError, 0);
     if (!error)
         return -1;
     error->context = context;
@@ -149,8 +149,8 @@ int ceoError_raiseFromString(PyObject *exceptionType, const char *message,
 // declaration of members for Python type
 //-----------------------------------------------------------------------------
 static PyMemberDef ceoMembers[] = {
-    { "message", T_OBJECT, offsetof(udt_Error, message), READONLY },
-    { "context", T_STRING, offsetof(udt_Error, context), READONLY },
+    { "message", T_OBJECT, offsetof(ceoError, message), READONLY },
+    { "context", T_STRING, offsetof(ceoError, context), READONLY },
     { NULL }
 };
 
@@ -161,7 +161,7 @@ static PyMemberDef ceoMembers[] = {
 PyTypeObject ceoPyTypeError = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "ceODBC._Error",
-    .tp_basicsize = sizeof(udt_Error),
+    .tp_basicsize = sizeof(ceoError),
     .tp_dealloc = (destructor) ceoError_free,
     .tp_str = (reprfunc) ceoError_str,
     .tp_flags = Py_TPFLAGS_DEFAULT,

@@ -13,7 +13,7 @@
 int ceoConnection_isConnected(ceoConnection *conn)
 {
     if (!conn->isConnected) {
-        PyErr_SetString(g_InterfaceErrorException, "not connected");
+        PyErr_SetString(ceoExceptionInterfaceError, "not connected");
         return -1;
     }
     return 0;

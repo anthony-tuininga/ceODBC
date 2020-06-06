@@ -8,24 +8,24 @@
 //-----------------------------------------------------------------------------
 // Declaration of common variable functions.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalGetValue(udt_Variable*, PyObject*,
+static PyObject *Variable_ExternalGetValue(ceoVar*, PyObject*,
         PyObject*);
-static PyObject *Variable_ExternalSetValue(udt_Variable*, PyObject*);
+static PyObject *Variable_ExternalSetValue(ceoVar*, PyObject*);
 
 
 //-----------------------------------------------------------------------------
 // Declaration of variable members
 //-----------------------------------------------------------------------------
-PyMemberDef g_VariableMembers[] = {
-    { "bufferSize", T_INT, offsetof(udt_Variable, bufferSize), READONLY },
-    { "inconverter", T_OBJECT, offsetof(udt_Variable, inConverter), 0 },
-    { "input", T_INT, offsetof(udt_Variable, input), 0 },
-    { "numElements", T_INT, offsetof(udt_Variable, numElements), READONLY },
-    { "outconverter", T_OBJECT, offsetof(udt_Variable, outConverter), 0 },
-    { "output", T_INT, offsetof(udt_Variable, output), 0 },
-    { "scale", T_INT, offsetof(udt_Variable, scale), READONLY },
-    { "size", T_INT, offsetof(udt_Variable, size), READONLY },
-    { "type", T_OBJECT, offsetof(udt_Variable, type), READONLY },
+static PyMemberDef ceoMembers[] = {
+    { "bufferSize", T_INT, offsetof(ceoVar, bufferSize), READONLY },
+    { "inconverter", T_OBJECT, offsetof(ceoVar, inConverter), 0 },
+    { "input", T_INT, offsetof(ceoVar, input), 0 },
+    { "numElements", T_INT, offsetof(ceoVar, numElements), READONLY },
+    { "outconverter", T_OBJECT, offsetof(ceoVar, outConverter), 0 },
+    { "output", T_INT, offsetof(ceoVar, output), 0 },
+    { "scale", T_INT, offsetof(ceoVar, scale), READONLY },
+    { "size", T_INT, offsetof(ceoVar, size), READONLY },
+    { "type", T_OBJECT, offsetof(ceoVar, type), READONLY },
     { NULL }
 };
 
@@ -33,7 +33,7 @@ PyMemberDef g_VariableMembers[] = {
 //-----------------------------------------------------------------------------
 // Declaration of variable methods
 //-----------------------------------------------------------------------------
-PyMethodDef g_VariableMethods[] = {
+static PyMethodDef ceoMethods[] = {
     { "getvalue", (PyCFunction) Variable_ExternalGetValue,
             METH_VARARGS  | METH_KEYWORDS },
     { "setvalue", (PyCFunction) Variable_ExternalSetValue, METH_VARARGS },
@@ -47,12 +47,12 @@ PyMethodDef g_VariableMethods[] = {
 PyTypeObject ceoPyTypeVar = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "ceODBC.Var",
-    .tp_basicsize = sizeof(udt_Variable),
+    .tp_basicsize = sizeof(ceoVar),
     .tp_dealloc = (destructor) Variable_Free,
     .tp_repr = (reprfunc) Variable_Repr,
     .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
-    .tp_methods = g_VariableMethods,
-    .tp_members = g_VariableMembers,
+    .tp_methods = ceoMethods,
+    .tp_members = ceoMembers,
     .tp_init = (initproc) Variable_DefaultInit,
     .tp_new = Variable_New
 };
@@ -62,7 +62,7 @@ PyTypeObject ceoPyTypeVar = {
 // Variable_InternalInit()
 //   Internal method of initializing a new variable.
 //-----------------------------------------------------------------------------
-static int Variable_InternalInit(udt_Variable *var, unsigned numElements,
+static int Variable_InternalInit(ceoVar *var, unsigned numElements,
         ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale,
         PyObject *value, int input, int output)
 {
@@ -114,7 +114,7 @@ static int Variable_InternalInit(udt_Variable *var, unsigned numElements,
 // Variable_DefaultInit()
 //   Default constructor.
 //-----------------------------------------------------------------------------
-int Variable_DefaultInit(udt_Variable *self, PyObject *args,
+int Variable_DefaultInit(ceoVar *self, PyObject *args,
         PyObject *keywordArgs)
 {
     ceoDbType *dbType;
@@ -143,7 +143,7 @@ int Variable_DefaultInit(udt_Variable *self, PyObject *args,
 // Variable_InitWithScale()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-int Variable_InitWithScale(udt_Variable *self, PyObject *args,
+int Variable_InitWithScale(ceoVar *self, PyObject *args,
         PyObject *keywordArgs)
 {
     ceoDbType *dbType;
@@ -173,7 +173,7 @@ int Variable_InitWithScale(udt_Variable *self, PyObject *args,
 // Variable_InitWithSize()
 //   Constructor which accepts scale as an argument as well.
 //-----------------------------------------------------------------------------
-int Variable_InitWithSize(udt_Variable *self, PyObject *args,
+int Variable_InitWithSize(ceoVar *self, PyObject *args,
         PyObject *keywordArgs)
 {
     ceoDbType *dbType;
@@ -203,12 +203,12 @@ int Variable_InitWithSize(udt_Variable *self, PyObject *args,
 // Variable_InternalNew()
 //   Internal method of creating a new variable.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_InternalNew(unsigned numElements,
+ceoVar *Variable_InternalNew(unsigned numElements,
         ceoDbType *type, SQLUINTEGER size, SQLSMALLINT scale)
 {
-    udt_Variable *var;
+    ceoVar *var;
 
-    var = (udt_Variable*) ceoPyTypeVar.tp_alloc(&ceoPyTypeVar, 0);
+    var = (ceoVar*) ceoPyTypeVar.tp_alloc(&ceoPyTypeVar, 0);
     if (!var)
         return NULL;
     if (Variable_InternalInit(var, numElements, type, size, scale,
@@ -236,7 +236,7 @@ PyObject *Variable_New(PyTypeObject *type, PyObject *args,
 // Variable_Free()
 //   Free an existing variable.
 //-----------------------------------------------------------------------------
-void Variable_Free(udt_Variable *self)
+void Variable_Free(ceoVar *self)
 {
     if (self->lengthOrIndicator)
         PyMem_Free(self->lengthOrIndicator);
@@ -252,7 +252,7 @@ void Variable_Free(udt_Variable *self)
 // Variable_DefaultNewByValue()
 //   Default method for determining the type of variable to use for the data.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_DefaultNewByValue(ceoCursor *cursor,
+static ceoVar *Variable_DefaultNewByValue(ceoCursor *cursor,
         PyObject *value, unsigned numElements)
 {
     ceoDbType *dbType;
@@ -271,7 +271,7 @@ static udt_Variable *Variable_DefaultNewByValue(ceoCursor *cursor,
 // type handler does not return anything, the default variable type is
 // returned as usual.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByInputTypeHandler(ceoCursor *cursor,
+static ceoVar *Variable_NewByInputTypeHandler(ceoCursor *cursor,
         PyObject *inputTypeHandler, PyObject *value, unsigned numElements)
 {
     PyObject *result;
@@ -287,7 +287,7 @@ static udt_Variable *Variable_NewByInputTypeHandler(ceoCursor *cursor,
                     "expecting variable from input type handler");
             return NULL;
         }
-        return (udt_Variable*) result;
+        return (ceoVar*) result;
     }
     Py_DECREF(result);
     return Variable_DefaultNewByValue(cursor, value, numElements);
@@ -298,7 +298,7 @@ static udt_Variable *Variable_NewByInputTypeHandler(ceoCursor *cursor,
 // Variable_NewByValue()
 //   Allocate a new variable by looking at the type of the data.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
+ceoVar *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     if (cursor->inputTypeHandler && cursor->inputTypeHandler != Py_None)
@@ -316,7 +316,7 @@ udt_Variable *Variable_NewByValue(ceoCursor *cursor, PyObject *value,
 // Variable_NewByType()
 //   Allocate a new variable by looking at the Python data type.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewByType(ceoCursor *cursor, PyObject *value,
+ceoVar *Variable_NewByType(ceoCursor *cursor, PyObject *value,
         unsigned numElements)
 {
     ceoDbType *dbType;
@@ -333,7 +333,7 @@ udt_Variable *Variable_NewByType(ceoCursor *cursor, PyObject *value,
     // handle directly bound variables
     if (Py_TYPE(value) == &ceoPyTypeVar) {
         Py_INCREF(value);
-        return (udt_Variable*) value;
+        return (ceoVar*) value;
     }
 
     // everything else ought to be a Python type
@@ -348,11 +348,11 @@ udt_Variable *Variable_NewByType(ceoCursor *cursor, PyObject *value,
 // Variable_NewByOutputTypeHandler()
 //   Create a new variable by calling the output type handler.
 //-----------------------------------------------------------------------------
-static udt_Variable *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
+static ceoVar *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
         PyObject *outputTypeHandler, ceoDbType *dbType,
         SQLUINTEGER size, SQLSMALLINT scale, unsigned numElements)
 {
-    udt_Variable *var;
+    ceoVar *var;
     PyObject *result;
 
     // call method, passing parameters
@@ -376,7 +376,7 @@ static udt_Variable *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
     }
 
     // verify that the array size is sufficient to handle the fetch
-    var = (udt_Variable*) result;
+    var = (ceoVar*) result;
     if (var->numElements < cursor->fetchArraySize) {
         Py_DECREF(result);
         PyErr_SetString(PyExc_TypeError,
@@ -393,12 +393,12 @@ static udt_Variable *Variable_NewByOutputTypeHandler(ceoCursor *cursor,
 //   Create a new variable for the given position in the result set. The new
 // variable is immediately bound to the statement as well.
 //-----------------------------------------------------------------------------
-udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
+ceoVar *Variable_NewForResultSet(ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT dataType, length, scale, nullable;
     ceoDbType *dbType;
-    udt_Variable *var;
+    ceoVar *var;
     SQLULEN size;
     SQLRETURN rc;
 
@@ -467,7 +467,7 @@ udt_Variable *Variable_NewForResultSet(ceoCursor *cursor,
 // Variable_BindParameter()
 //   Allocate a variable and bind it to the given statement.
 //-----------------------------------------------------------------------------
-int Variable_BindParameter(udt_Variable *self, ceoCursor *cursor,
+int Variable_BindParameter(ceoVar *self, ceoCursor *cursor,
         SQLUSMALLINT position)
 {
     SQLSMALLINT inputOutputType;
@@ -494,7 +494,7 @@ int Variable_BindParameter(udt_Variable *self, ceoCursor *cursor,
 // Variable_Resize()
 //   Resize the variable.
 //-----------------------------------------------------------------------------
-int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
+int Variable_Resize(ceoVar *self, SQLUINTEGER newSize)
 {
     char *newData, *oldData;
     SQLINTEGER i;
@@ -527,7 +527,7 @@ int Variable_Resize(udt_Variable *self, SQLUINTEGER newSize)
 // ceoVar_getValueHelper()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
+PyObject *ceoVar_getValueHelper(ceoVar *var, unsigned pos)
 {
     char message[250], *ptr;
     PyObject *obj, *result;
@@ -554,7 +554,7 @@ PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
                     NULL);
             if (!obj)
                 return NULL;
-            result = PyObject_CallFunctionObjArgs(g_DecimalType, obj, NULL);
+            result = PyObject_CallFunctionObjArgs(ceoPyTypeDecimal, obj, NULL);
             Py_DECREF(obj);
             return result;
         case SQL_INTEGER:
@@ -570,7 +570,7 @@ PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
  
     snprintf(message, sizeof(message), "missing get support for DB type %s",
             var->type->name);
-    ceoError_raiseFromString(g_InternalErrorException, message, __func__);
+    ceoError_raiseFromString(ceoExceptionInternalError, message, __func__);
     return NULL;
 }
 
@@ -579,7 +579,7 @@ PyObject *ceoVar_getValueHelper(udt_Variable *var, unsigned pos)
 // Variable_GetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
+PyObject *Variable_GetValue(ceoVar *self, unsigned arrayPos)
 {
     PyObject *value, *result;
 
@@ -598,7 +598,7 @@ PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 
     // check for truncation
     if (self->lengthOrIndicator[arrayPos] > self->bufferSize)
-        return PyErr_Format(g_DatabaseErrorException,
+        return PyErr_Format(ceoExceptionDatabaseError,
                 "column %d (%d) truncated (need %ld, have %ld)",
                 self->position, arrayPos, self->lengthOrIndicator[arrayPos],
                 self->bufferSize);
@@ -619,7 +619,7 @@ PyObject *Variable_GetValue(udt_Variable *self, unsigned arrayPos)
 // ceoVar_setValueHelper()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
+int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
 {
     Py_ssize_t tempLength;
     PyObject *textValue;
@@ -679,7 +679,7 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
                 return -1;
             return 0;
         case SQL_CHAR:
-            if (Py_TYPE(value) != (PyTypeObject*) g_DecimalType) {
+            if (Py_TYPE(value) != (PyTypeObject*) ceoPyTypeDecimal) {
                 PyErr_SetString(PyExc_TypeError, "expecting decimal object");
                 return -1;
             }
@@ -704,7 +704,7 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
             if (!temp)
                 return -1;
             if (tempLength > var->size) {
-                if (Variable_Resize((udt_Variable*) var, tempLength) < 0)
+                if (Variable_Resize((ceoVar*) var, tempLength) < 0)
                     return -1;
             }
             var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
@@ -736,7 +736,7 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
 
     snprintf(message, sizeof(message), "missing set support for DB type %s",
             var->type->name);
-    return ceoError_raiseFromString(g_InternalErrorException, message,
+    return ceoError_raiseFromString(ceoExceptionInternalError, message,
             __func__);
 }
 
@@ -745,7 +745,7 @@ int ceoVar_setValueHelper(udt_Variable *var, unsigned pos, PyObject *value)
 // Variable_SetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-int Variable_SetValue(udt_Variable *self, unsigned arrayPos, PyObject *value)
+int Variable_SetValue(ceoVar *self, unsigned arrayPos, PyObject *value)
 {
     PyObject *convertedValue = NULL;
     int result;
@@ -784,7 +784,7 @@ int Variable_SetValue(udt_Variable *self, unsigned arrayPos, PyObject *value)
 // Variable_ExternalGetValue()
 //   Return the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalGetValue(udt_Variable *self, PyObject *args,
+static PyObject *Variable_ExternalGetValue(ceoVar *self, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "pos", NULL };
@@ -801,7 +801,7 @@ static PyObject *Variable_ExternalGetValue(udt_Variable *self, PyObject *args,
 // Variable_ExternalSetValue()
 //   Set the value of the variable at the given position.
 //-----------------------------------------------------------------------------
-static PyObject *Variable_ExternalSetValue(udt_Variable *self, PyObject *args)
+static PyObject *Variable_ExternalSetValue(ceoVar *self, PyObject *args)
 {
     PyObject *value;
     unsigned pos;
@@ -820,7 +820,7 @@ static PyObject *Variable_ExternalSetValue(udt_Variable *self, PyObject *args)
 // Variable_Repr()
 //   Return a string representation of the variable.
 //-----------------------------------------------------------------------------
-PyObject *Variable_Repr(udt_Variable *self)
+PyObject *Variable_Repr(ceoVar *self)
 {
     PyObject *valueRepr, *value, *module, *name, *result;
 

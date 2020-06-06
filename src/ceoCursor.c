@@ -13,7 +13,7 @@
 static int ceoCursor_isOpen(ceoCursor *cursor)
 {
     if (!cursor->handle) {
-        PyErr_SetString(g_InterfaceErrorException, "not open");
+        PyErr_SetString(ceoExceptionInterfaceError, "not open");
         return -1;
     }
     return ceoConnection_isConnected(cursor->connection);
@@ -180,7 +180,7 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 {
     SQLSMALLINT numColumns;
     SQLUSMALLINT position;
-    udt_Variable *var;
+    ceoVar *var;
     SQLRETURN rc;
 
     // determine the number of columns in the result set
@@ -236,7 +236,7 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 //-----------------------------------------------------------------------------
 static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
         unsigned numElements, unsigned arrayPos, PyObject *value,
-        udt_Variable *origVar, udt_Variable **newVar, int deferTypeAssignment)
+        ceoVar *origVar, ceoVar **newVar, int deferTypeAssignment)
 {
     int isValueVar;
 
@@ -251,7 +251,7 @@ static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
         if (isValueVar) {
             if ( (PyObject*) origVar != value) {
                 Py_INCREF(value);
-                *newVar = (udt_Variable*) value;
+                *newVar = (ceoVar*) value;
                 (*newVar)->position = -1;
             }
 
@@ -291,7 +291,7 @@ static int ceoCursor_bindParameterHelper(ceoCursor *cursor,
         // if the value is a variable object, bind it directly
         if (isValueVar) {
             Py_INCREF(value);
-            *newVar = (udt_Variable*) value;
+            *newVar = (ceoVar*) value;
             (*newVar)->position = -1;
 
         // otherwise, create a new variable
@@ -362,7 +362,7 @@ static int ceoCursor_bindParameters(ceoCursor *cursor, PyObject *parameters,
         int deferTypeAssignment)
 {
     int i, numParams, origNumParams;
-    udt_Variable *newVar, *origVar;
+    ceoVar *newVar, *origVar;
     PyObject *value;
 
     // set up the list of parameters
@@ -384,7 +384,7 @@ static int ceoCursor_bindParameters(ceoCursor *cursor, PyObject *parameters,
         if (!value)
             return -1;
         if (i < origNumParams) {
-            origVar = (udt_Variable*) PyList_GET_ITEM(cursor->parameterVars, i);
+            origVar = (ceoVar*) PyList_GET_ITEM(cursor->parameterVars, i);
             if ( (PyObject*) origVar == Py_None)
                 origVar = NULL;
         } else origVar = NULL;
@@ -714,7 +714,7 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
 {
     PyObject *tuple, *item, *result;
     int numItems, pos;
-    udt_Variable *var;
+    ceoVar *var;
 
     // create a new tuple
     numItems = PyList_GET_SIZE(cursor->resultSetVars);
@@ -724,7 +724,7 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
 
     // acquire the value for each item
     for (pos = 0; pos < numItems; pos++) {
-        var = (udt_Variable*) PyList_GET_ITEM(cursor->resultSetVars, pos);
+        var = (ceoVar*) PyList_GET_ITEM(cursor->resultSetVars, pos);
         item = Variable_GetValue(var, cursor->rowNum);
         if (!item) {
             Py_DECREF(tuple);
@@ -761,7 +761,7 @@ static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
 
     // make sure we don't get a situation where nothing is to be executed
     if (statement == Py_None && !cursor->statement) {
-        PyErr_SetString(g_ProgrammingErrorException,
+        PyErr_SetString(ceoExceptionProgrammingError,
                 "no statement specified and no prior statement prepared");
         return -1;
     }
@@ -986,7 +986,7 @@ static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
     for (i = 0; i < numRows; i++) {
         arguments = PyList_GET_ITEM(listOfArguments, i);
         if (!PySequence_Check(arguments)) {
-            PyErr_SetString(g_InterfaceErrorException,
+            PyErr_SetString(ceoExceptionInterfaceError,
                     "expecting a list of sequences");
             return NULL;
         }
@@ -1016,7 +1016,7 @@ static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
 static int ceoCursor_callBuildStatement(PyObject *name,
-        udt_Variable *returnValue, PyObject *args, PyObject **statementObj)
+        ceoVar *returnValue, PyObject *args, PyObject **statementObj)
 {
     PyObject *format, *formatArgs;
     int numArgs, statementSize, i;
@@ -1073,7 +1073,7 @@ static int ceoCursor_callBuildStatement(PyObject *name,
 // ceoCursor_call()
 //   Call procedure or function.
 //-----------------------------------------------------------------------------
-static int ceoCursor_call(ceoCursor *cursor, udt_Variable *returnValueVar,
+static int ceoCursor_call(ceoCursor *cursor, ceoVar *returnValueVar,
         PyObject *procedureName, PyObject *args, int argsOffset)
 {
     PyObject *statement, *temp;
@@ -1126,7 +1126,7 @@ static int ceoCursor_call(ceoCursor *cursor, udt_Variable *returnValueVar,
 static PyObject *ceoCursor_callFunc(ceoCursor *cursor, PyObject *args)
 {
     PyObject *functionName, *returnType, *results;
-    udt_Variable *returnValueVar;
+    ceoVar *returnValueVar;
     int numArgs;
 
     // verify we have the right arguments
@@ -1193,7 +1193,7 @@ static PyObject *ceoCursor_callProc(ceoCursor *cursor, PyObject *args)
         return NULL;
     for (i = 0; i < numArgs; i++) {
         var = PyList_GET_ITEM(cursor->parameterVars, i);
-        temp = Variable_GetValue((udt_Variable*) var, 0);
+        temp = Variable_GetValue((ceoVar*) var, 0);
         if (!temp) {
             Py_DECREF(results);
             return NULL;
@@ -1217,7 +1217,7 @@ static int ceoCursor_verifyFetch(ceoCursor *cursor)
 
     // make sure the cursor is for a query
     if (!cursor->resultSetVars) {
-        PyErr_SetString(g_InterfaceErrorException, "not a query");
+        PyErr_SetString(ceoExceptionInterfaceError, "not a query");
         return -1;
     }
 
@@ -1234,7 +1234,7 @@ static int ceoCursor_internalFetch(ceoCursor *cursor)
     SQLRETURN rc;
 
     if (!cursor->resultSetVars) {
-        PyErr_SetString(g_InterfaceErrorException, "query not executed");
+        PyErr_SetString(ceoExceptionInterfaceError, "query not executed");
         return -1;
     }
     Py_BEGIN_ALLOW_THREADS
@@ -1451,8 +1451,8 @@ static PyObject *Cursor_Var(ceoCursor *cursor, PyObject *args,
     int size, arraySize, scale, input, output;
     PyObject *inConverter, *outConverter;
     ceoDbType *dbType;
-    udt_Variable *var;
     PyObject *type;
+    ceoVar *var;
 
     // parse arguments
     size = 0;

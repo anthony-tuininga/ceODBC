@@ -73,7 +73,7 @@ static PyObject *ceoApiType_richCompare(ceoApiType *apiType, PyObject *other,
 
     // only handle EQ and NE
     if (comparisonType != Py_EQ && comparisonType != Py_NE) {
-        PyErr_SetString(g_InterfaceErrorException,
+        PyErr_SetString(ceoExceptionInterfaceError,
                 "API types only support comparing equal and not equal");
         return NULL;
     }

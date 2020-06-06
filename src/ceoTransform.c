@@ -53,17 +53,18 @@ int ceoTransform_init(void)
     PyDateTime_IMPORT;
     if (PyErr_Occurred())
         return -1;
-    g_DateType = PyDateTimeAPI->DateType;
-    g_TimeType = PyDateTimeAPI->TimeType;
-    g_DateTimeType = PyDateTimeAPI->DateTimeType;
+    ceoPyTypeDate = PyDateTimeAPI->DateType;
+    ceoPyTypeTime = PyDateTimeAPI->TimeType;
+    ceoPyTypeDateTime = PyDateTimeAPI->DateTimeType;
 
     // import the decimal module for decimal support
     module = PyImport_ImportModule("decimal");
     if (!module)
         return -1;
-    g_DecimalType = (PyTypeObject*) PyObject_GetAttrString(module, "Decimal");
+    ceoPyTypeDecimal =
+            (PyTypeObject*) PyObject_GetAttrString(module, "Decimal");
     Py_DECREF(module);
-    if (!g_DecimalType)
+    if (!ceoPyTypeDecimal)
         return -1;
 
     return 0;

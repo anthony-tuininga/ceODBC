@@ -41,35 +41,35 @@
 //-----------------------------------------------------------------------------
 // Exception classes
 //-----------------------------------------------------------------------------
-PyObject *g_WarningException = NULL;
-PyObject *g_ErrorException = NULL;
-PyObject *g_InterfaceErrorException = NULL;
-PyObject *g_DatabaseErrorException = NULL;
-PyObject *g_DataErrorException = NULL;
-PyObject *g_OperationalErrorException = NULL;
-PyObject *g_IntegrityErrorException = NULL;
-PyObject *g_InternalErrorException = NULL;
-PyObject *g_ProgrammingErrorException = NULL;
-PyObject *g_NotSupportedErrorException = NULL;
+PyObject *ceoExceptionWarning = NULL;
+PyObject *ceoExceptionError = NULL;
+PyObject *ceoExceptionInterfaceError = NULL;
+PyObject *ceoExceptionDatabaseError = NULL;
+PyObject *ceoExceptionDataError = NULL;
+PyObject *ceoExceptionOperationalError = NULL;
+PyObject *ceoExceptionIntegrityError = NULL;
+PyObject *ceoExceptionInternalError = NULL;
+PyObject *ceoExceptionProgrammingError = NULL;
+PyObject *ceoExceptionNotSupportedError = NULL;
 
 
 //-----------------------------------------------------------------------------
 // globally referenced classes
 //-----------------------------------------------------------------------------
-PyTypeObject *g_DecimalType = NULL;
-PyTypeObject *g_DateType = NULL;
-PyTypeObject *g_DateTimeType = NULL;
-PyTypeObject *g_TimeType = NULL;
+PyTypeObject *ceoPyTypeDecimal = NULL;
+PyTypeObject *ceoPyTypeDate = NULL;
+PyTypeObject *ceoPyTypeDateTime = NULL;
+PyTypeObject *ceoPyTypeTime = NULL;
 
 
 //-----------------------------------------------------------------------------
 // API types
 //-----------------------------------------------------------------------------
-ceoApiType *g_BinaryApiType = NULL;
-ceoApiType *g_DateTimeApiType = NULL;
-ceoApiType *g_NumberApiType = NULL;
-ceoApiType *g_RowidApiType = NULL;
-ceoApiType *g_StringApiType = NULL;
+ceoApiType *ceoApiTypeBinary = NULL;
+ceoApiType *ceoApiTypeDateTime = NULL;
+ceoApiType *ceoApiTypeNumber = NULL;
+ceoApiType *ceoApiTypeRowid = NULL;
+ceoApiType *ceoApiTypeString = NULL;
 
 
 //-----------------------------------------------------------------------------
@@ -166,7 +166,7 @@ static PyObject* ceoModule_timestampFromTicks(PyObject* module, PyObject* args)
 //-----------------------------------------------------------------------------
 //   Declaration of methods supported by this module
 //-----------------------------------------------------------------------------
-static PyMethodDef g_ModuleMethods[] = {
+static PyMethodDef ceoMethods[] = {
     { "DateFromTicks", ceoModule_dateFromTicks, METH_VARARGS },
     { "TimeFromTicks", ceoModule_timeFromTicks, METH_VARARGS },
     { "TimestampFromTicks", ceoModule_timestampFromTicks, METH_VARARGS },
@@ -177,16 +177,11 @@ static PyMethodDef g_ModuleMethods[] = {
 //-----------------------------------------------------------------------------
 //   Declaration of module definition
 //-----------------------------------------------------------------------------
-static struct PyModuleDef g_ModuleDef = {
+static struct PyModuleDef ceoModuleDef = {
     PyModuleDef_HEAD_INIT,
-    "ceODBC",
-    NULL,
-    -1,
-    g_ModuleMethods,                       // methods
-    NULL,                                  // m_reload
-    NULL,                                  // traverse
-    NULL,                                  // clear
-    NULL                                   // free
+    .m_name = "ceODBC",
+    .m_size = -1,
+    .m_methods = ceoMethods
 };
 
 
@@ -212,39 +207,39 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
     MAKE_TYPE_READY(&ceoPyTypeVar)
 
     // initialize module
-    module = PyModule_Create(&g_ModuleDef);
+    module = PyModule_Create(&ceoModuleDef);
     if (!module)
         return NULL;
 
     // add exceptions
-    if (ceoModule_setException(module, &g_WarningException, "Warning",
+    if (ceoModule_setException(module, &ceoExceptionWarning, "Warning",
             NULL) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_ErrorException, "Error", NULL) < 0)
+    if (ceoModule_setException(module, &ceoExceptionError, "Error", NULL) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_InterfaceErrorException,
-            "InterfaceError", g_ErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionInterfaceError,
+            "InterfaceError", ceoExceptionError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_DatabaseErrorException,
-            "DatabaseError", g_ErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionDatabaseError,
+            "DatabaseError", ceoExceptionError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_DataErrorException,
-            "DataError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionDataError,
+            "DataError", ceoExceptionDatabaseError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_OperationalErrorException,
-            "OperationalError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionOperationalError,
+            "OperationalError", ceoExceptionDatabaseError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_IntegrityErrorException,
-            "IntegrityError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionIntegrityError,
+            "IntegrityError", ceoExceptionDatabaseError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_InternalErrorException,
-            "InternalError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionInternalError,
+            "InternalError", ceoExceptionDatabaseError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_ProgrammingErrorException,
-            "ProgrammingError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionProgrammingError,
+            "ProgrammingError", ceoExceptionDatabaseError) < 0)
         return NULL;
-    if (ceoModule_setException(module, &g_NotSupportedErrorException,
-            "NotSupportedError", g_DatabaseErrorException) < 0)
+    if (ceoModule_setException(module, &ceoExceptionNotSupportedError,
+            "NotSupportedError", ceoExceptionDatabaseError) < 0)
         return NULL;
 
     // add the base types
@@ -258,16 +253,16 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
 
     // add the constructors required by the DB API
     ADD_TYPE_OBJECT("Binary", &PyBytes_Type)
-    ADD_TYPE_OBJECT("Date", g_DateType)
-    ADD_TYPE_OBJECT("Time", g_TimeType)
-    ADD_TYPE_OBJECT("Timestamp", g_DateTimeType)
+    ADD_TYPE_OBJECT("Date", ceoPyTypeDate)
+    ADD_TYPE_OBJECT("Time", ceoPyTypeTime)
+    ADD_TYPE_OBJECT("Timestamp", ceoPyTypeDateTime)
 
     // add the API types required by the DB API
-    CREATE_API_TYPE(g_BinaryApiType, "BINARY")
-    CREATE_API_TYPE(g_DateTimeApiType, "DATETIME")
-    CREATE_API_TYPE(g_NumberApiType, "NUMBER")
-    CREATE_API_TYPE(g_RowidApiType, "ROWID")
-    CREATE_API_TYPE(g_StringApiType, "STRING")
+    CREATE_API_TYPE(ceoApiTypeBinary, "BINARY")
+    CREATE_API_TYPE(ceoApiTypeDateTime, "DATETIME")
+    CREATE_API_TYPE(ceoApiTypeNumber, "NUMBER")
+    CREATE_API_TYPE(ceoApiTypeRowid, "ROWID")
+    CREATE_API_TYPE(ceoApiTypeString, "STRING")
 
     // add the database types
     CEO_ADD_DB_TYPE(&ceoDbTypeBigInt, "DB_TYPE_BIGINT", SQL_BIGINT,
@@ -297,16 +292,16 @@ PyMODINIT_FUNC PyInit_ceODBC(void)
             0)
 
     // register the variable types with the API types
-    REGISTER_TYPE(g_BinaryApiType, ceoDbTypeBinary)
-    REGISTER_TYPE(g_BinaryApiType, ceoDbTypeLongBinary)
-    REGISTER_TYPE(g_DateTimeApiType, ceoDbTypeDate)
-    REGISTER_TYPE(g_DateTimeApiType, ceoDbTypeTimestamp)
-    REGISTER_TYPE(g_NumberApiType, ceoDbTypeBigInt)
-    REGISTER_TYPE(g_NumberApiType, ceoDbTypeDecimal)
-    REGISTER_TYPE(g_NumberApiType, ceoDbTypeDouble)
-    REGISTER_TYPE(g_NumberApiType, ceoDbTypeInt)
-    REGISTER_TYPE(g_StringApiType, ceoDbTypeString)
-    REGISTER_TYPE(g_StringApiType, ceoDbTypeLongString)
+    REGISTER_TYPE(ceoApiTypeBinary, ceoDbTypeBinary)
+    REGISTER_TYPE(ceoApiTypeBinary, ceoDbTypeLongBinary)
+    REGISTER_TYPE(ceoApiTypeDateTime, ceoDbTypeDate)
+    REGISTER_TYPE(ceoApiTypeDateTime, ceoDbTypeTimestamp)
+    REGISTER_TYPE(ceoApiTypeNumber, ceoDbTypeBigInt)
+    REGISTER_TYPE(ceoApiTypeNumber, ceoDbTypeDecimal)
+    REGISTER_TYPE(ceoApiTypeNumber, ceoDbTypeDouble)
+    REGISTER_TYPE(ceoApiTypeNumber, ceoDbTypeInt)
+    REGISTER_TYPE(ceoApiTypeString, ceoDbTypeString)
+    REGISTER_TYPE(ceoApiTypeString, ceoDbTypeLongString)
 
     // create synonyms for backwards compatibility
     ADD_TYPE_OBJECT("BigIntegerVar", ceoDbTypeBigInt)
