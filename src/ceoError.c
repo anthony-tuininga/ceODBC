@@ -62,10 +62,10 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
 
     // determine number of diagnostic records available
     rc = SQLGetDiagFieldA(handleType, handle, 0, SQL_DIAG_NUMBER, &numRecords,
-            SQL_IS_INTEGER, NULL);
+            0, NULL);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-        error->message = CEO_STR_FROM_ASCII("cannot get number of " \
-                "diagnostic records");
+        error->message =
+                CEO_STR_FROM_ASCII("cannot get number of diagnostic records");
 
     // determine error text
     } else if (numRecords == 0) {
@@ -81,14 +81,14 @@ int ceoError_check(SQLSMALLINT handleType, SQLHANDLE handle,
         for (i = 1; i <= numRecords; i++) {
             rc = SQLGetDiagFieldA(handleType, handle, i, SQL_DIAG_MESSAGE_TEXT,
                     buffer, sizeof(buffer), &length);
-            if (length > sizeof(buffer) - sizeof(SQLCHAR))
-                length = sizeof(buffer) - sizeof(SQLCHAR);
+            if (length > (SQLSMALLINT) sizeof(buffer) - 1)
+                length = (SQLSMALLINT) sizeof(buffer) - 1;
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 error->message = CEO_STR_FROM_ASCII("cannot get " \
                         "diagnostic message text");
                 break;
             }
-            temp = PyUnicode_DecodeUTF8(buffer, length, NULL);
+            temp = PyUnicode_DecodeUTF8((const char*) buffer, length, NULL);
             if (!temp) {
                 Py_DECREF(error);
                 Py_DECREF(errorMessages);

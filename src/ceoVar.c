@@ -356,11 +356,13 @@ int ceoVar_bindParameter(ceoVar *var, ceoCursor *cursor,
     SQLRETURN rc;
 
     var->position = position;
-    if (var->input && var->output)
+    if (var->input && var->output) {
         inputOutputType = SQL_PARAM_INPUT_OUTPUT;
-    else if (var->output)
+    } else if (var->output) {
         inputOutputType = SQL_PARAM_OUTPUT;
-    else inputOutputType = SQL_PARAM_INPUT;
+    } else {
+        inputOutputType = SQL_PARAM_INPUT;
+    }
     rc = SQLBindParameter(cursor->handle, position, inputOutputType,
             var->type->cDataType, var->type->sqlDataType, var->size,
             var->scale, var->data.asRaw, var->bufferSize,
@@ -376,10 +378,10 @@ int ceoVar_bindParameter(ceoVar *var, ceoCursor *cursor,
 // ceoVar_resize()
 //   Resize the variable.
 //-----------------------------------------------------------------------------
-int ceoVar_resize(ceoVar *var, SQLUINTEGER newSize)
+static int ceoVar_resize(ceoVar *var, unsigned long newSize)
 {
     char *newData, *oldData;
-    SQLINTEGER i;
+    unsigned long i;
 
     // allocate new memory for the larger size
     newData = (char*) PyMem_Malloc(var->numElements * newSize);
@@ -436,7 +438,8 @@ PyObject *ceoVar_getValueHelper(ceoVar *var, unsigned pos)
                     NULL);
             if (!obj)
                 return NULL;
-            result = PyObject_CallFunctionObjArgs(ceoPyTypeDecimal, obj, NULL);
+            result = PyObject_CallFunctionObjArgs((PyObject*) ceoPyTypeDecimal,
+                    obj, NULL);
             Py_DECREF(obj);
             return result;
         case SQL_INTEGER:
@@ -518,7 +521,7 @@ int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
             temp = PyBytes_AS_STRING(value);
             tempLength = PyBytes_GET_SIZE(value);
             if (tempLength > var->size) {
-                if (ceoVar_resize(var, tempLength) < 0)
+                if (ceoVar_resize(var, (unsigned long) tempLength) < 0)
                     return -1;
             }
             var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;
@@ -586,7 +589,8 @@ int ceoVar_setValueHelper(ceoVar *var, unsigned pos, PyObject *value)
             if (!temp)
                 return -1;
             if (tempLength > var->size) {
-                if (ceoVar_resize((ceoVar*) var, tempLength) < 0)
+                if (ceoVar_resize((ceoVar*) var,
+                        (unsigned long) tempLength) < 0)
                     return -1;
             }
             var->lengthOrIndicator[pos] = (SQLINTEGER) tempLength;

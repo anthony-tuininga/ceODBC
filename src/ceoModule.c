@@ -19,7 +19,7 @@
         return NULL;
 
 #define REGISTER_TYPE(apiTypeObject, dbType) \
-    if (PyList_Append(apiTypeObject->types, dbType) < 0) \
+    if (PyList_Append(apiTypeObject->types, (PyObject*) dbType) < 0) \
         return NULL;
 
 #define ADD_TYPE_OBJECT(name, type) \

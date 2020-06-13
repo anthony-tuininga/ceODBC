@@ -159,13 +159,14 @@ struct ceoCursor {
     PyObject *outputTypeHandler;
     int arraySize;
     int bindArraySize;
-    SQLULEN fetchArraySize;
+    unsigned long fetchArraySize;
     int setInputSizes;
     int setOutputSize;
     int setOutputSizeColumn;
-    SQLLEN rowCount;
-    int actualRows;
-    int rowNum;
+    unsigned long rowCount;
+    unsigned long fetchBufferRowCount;
+    unsigned long fetchBufferRowIndex;
+    int moreRowsToFetch;
     int logSql;
 };
 
@@ -187,7 +188,7 @@ struct ceoError {
 struct ceoVar {
     PyObject_HEAD
     SQLSMALLINT position;
-    SQLINTEGER numElements;
+    unsigned numElements;
     SQLLEN *lengthOrIndicator;
     ceoDbType *type;
     SQLUINTEGER size;
@@ -230,7 +231,7 @@ int ceoTransform_sqlValueFromTimestamp(PyObject *pyValue,
         TIMESTAMP_STRUCT *sqlValue);
 PyObject *ceoTransform_timeFromSqlValue(TIME_STRUCT *sqlValue);
 PyObject *ceoTransform_timeFromTicks(PyObject* args);
-PyObject *ceoTransform_timestatmpFromSqlValue(TIMESTAMP_STRUCT *sqlValue);
+PyObject *ceoTransform_timestampFromSqlValue(TIMESTAMP_STRUCT *sqlValue);
 PyObject *ceoTransform_timestampFromTicks(PyObject *args);
 
 int ceoUtils_findInString(PyObject *strObj, char *stringToFind,
@@ -249,5 +250,4 @@ ceoVar *ceoVar_newByType(ceoCursor *cursor, PyObject *value,
 ceoVar *ceoVar_newByValue(ceoCursor *cursor, PyObject *value,
         unsigned numElements);
 ceoVar *ceoVar_newForResultSet(ceoCursor *cursor, SQLUSMALLINT position);
-int ceoVar_resize(ceoVar *var, SQLUINTEGER newSize);
 int ceoVar_setValue(ceoVar *self, unsigned arrayPos, PyObject *value);

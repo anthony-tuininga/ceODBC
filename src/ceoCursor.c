@@ -55,8 +55,9 @@ static int ceoCursor_internalInit(ceoCursor *cursor,
     cursor->setOutputSize = 0;
     cursor->setOutputSizeColumn = 0;
     cursor->rowCount = 0;
-    cursor->actualRows = 0;
-    cursor->rowNum = 0;
+    cursor->fetchBufferRowCount = 0;
+    cursor->fetchBufferRowIndex = 0;
+    cursor->moreRowsToFetch = 1;
 
     // allocate handle
     rc = SQLAllocHandle(SQL_HANDLE_STMT, cursor->connection->handle,
@@ -196,14 +197,14 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
     // set up the fetch array size
     cursor->fetchArraySize = cursor->arraySize;
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROW_ARRAY_SIZE,
-            (SQLPOINTER) cursor->fetchArraySize, SQL_IS_INTEGER);
+            (SQLPOINTER) cursor->fetchArraySize, SQL_IS_UINTEGER);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_prepareResultSet(): set array size") < 0)
         return -1;
 
     // set up the rows fetched pointer
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_ROWS_FETCHED_PTR,
-            &cursor->actualRows, SQL_IS_POINTER);
+            &cursor->fetchBufferRowCount, SQL_IS_POINTER);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_prepareResultSet(): set rows fetched pointer") < 0)
         return -1;
@@ -223,8 +224,9 @@ static int ceoCursor_prepareResultSet(ceoCursor *cursor)
 
     // set internal counters
     cursor->rowCount = 0;
-    cursor->actualRows = -1;
-    cursor->rowNum = 0;
+    cursor->fetchBufferRowCount = 0;
+    cursor->fetchBufferRowIndex = 0;
+    cursor->moreRowsToFetch = 1;
 
     return 0;
 }
@@ -361,14 +363,15 @@ static int ceoCursor_bindParameters(ceoCursor *cursor, PyObject *parameters,
         int parametersOffset, unsigned numElements, unsigned arrayPos,
         int deferTypeAssignment)
 {
-    int i, numParams, origNumParams;
+    SQLUSMALLINT i, numParams, origNumParams;
     ceoVar *newVar, *origVar;
     PyObject *value;
 
     // set up the list of parameters
-    numParams = PyTuple_GET_SIZE(parameters) - parametersOffset;
+    numParams =
+            (SQLUSMALLINT) (PyTuple_GET_SIZE(parameters) - parametersOffset);
     if (cursor->parameterVars) {
-        origNumParams = PyList_GET_SIZE(cursor->parameterVars);
+        origNumParams = (SQLUSMALLINT) PyList_GET_SIZE(cursor->parameterVars);
     } else {
         origNumParams = 0;
         cursor->parameterVars = PyList_New(numParams);
@@ -447,6 +450,8 @@ PyObject *ceoCursor_internalCatalogHelper(ceoCursor *cursor)
 //-----------------------------------------------------------------------------
 static int ceoCursor_internalExecuteHelper(ceoCursor *cursor, SQLRETURN rc)
 {
+    SQLLEN rowCount;
+
     // SQL_NO_DATA is returned from statements which do not affect any rows
     if (rc == SQL_NO_DATA) {
         cursor->rowCount = 0;
@@ -461,9 +466,10 @@ static int ceoCursor_internalExecuteHelper(ceoCursor *cursor, SQLRETURN rc)
 
     // determine the value of the rowcount attribute
     if (!cursor->resultSetVars) {
-        rc = SQLRowCount(cursor->handle, &cursor->rowCount);
-        if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "Cursor_SetRowCount()") < 0)
+        rc = SQLRowCount(cursor->handle, &rowCount);
+        if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "get row count") < 0)
             return -1;
+        cursor->rowCount = (unsigned long) rowCount;
     }
 
     // reset input and output sizes
@@ -509,8 +515,8 @@ static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
     // retrieve information about the column
     rc = SQLDescribeColA(cursor->handle, position, name, sizeof(name),
             &nameLength, &dataType, &precision, &scale, &nullable);
-    if (nameLength > sizeof(name) - 1)
-        nameLength = sizeof(name) - 1;
+    if (nameLength > (SQLSMALLINT) sizeof(name) - 1)
+        nameLength = (SQLSMALLINT) (sizeof(name) - 1);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_itemDescription(): get column info") < 0)
         return NULL;
@@ -548,7 +554,8 @@ static PyObject *ceoCursor_itemDescription(ceoCursor *cursor,
 
     // set each of the items in the tuple
     Py_INCREF((PyObject*) dbType);
-    PyTuple_SET_ITEM(tuple, 0, PyUnicode_DecodeUTF8(name, nameLength, NULL));
+    PyTuple_SET_ITEM(tuple, 0,
+            PyUnicode_DecodeUTF8((const char*) name, nameLength, NULL));
     PyTuple_SET_ITEM(tuple, 1, (PyObject*) dbType);
     PyTuple_SET_ITEM(tuple, 2, PyLong_FromLong(displaySize));
     PyTuple_SET_ITEM(tuple, 3, PyLong_FromLong(size));
@@ -620,11 +627,11 @@ static PyObject *ceoCursor_getName(ceoCursor *cursor, void *arg)
 
     rc = SQLGetCursorNameA(cursor->handle, name, sizeof(name),
             &nameLength);
-    if (nameLength > sizeof(name) - 1)
-        nameLength = sizeof(name) - 1;
+    if (nameLength > (SQLSMALLINT) sizeof(name) - 1)
+        nameLength = (SQLSMALLINT) (sizeof(name) - 1);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_getName()") < 0)
         return NULL;
-    return PyUnicode_DecodeUTF8(name, nameLength, NULL);
+    return PyUnicode_DecodeUTF8((const char*) name, nameLength, NULL);
 }
 
 
@@ -725,7 +732,7 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
     // acquire the value for each item
     for (pos = 0; pos < numItems; pos++) {
         var = (ceoVar*) PyList_GET_ITEM(cursor->resultSetVars, pos);
-        item = ceoVar_getValue(var, cursor->rowNum);
+        item = ceoVar_getValue(var, cursor->fetchBufferRowIndex);
         if (!item) {
             Py_DECREF(tuple);
             return NULL;
@@ -734,7 +741,7 @@ static PyObject *ceoCursor_createRow(ceoCursor *cursor)
     }
 
     // increment row counters
-    cursor->rowNum++;
+    cursor->fetchBufferRowIndex++;
     cursor->rowCount++;
 
     // if a row factory is defined, call it
@@ -806,7 +813,7 @@ static int ceoCursor_internalPrepare(ceoCursor *cursor, PyObject *statement)
     if (!sql)
         return -1;
     Py_BEGIN_ALLOW_THREADS
-    rc = SQLPrepareA(cursor->handle, sql, sqlLength);
+    rc = SQLPrepareA(cursor->handle, (SQLCHAR*) sql, sqlLength);
     Py_END_ALLOW_THREADS
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc, "ceoCursor_internalPrepare()") < 0)
         return -1;
@@ -965,7 +972,8 @@ static PyObject *ceoCursor_execute(ceoCursor *cursor, PyObject *args)
 static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
 {
     PyObject *arguments, *listOfArguments, *statement;
-    int i, numRows;
+    Py_ssize_t i, numRows;
+    SQLULEN value;
     SQLRETURN rc;
 
     // expect statement text (optional) plus list of sequences
@@ -996,8 +1004,9 @@ static PyObject *ceoCursor_executeMany(ceoCursor *cursor, PyObject *args)
     }
 
     // set the number of parameters bound
+    value = (SQLULEN) numRows;
     rc = SQLSetStmtAttr(cursor->handle, SQL_ATTR_PARAMSET_SIZE,
-            (SQLPOINTER) numRows, SQL_IS_UINTEGER);
+            (SQLPOINTER) value, SQL_IS_UINTEGER);
     if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_executeMany(): set paramset size") < 0)
         return NULL;
@@ -1241,12 +1250,13 @@ static int ceoCursor_internalFetch(ceoCursor *cursor)
     rc = SQLFetch(cursor->handle);
     Py_END_ALLOW_THREADS
     if (rc == SQL_NO_DATA) {
-        cursor->actualRows = 0;
+        cursor->fetchBufferRowCount = 0;
+        cursor->moreRowsToFetch = 0;
     } else if (CEO_CURSOR_CHECK_ERROR(cursor, rc,
             "ceoCursor_internalFetch(): fetch") < 0) {
         return -1;
     }
-    cursor->rowNum = 0;
+    cursor->fetchBufferRowIndex = 0;
     return 0;
 }
 
@@ -1258,16 +1268,11 @@ static int ceoCursor_internalFetch(ceoCursor *cursor)
 //-----------------------------------------------------------------------------
 static int ceoCursor_moreRows(ceoCursor *cursor)
 {
-    if (cursor->rowNum >= cursor->actualRows) {
-        if (cursor->actualRows < 0 ||
-                cursor->actualRows == cursor->fetchArraySize) {
-            if (ceoCursor_internalFetch(cursor) < 0)
-                return -1;
-        }
-        if (cursor->rowNum >= cursor->actualRows)
-            return 0;
+    if (cursor->fetchBufferRowIndex >= cursor->fetchBufferRowCount) {
+        if (cursor->moreRowsToFetch && ceoCursor_internalFetch(cursor) < 0)
+            return -1;
     }
-    return 1;
+    return cursor->moreRowsToFetch;
 }
 
 
@@ -1276,10 +1281,12 @@ static int ceoCursor_moreRows(ceoCursor *cursor)
 //   Return a list consisting of the remaining rows up to the given row limit
 // (if specified).
 //-----------------------------------------------------------------------------
-static PyObject *ceoCursor_multiFetch(ceoCursor *cursor, int rowLimit)
+static PyObject *ceoCursor_multiFetch(ceoCursor *cursor,
+        unsigned long rowLimit)
 {
     PyObject *results, *row;
-    int rowNum, rc;
+    unsigned long rowNum;
+    int rc;
 
     // create an empty list
     results = PyList_New(0);
@@ -1344,11 +1351,11 @@ static PyObject *ceoCursor_fetchMany(ceoCursor *cursor, PyObject *args,
         PyObject *keywordArgs)
 {
     static char *keywordList[] = { "numRows", NULL };
-    int rowLimit;
+    unsigned long rowLimit;
 
     // parse arguments -- optional rowlimit expected
     rowLimit = cursor->arraySize;
-    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|i", keywordList,
+    if (!PyArg_ParseTupleAndKeywords(args, keywordArgs, "|k", keywordList,
             &rowLimit))
         return NULL;
 

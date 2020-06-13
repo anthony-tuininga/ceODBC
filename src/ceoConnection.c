@@ -155,7 +155,7 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
         return -1;
 
     // connecting to driver
-    rc = SQLDriverConnectA(conn->handle, NULL, dsn, dsnLength,
+    rc = SQLDriverConnectA(conn->handle, NULL, (SQLCHAR*) dsn, dsnLength,
             actualDsnBuffer, CEO_ARRAYSIZE(actualDsnBuffer),
             &actualDsnLength, SQL_DRIVER_NOPROMPT);
     if ((size_t) actualDsnLength > CEO_ARRAYSIZE(actualDsnBuffer) - 1)
@@ -179,7 +179,8 @@ static int ceoConnection_init(ceoConnection *conn, PyObject *args,
     conn->isConnected = 1;
 
     // save copy of constructed DSN
-    dsnObj = PyUnicode_FromStringAndSize(actualDsnBuffer, actualDsnLength);
+    dsnObj = PyUnicode_FromStringAndSize((const char*) actualDsnBuffer,
+            actualDsnLength);
     if (!dsnObj) {
         Py_DECREF(conn);
         return -1;
@@ -744,7 +745,7 @@ static PyObject *ceoConnection_getAutoCommit(ceoConnection *conn, void* arg)
 static int ceoConnection_setAutoCommit(ceoConnection *conn, PyObject *value,
         void* arg)
 {
-    SQLUINTEGER sqlValue;
+    unsigned long sqlValue;
     SQLRETURN rc;
 
     if (!PyBool_Check(value)) {

@@ -112,7 +112,6 @@ ceoDbType *ceoDbType_fromPythonType(PyTypeObject *type)
 ceoDbType *ceoDbType_fromType(PyObject *type)
 {
     ceoApiType *apiType;
-    char message[250];
     int status;
 
     // check to see if a database type constant was specified
@@ -128,7 +127,7 @@ ceoDbType *ceoDbType_fromType(PyObject *type)
         return NULL;
     if (status == 1) {
         apiType = (ceoApiType*) type;
-        return PyList_GET_ITEM(apiType->types, 0);
+        return (ceoDbType*) PyList_GET_ITEM(apiType->types, 0);
     }
 
     // check to see if a Python type has been specified
