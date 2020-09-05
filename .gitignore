@@ -1,5 +1,9 @@
 *.pyc
-__pycache__
+__pycache__/
+.eggs/
+.tox/
+*.egg-info/
 MANIFEST
 build/
 dist/
+src/ceODBC/driver.c

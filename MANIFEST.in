@@ -1,5 +1,8 @@
 include MANIFEST.in
+include pyproject.toml
+include tox.ini
 include *.txt
+recursive-include src/ceODBC *.py
+recursive-include src/ceODBC *.pyx
+recursive-include tests *.sql *.py
 recursive-include doc *.rst
-recursive-include src *.c
-recursive-include test *.sql *.py
