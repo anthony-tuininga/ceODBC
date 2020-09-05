@@ -13,3 +13,4 @@ include "odbc.pxd"
 
 include "errors.pyx"
 include "connection.pyx"
+include "cursor.pyx"

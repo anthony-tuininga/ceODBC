@@ -22,6 +22,10 @@ cdef class Connection:
     def autocommit(self, value):
         pass
 
+    cdef inline int _check_connected(self) except -1:
+        if self._handle == NULL:
+            _raise_from_string(exceptions.InterfaceError, "not connected")
+
     def _connect(self, dsn, autocommit):
         cdef:
             SQLSMALLINT dsn_length, actual_dsn_length
@@ -96,3 +100,24 @@ cdef class Connection:
 
         # return the DSN less the password section
         return dsn[:start_pos + 4] + dsn[end_pos:]
+
+    def close(self):
+        cdef SQLRETURN rc
+        self._check_connected()
+        with nogil:
+            rc = SQLEndTran(SQL_HANDLE_DBC, self._handle, SQL_ROLLBACK)
+            if rc == SQL_SUCCESS or rc == SQL_SUCCESS_WITH_INFO:
+                rc = SQLDisconnect(self._handle)
+        _check_conn_error(self._handle, rc)
+        SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
+        self._handle = NULL
+
+    def cursor(self):
+        return Cursor(self)
+
+    def rollback(self):
+        cdef SQLRETURN rc
+        self._check_connected()
+        with nogil:
+            rc = SQLEndTran(SQL_HANDLE_DBC, self._handle, SQL_ROLLBACK)
+        _check_conn_error(self._handle, rc)

@@ -33,10 +33,17 @@ cdef extern from "<sql.h>":
     SQLSMALLINT SQL_DIAG_MESSAGE_TEXT
 
     # other constants
+    SQLSMALLINT SQL_COMMIT
+    SQLSMALLINT SQL_ROLLBACK
     SQLUSMALLINT SQL_DRIVER_NOPROMPT
 
     SQLRETURN SQLAllocHandle(SQLSMALLINT HandleType, SQLHANDLE InputHandle,
                              SQLHANDLE *OutputHandle) nogil
+
+    SQLRETURN SQLDisconnect(SQLHDBC ConnectionHandle) nogil
+
+    SQLRETURN SQLEndTran(SQLSMALLINT HandleType, SQLHANDLE Handle,
+                         SQLSMALLINT CompletionType) nogil
 
     SQLRETURN SQLFreeHandle(SQLSMALLINT HandleType, SQLHANDLE Handle) nogil
 
