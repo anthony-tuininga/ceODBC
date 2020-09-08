@@ -27,6 +27,15 @@ cdef class Cursor:
         if self._handle:
             SQLFreeHandle(SQL_HANDLE_STMT, self._handle)
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self._check_can_fetch()
+        if self._more_rows() > 0:
+            return self._create_row()
+        raise StopIteration
+
     cdef inline int _check_can_fetch(self) except -1:
         self._check_open()
         if not self._fetch_vars:
@@ -48,6 +57,8 @@ cdef class Cursor:
             column = var._get_value(<unsigned> self._buffer_index)
             cpython.Py_INCREF(column)
             cpython.PyTuple_SET_ITEM(row, i, column)
+        self._buffer_index += 1
+        self.rowcount += 1
         if self.rowfactory:
             return self.rowfactory(row)
         return row
@@ -232,6 +243,14 @@ cdef class Cursor:
         self._buffer_rowcount = 0
         self._buffer_index = 0
         self._more_rows_to_fetch = True
+
+    def close(self):
+        cdef SQLRETURN rc
+        self._check_open()
+        SQLCloseCursor(self._handle)
+        rc = SQLFreeHandle(SQL_HANDLE_STMT, self._handle)
+        _check_stmt_error(self._handle, rc)
+        self._handle = NULL
 
     def execute(self, statement, *args):
         cdef:

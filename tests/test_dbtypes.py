@@ -16,6 +16,14 @@ class TestCase(base.BaseTestCase):
         self.assertEqual(api_type, db_type)
         self.assertNotEqual(db_type, 5)
 
+    def test_DB_TYPE_BIGINT(self):
+        "test DB_TYPE_BIGINT comparisons"
+        self._test_compare(ceODBC.DB_TYPE_BIGINT, ceODBC.NUMBER)
+
+    def test_DB_TYPE_INT(self):
+        "test DB_TYPE_INT comparisons"
+        self._test_compare(ceODBC.DB_TYPE_INT, ceODBC.NUMBER)
+
     def test_DB_TYPE_STRING(self):
         "test DB_TYPE_STRING comparisons"
         self._test_compare(ceODBC.DB_TYPE_STRING, ceODBC.STRING)

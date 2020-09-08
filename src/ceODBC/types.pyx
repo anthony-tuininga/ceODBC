@@ -50,6 +50,8 @@ cdef class DbType:
             return DB_TYPE_STRING
         elif data_type == SQL_BIGINT:
             return DB_TYPE_BIGINT
+        elif data_type == SQL_INTEGER:
+            return DB_TYPE_INT
         _raise_from_string(exceptions.NotSupportedError,
                            f"SQL data type {data_type} not supported")
 

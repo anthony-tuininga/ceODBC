@@ -9,7 +9,7 @@ paramstyle = "qmark"
 version = __version__
 
 # database type constants from driver
-from .driver import DB_TYPE_STRING
+from .driver import DB_TYPE_BIGINT, DB_TYPE_INT, DB_TYPE_STRING
 
 # API type constants from driver
-from .driver import STRING
+from .driver import BINARY, DATETIME, NUMBER, ROWID, STRING

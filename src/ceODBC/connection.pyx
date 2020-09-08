@@ -127,6 +127,7 @@ cdef class Connection:
             SQLRETURN rc
         cursor = Cursor.__new__(Cursor)
         cursor.connection = self
+        cursor.arraysize = 1
         rc = SQLAllocHandle(SQL_HANDLE_STMT, self._handle, &cursor._handle)
         _check_conn_error(self._handle, rc)
         return cursor

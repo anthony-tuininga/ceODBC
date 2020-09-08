@@ -60,5 +60,7 @@ cdef class Var:
             return ptr[:self._length_or_indicator[pos]].decode()
         elif c_data_type == SQL_C_SBIGINT:
             return self._data.as_bigint[pos]
+        elif c_data_type == SQL_C_LONG:
+            return self._data.as_int[pos]
         message = f"missing get support for DB type {self.type}"
         _raise_from_string(exceptions.InternalError, message)
