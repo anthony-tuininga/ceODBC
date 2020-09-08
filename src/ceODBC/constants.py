@@ -7,3 +7,9 @@ paramstyle = "qmark"
 
 # backwards compatible alias
 version = __version__
+
+# database type constants from driver
+from .driver import DB_TYPE_STRING
+
+# API type constants from driver
+from .driver import STRING

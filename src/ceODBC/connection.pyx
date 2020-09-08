@@ -7,6 +7,8 @@ cdef class Connection:
     cdef:
         SQLHANDLE _handle, _env_handle
         readonly str dsn
+        public object inputtypehandler
+        public object outputtypehandler
 
     def __dealloc__(self):
         if self._handle:
@@ -112,8 +114,22 @@ cdef class Connection:
         SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
         self._handle = NULL
 
+    def commit(self):
+        cdef SQLRETURN rc
+        self._check_connected()
+        with nogil:
+            rc = SQLEndTran(SQL_HANDLE_DBC, self._handle, SQL_COMMIT)
+        _check_conn_error(self._handle, rc)
+
     def cursor(self):
-        return Cursor(self)
+        cdef:
+            Cursor cursor
+            SQLRETURN rc
+        cursor = Cursor.__new__(Cursor)
+        cursor.connection = self
+        rc = SQLAllocHandle(SQL_HANDLE_STMT, self._handle, &cursor._handle)
+        _check_conn_error(self._handle, rc)
+        return cursor
 
     def rollback(self):
         cdef SQLRETURN rc

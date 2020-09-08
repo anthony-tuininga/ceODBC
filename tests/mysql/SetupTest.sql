@@ -72,4 +72,3 @@ insert into TestStrings
 values (4, 'String 4YYY', 'Nullable Two');
 
 commit;
-
