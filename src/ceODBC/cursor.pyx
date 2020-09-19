@@ -36,6 +36,29 @@ cdef class Cursor:
             return self._create_row()
         raise StopIteration
 
+    def _call(self, name, parameters, return_value=None):
+
+        # if only a single argument is passed and that arguemnt is a list or
+        # tuple, use that value as the parameters
+        if len(parameters) == 1 and isinstance(parameters[0], (list, tuple)):
+            parameters = parameters[0]
+
+        # build statement
+        bind_values = []
+        statement_parts = ["{"]
+        if return_value is not None:
+            statement_parts.append("? = ")
+            bind_values.append(return_value)
+        statement_parts.append(f"CALL {name}")
+        if len(parameters) > 0:
+            args = ",".join(["?"] * len(parameters))
+            statement_parts.append(f"({args})")
+            bind_values.extend(parameters)
+        statement = "".join(statement_parts) + "}"
+
+        # execute statement
+        self.execute(statement, bind_values)
+
     cdef inline int _check_can_fetch(self) except -1:
         self._check_open()
         if not self._fetch_vars:
@@ -244,6 +267,12 @@ cdef class Cursor:
         self._buffer_index = 0
         self._more_rows_to_fetch = True
 
+    def callproc(self, name, *args):
+        self._call(name, args)
+        if not args:
+            return []
+        return [v.getvalue() for v in self._bind_vars]
+
     def close(self):
         cdef SQLRETURN rc
         self._check_open()
@@ -270,6 +299,22 @@ cdef class Cursor:
         rc = SQLRowCount(self._handle, &rowcount)
         _check_stmt_error(self._handle, rc)
         self.rowcount = <unsigned long> rowcount
+
+    def fetchall(self):
+        self._check_can_fetch()
+        result = []
+        while self._more_rows() > 0:
+            result.append(self._create_row())
+        return result
+
+    def fetchmany(self, num_rows=None):
+        self._check_can_fetch()
+        if num_rows is None:
+            num_rows = self.arraysize
+        result = []
+        while len(result) < num_rows and self._more_rows() > 0:
+            result.append(self._create_row())
+        return result
 
     def fetchone(self):
         self._check_can_fetch()

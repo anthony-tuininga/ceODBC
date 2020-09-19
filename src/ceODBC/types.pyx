@@ -46,7 +46,8 @@ cdef class DbType:
 
     @staticmethod
     cdef DbType _from_sql_data_type(SQLSMALLINT data_type):
-        if data_type == SQL_VARCHAR:
+        if data_type == SQL_VARCHAR \
+                or data_type == SQL_LONGVARCHAR:
             return DB_TYPE_STRING
         elif data_type == SQL_BIGINT:
             return DB_TYPE_BIGINT
