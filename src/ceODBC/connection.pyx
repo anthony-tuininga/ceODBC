@@ -10,6 +10,9 @@ cdef class Connection:
         public object inputtypehandler
         public object outputtypehandler
 
+    def __init__(self, dsn, autocommit=False):
+        self._connect(dsn, autocommit)
+
     def __dealloc__(self):
         if self._handle:
             SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
