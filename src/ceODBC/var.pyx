@@ -22,6 +22,8 @@ cdef class Var:
         readonly SQLUINTEGER size
         readonly SQLLEN buffer_size
         readonly SQLSMALLINT scale
+        readonly str name
+        readonly bint nulls_allowed
         public bint input
         public bint output
         public object inconverter
@@ -53,14 +55,119 @@ cdef class Var:
     cdef object _get_value_helper(self, unsigned pos):
         cdef:
             SQLSMALLINT c_data_type
+            DATE_STRUCT *date_value
             char *ptr
         c_data_type = self.type._c_data_type
         if c_data_type == SQL_C_CHAR:
             ptr = <char*> self._data.as_bytes + pos * self.buffer_size
-            return ptr[:self._length_or_indicator[pos]].decode()
+            value = ptr[:self._length_or_indicator[pos]].decode()
+            if self.type is DB_TYPE_DECIMAL:
+                return decimal.Decimal(value)
+            return value
         elif c_data_type == SQL_C_SBIGINT:
             return self._data.as_bigint[pos]
         elif c_data_type == SQL_C_LONG:
             return self._data.as_int[pos]
+        elif c_data_type == SQL_C_DOUBLE:
+            return self._data.as_double[pos]
+        elif c_data_type == SQL_C_TYPE_DATE:
+            date_value = &self._data.as_date[pos]
+            return cydatetime.date_new(date_value.year, date_value.month,
+                                       date_value.day)
         message = f"missing get support for DB type {self.type}"
-        _raise_from_string(exceptions.InternalError, message)
+        _raise_from_string(exceptions.NotSupportedError, message)
+
+    cdef int _resize(self, SQLUINTEGER new_size,
+                     SQLLEN new_buffer_size) except -1:
+        cdef:
+            SQLCHAR *new_data
+            SQLCHAR *old_data
+            unsigned i
+        new_data = <SQLCHAR*> \
+                cpython.PyMem_Malloc(self.num_elements * new_buffer_size)
+        old_data = self._data.as_bytes
+        for i in range(self.num_elements):
+            memcpy(new_data + new_buffer_size * i,
+                   old_data + self.buffer_size * i, self.buffer_size)
+        cpython.PyMem_Free(old_data)
+        self._data.as_raw = new_data
+        self.size = new_size
+        self.buffer_size = new_buffer_size
+        self.position = -1
+
+    cdef int _set_value(self, unsigned pos, object value) except -1:
+        if pos >= self.num_elements:
+            raise IndexError("array size exceeded")
+        if self.inconverter is not None:
+            value = self.inconverter(value)
+        if value is None:
+            self._length_or_indicator[pos] = SQL_NULL_DATA
+        else:
+            self._length_or_indicator[pos] = 0
+            self._set_value_helper(pos, value)
+
+    cdef int _set_value_helper(self, unsigned pos, object value) except -1:
+        cdef:
+            SQLSMALLINT c_data_type
+            SQLLEN temp_bytes_size
+            SQLUINTEGER temp_size
+            bytes temp_bytes
+        c_data_type = self.type._c_data_type
+        if c_data_type == SQL_C_CHAR:
+            if self.type is DB_TYPE_DECIMAL:
+                if not isinstance(value, decimal.Decimal):
+                    raise TypeError("expecting decimal.Decimal value")
+                value = str(value)
+            elif self.type is DB_TYPE_STRING \
+                    and not isinstance(value, str):
+                raise TypeError("expecting string")
+            temp_bytes = value.encode()
+            temp_bytes_size = <SQLLEN> len(temp_bytes)
+            if temp_bytes_size > self.buffer_size:
+                temp_size = <SQLUINTEGER> len(value)
+                self._resize(temp_size, temp_bytes_size)
+            self._length_or_indicator[pos] = <SQLINTEGER> temp_bytes_size
+            if temp_bytes_size > 0:
+                memcpy(self._data.as_bytes + self.buffer_size * pos,
+                       <SQLCHAR*> temp_bytes, temp_bytes_size)
+        elif c_data_type == SQL_C_DOUBLE:
+            if isinstance(value, float):
+                self._data.as_double[pos] = <double> value
+            elif isinstance(value, int):
+                self._data.as_double[pos] = \
+                        <double> cpython.PyLong_AsLong(value)
+            else:
+                raise TypeError("expecting a number")
+        elif c_data_type == SQL_C_SBIGINT:
+            if not isinstance(value, int):
+                raise TypeError("expecting integer")
+            self._data.as_bigint[pos] = cpython.PyLong_AsLongLong(value)
+        else:
+            message = f"missing set support for DB type {self.type}"
+            _raise_from_string(exceptions.NotSupportedError, message)
+
+    @property
+    def _description(self):
+        precision = self.size
+        scale = self.scale
+        if self.type is not DB_TYPE_BIGINT and self.type is not DB_TYPE_BIT \
+                and self.type is not DB_TYPE_INT \
+                and self.type is not DB_TYPE_DOUBLE \
+                and self.type is not DB_TYPE_DECIMAL:
+            precision = scale = 0
+        if self.type is DB_TYPE_BIGINT or self.type is DB_TYPE_INT:
+            display_size = self.size + 1
+        elif self.type is DB_TYPE_DOUBLE or self.type is DB_TYPE_DECIMAL:
+            display_size = self.size + 1
+            if scale > 0:
+                display_size += 1
+        else:
+            display_size = self.size
+        return (self.name, self.type, display_size, self.size, precision,
+                scale, self.nulls_allowed)
+
+    def getvalue(self, pos=0):
+        return self._get_value(pos)
+
+    def setvalue(self, pos, value):
+        self._set_value(pos, value)

@@ -21,6 +21,9 @@ cdef class ApiType:
     def __hash__(self):
         return hash(self.name)
 
+    def __reduce__(self):
+        return self.name
+
     def __repr__(self):
         return f"<ApiType {self.name}>"
 
@@ -41,6 +44,9 @@ cdef class DbType:
         self._buffer_size = buffer_size
         self._bytes_multiplier = bytes_multiplier
 
+    def __reduce__(self):
+        return self.name
+
     def __repr__(self):
         return f"<DbType {self.name}>"
 
@@ -51,8 +57,17 @@ cdef class DbType:
             return DB_TYPE_STRING
         elif data_type == SQL_BIGINT:
             return DB_TYPE_BIGINT
-        elif data_type == SQL_INTEGER:
+        elif data_type == SQL_INTEGER \
+                or data_type == SQL_SMALLINT \
+                or data_type == SQL_TINYINT:
             return DB_TYPE_INT
+        elif data_type == SQL_FLOAT \
+                or data_type == SQL_DOUBLE:
+            return DB_TYPE_DOUBLE
+        elif data_type == SQL_TYPE_DATE:
+            return DB_TYPE_DATE
+        elif data_type == SQL_NUMERIC or data_type == SQL_DECIMAL:
+            return DB_TYPE_DECIMAL
         _raise_from_string(exceptions.NotSupportedError,
                            f"SQL data type {data_type} not supported")
 
@@ -85,6 +100,35 @@ cdef class DbType:
         else:
             _raise_from_string(exceptions.NotSupportedError,
                                f"Python type {typ} not supported")
+
+    @staticmethod
+    cdef DbType _from_value(object value, SQLUINTEGER *size):
+        size[0] = 0
+        if value is None:
+            size[0] = 1
+            return DB_TYPE_STRING
+        elif isinstance(value, str):
+            size[0] = len(value)
+            return DB_TYPE_STRING
+        elif isinstance(value, bytes):
+            size[0] = len(value)
+            return DB_TYPE_BINARY
+        elif isinstance(value, bool):
+            return DB_TYPE_BIT
+        elif isinstance(value, int):
+            return DB_TYPE_BIGINT
+        elif isinstance(value, decimal.Decimal):
+            return DB_TYPE_DECIMAL
+        elif isinstance(value, float):
+            return DB_TYPE_DOUBLE
+        elif isinstance(value, datetime.time):
+            return DB_TYPE_TIME
+        elif isinstance(value, datetime.datetime):
+            return DB_TYPE_TIMESTAMP
+        elif isinstance(value, datetime.date):
+            return DB_TYPE_DATE
+        message = f"Python value of type {type(value)} not supported"
+        _raise_from_string(exceptions.NotSupportedError, message)
 
 
 # database types

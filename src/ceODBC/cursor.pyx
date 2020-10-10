@@ -36,9 +36,56 @@ cdef class Cursor:
             return self._create_row()
         raise StopIteration
 
+    cdef int _bind_parameters(self, tuple parameters, unsigned num_elements=1,
+                              unsigned pos=0) except -1:
+        cdef:
+            SQLUSMALLINT i, num_params, orig_num_vars
+            SQLSMALLINT var_direction
+            SQLRETURN rc
+            Var orig_var
+        num_params = <SQLUSMALLINT> cpython.PyTuple_GET_SIZE(parameters)
+        if self._bind_vars:
+            orig_num_vars = \
+                    <SQLUSMALLINT> cpython.PyList_GET_SIZE(self._bind_vars)
+        else:
+            orig_num_vars = 0
+            self._bind_vars = [None] * num_params
+        for i, value in enumerate(parameters):
+
+            # determine which variable should be bound
+            if i < orig_num_vars:
+                orig_var = <Var> cpython.PyList_GET_ITEM(self._bind_vars, i)
+            else:
+                orig_var = None
+            var = self._get_bind_var(num_elements, pos, value, orig_var)
+            if var is orig_var:
+                continue
+            if i < len(self._bind_vars):
+                self._bind_vars[i] = var
+            else:
+                self._bind_vars.append(var)
+
+            # if this variable has not been bound before, ensure that it is
+            # bound
+            if var._position < 0:
+                var._position = i + 1
+                if var.input and var.output:
+                    var_direction = SQL_PARAM_INPUT_OUTPUT
+                elif var.output:
+                    var_direction = SQL_PARAM_OUTPUT
+                else:
+                    var_direction = SQL_PARAM_INPUT
+                rc = SQLBindParameter(self._handle, var._position,
+                                      var_direction, var.type._c_data_type,
+                                      var.type._sql_data_type, var.size,
+                                      var.scale, var._data.as_raw,
+                                      var.buffer_size,
+                                      var._length_or_indicator)
+                _check_stmt_error(self._handle, rc)
+
     def _call(self, name, parameters, return_value=None):
 
-        # if only a single argument is passed and that arguemnt is a list or
+        # if only a single argument is passed and that argument is a list or
         # tuple, use that value as the parameters
         if len(parameters) == 1 and isinstance(parameters[0], (list, tuple)):
             parameters = parameters[0]
@@ -57,7 +104,7 @@ cdef class Cursor:
         statement = "".join(statement_parts) + "}"
 
         # execute statement
-        self.execute(statement, bind_values)
+        self.execute(statement, *bind_values)
 
     cdef inline int _check_can_fetch(self) except -1:
         self._check_open()
@@ -126,9 +173,17 @@ cdef class Cursor:
 
         return var
 
+    cdef Var _create_var_by_value(self, object value, unsigned num_elements):
+        cdef:
+            SQLUINTEGER size = 0
+            DbType dbtype
+        dbtype = DbType._from_value(value, &size)
+        return self._create_var(dbtype, num_elements, size)
+
     cdef Var _create_var_for_result_set(self, SQLUSMALLINT position):
         cdef:
-            SQLSMALLINT data_type, length, scale, nullable
+            SQLSMALLINT data_type, name_length, scale, nullable
+            SQLCHAR name[256]
             DbType dbtype
             object result
             SQLULEN size
@@ -136,8 +191,9 @@ cdef class Cursor:
             Var var
 
         # retrieve information about the column
-        rc = SQLDescribeColA(self._handle, position, NULL, 0, &length,
-                             &data_type, &size, &scale, &nullable)
+        rc = SQLDescribeColA(self._handle, position, name, sizeof(name),
+                             &name_length, &data_type, &size, &scale,
+                             &nullable)
         _check_stmt_error(self._handle, rc)
         dbtype = DbType._from_sql_data_type(data_type)
 
@@ -179,6 +235,11 @@ cdef class Cursor:
         # otherwise, create a variable using the fetch metadata
         else:
             var = self._create_var(dbtype, self._fetch_array_size, size)
+        if name_length > <SQLSMALLINT> sizeof(name):
+            name_length = <SQLSMALLINT> sizeof(name)
+        var.name = name[:name_length].decode()
+        var.scale = scale
+        var.nulls_allowed = nullable != SQL_NO_NULLS
 
         # bind the column
         var._position = position
@@ -187,7 +248,6 @@ cdef class Cursor:
                         var._length_or_indicator)
         _check_stmt_error(self._handle, rc)
         return var
-
 
     cdef int _fetch_rows(self) except -1:
         cdef:
@@ -200,6 +260,43 @@ cdef class Cursor:
         else:
             _check_stmt_error(self._handle, rc)
         self._buffer_index = 0
+
+    cdef Var _get_bind_var(self, unsigned num_elements, unsigned pos,
+                           object value, Var orig_var):
+        cdef:
+            object temp_value
+            unsigned i
+            Var var
+        if isinstance(value, Var):
+            return <Var> value
+        elif orig_var is not None:
+            if num_elements <= orig_var.num_elements:
+                var = orig_var
+            else:
+                var = self._create_var(orig_var.type, num_elements,
+                                       orig_var.size)
+                if pos > 0:
+                    for i in range(pos - 1):
+                        temp_value = orig_var._get_single_value(i)
+                        var._set_value(i, temp_value)
+                try:
+                    var._set_value(pos, value)
+                    return var
+                except:
+                    if pos > 0:
+                        raise
+        var = self._create_var_by_value(value, num_elements)
+        var._set_value(pos, value)
+        return var
+
+    cdef tuple _massage_args(self, args):
+        """
+        if only a single argument is passed and that argument is a list or
+        tuple, return that value
+        """
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            return tuple(args[0])
+        return args
 
     cdef int _more_rows(self) except -1:
         if self._buffer_index >= self._buffer_rowcount:
@@ -281,12 +378,22 @@ cdef class Cursor:
         _check_stmt_error(self._handle, rc)
         self._handle = NULL
 
+    @property
+    def description(self):
+        self._check_open()
+        if self._fetch_vars is None:
+            return None
+        return [v._description for v in self._fetch_vars]
+
     def execute(self, statement, *args):
         cdef:
             SQLLEN rowcount
             SQLRETURN rc
         self._check_open()
         self._prepare(statement)
+        args = self._massage_args(args)
+        self._bind_parameters(args)
+
         with nogil:
             rc = SQLExecute(self._handle)
         if rc == SQL_NO_DATA:
@@ -320,3 +427,44 @@ cdef class Cursor:
         self._check_can_fetch()
         if self._more_rows() > 0:
             return self._create_row()
+
+    def setinputsizes(self, *args):
+        cdef:
+            tuple massaged_args
+            ssize_t i, size
+            list bind_vars
+            DbType dbtype
+            object value
+            Var var
+        self._check_open()
+        massaged_args = self._massage_args(args)
+        bind_vars = [None] * len(massaged_args)
+        for i, value in enumerate(massaged_args):
+            if value is None:
+                var = None
+            elif isinstance(value, Var):
+                var = value
+            else:
+                if isinstance(value, int):
+                    dbtype = DB_TYPE_STRING
+                    size = value
+                else:
+                    dbtype = DbType._from_type(value)
+                    size = 0
+                var = self._create_var(dbtype, 1, size)
+            bind_vars[i] = var
+        self._bind_vars = bind_vars
+
+    def var(self, type, size=0, scale=0, arraysize=1, inconverter=None,
+            outconverter=None, input=True, output=False):
+        cdef:
+            DbType dbtype
+            Var var
+        dbtype = DbType._from_type(type)
+        var = self._create_var(dbtype, arraysize, size)
+        var.scale = scale
+        var.inconverter = inconverter
+        var.outconverter = outconverter
+        var.input = input
+        var.output = output
+        return var
