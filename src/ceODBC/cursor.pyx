@@ -454,6 +454,7 @@ cdef class Cursor:
                 var = self._create_var(dbtype, 1, size)
             bind_vars[i] = var
         self._bind_vars = bind_vars
+        return bind_vars
 
     def var(self, type, size=0, scale=0, arraysize=1, inconverter=None,
             outconverter=None, input=True, output=False):
