@@ -249,6 +249,23 @@ cdef class Cursor:
         _check_stmt_error(self._handle, rc)
         return var
 
+    cdef object _execute(self):
+        cdef:
+            SQLLEN rowcount
+            SQLRETURN rc
+        with nogil:
+            rc = SQLExecute(self._handle)
+        if rc == SQL_NO_DATA:
+            self._rowcount = 0
+            return
+        _check_stmt_error(self._handle, rc)
+        self._prepare_result_set()
+        if self._fetch_vars:
+            return self
+        rc = SQLRowCount(self._handle, &rowcount)
+        _check_stmt_error(self._handle, rc)
+        self.rowcount = <unsigned long> rowcount
+
     cdef int _fetch_rows(self) except -1:
         cdef:
             SQLRETURN rc
@@ -277,14 +294,14 @@ cdef class Cursor:
                                        orig_var.size)
                 if pos > 0:
                     for i in range(pos - 1):
-                        temp_value = orig_var._get_single_value(i)
+                        temp_value = orig_var._get_value(i)
                         var._set_value(i, temp_value)
-                try:
-                    var._set_value(pos, value)
-                    return var
-                except:
-                    if pos > 0:
-                        raise
+            try:
+                var._set_value(pos, value)
+                return var
+            except:
+                if pos > 0:
+                    raise
         var = self._create_var_by_value(value, num_elements)
         var._set_value(pos, value)
         return var
@@ -386,26 +403,36 @@ cdef class Cursor:
         return [v._description for v in self._fetch_vars]
 
     def execute(self, statement, *args):
-        cdef:
-            SQLLEN rowcount
-            SQLRETURN rc
         self._check_open()
         self._prepare(statement)
         args = self._massage_args(args)
         self._bind_parameters(args)
+        return self._execute()
 
-        with nogil:
-            rc = SQLExecute(self._handle)
-        if rc == SQL_NO_DATA:
-            self._rowcount = 0
-            return
+    def executemany(self, statement, args):
+        cdef:
+            unsigned num_rows
+            object row_args
+            SQLULEN temp
+            SQLRETURN rc
+            ssize_t i
+        if statement is not None and not isinstance(statement, str):
+            raise TypeError("expecting None or a string")
+        if not isinstance(args, list):
+            raise TypeError("expecting list")
+        self._check_open()
+        self._prepare(statement)
+        num_rows = <unsigned> len(args)
+        for i, row_args in enumerate(args):
+            if not isinstance(row_args, (list, tuple)):
+                message = "expecting a list of lists or tuples"
+                _raise_from_string(exceptions.InterfaceError, message)
+            self._bind_parameters(tuple(row_args), num_rows, i)
+        temp = <SQLULEN> num_rows
+        rc = SQLSetStmtAttr(self._handle, SQL_ATTR_PARAMSET_SIZE,
+                <SQLPOINTER> temp, SQL_IS_UINTEGER)
         _check_stmt_error(self._handle, rc)
-        self._prepare_result_set()
-        if self._fetch_vars:
-            return self
-        rc = SQLRowCount(self._handle, &rowcount)
-        _check_stmt_error(self._handle, rc)
-        self.rowcount = <unsigned long> rowcount
+        return self._execute()
 
     def fetchall(self):
         self._check_can_fetch()
@@ -427,6 +454,10 @@ cdef class Cursor:
         self._check_can_fetch()
         if self._more_rows() > 0:
             return self._create_row()
+
+    def prepare(self, statement):
+        self._check_open()
+        self._prepare(statement)
 
     def setinputsizes(self, *args):
         cdef:

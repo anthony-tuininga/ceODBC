@@ -60,5 +60,92 @@ class TestCase(base.BaseTestCase):
                           "select y")
         self.assertRaises(ceODBC.InterfaceError, self.cursor.fetchall)
 
+    def test_1207_executemany(self):
+        "1207 - test executing a statement multiple times"
+        self.cursor.execute("delete from TestTempTable")
+        rows = [ [n] for n in range(230) ]
+        self.cursor.arraysize = 500
+        statement = "insert into TestTempTable (IntCol) values (?)"
+        self.cursor.executemany(statement, rows)
+        self.connection.commit()
+        self.cursor.execute("select count(*) from TestTempTable")
+        count, = self.cursor.fetchone()
+        self.assertEqual(count, len(rows))
+
+    def test_1208_executemany_with_prepare(self):
+        "1208 - test executing a statement multiple times (with prepare)"
+        self.cursor.execute("delete from TestTempTable")
+        rows = [ [n] for n in range(225) ]
+        self.cursor.arraysize = 100
+        statement = "insert into TestTempTable (IntCol) values (?)"
+        self.cursor.prepare(statement)
+        self.cursor.executemany(None, rows)
+        self.connection.commit()
+        self.cursor.execute("select count(*) from TestTempTable")
+        count, = self.cursor.fetchone()
+        self.assertEqual(count, len(rows))
+
+    def test_1209_executemany_with_rebind(self):
+        "1209 - test executing a statement multiple times (with rebind)"
+        self.cursor.execute("delete from TestTempTable")
+        rows = [ [n] for n in range(235) ]
+        self.cursor.arraysize = 100
+        statement = "insert into TestTempTable (IntCol) values (?)"
+        self.cursor.executemany(statement, rows[:50])
+        self.cursor.executemany(statement, rows[50:])
+        self.connection.commit()
+        self.cursor.execute("select count(*) from TestTempTable")
+        count, = self.cursor.fetchone()
+        self.assertEqual(count, len(rows))
+
+    def test_1210_executemany_with_resize(self):
+        "1210 - test executing a statement multiple times (with resize)"
+        self.cursor.execute("delete from TestTempTable")
+        rows = [ ( 1, "First" ),
+                 ( 2, "Second" ),
+                 ( 3, "Third" ),
+                 ( 4, "Fourth" ),
+                 ( 5, "Fifth" ),
+                 ( 6, "Sixth" ),
+                 ( 7, "Seventh" ) ]
+        self.cursor.setinputsizes(int, 100)
+        sql = "insert into TestTempTable (IntCol, StringCol) values (?, ?)"
+        self.cursor.executemany(sql, rows)
+        self.cursor.execute("select count(*) from TestTempTable")
+        count, = self.cursor.fetchone()
+        self.assertEqual(count, len(rows))
+
+    def test_1211_executemany_with_execption(self):
+        "1211 - test executing a statement multiple times (with exception)"
+        cursor = self.connection.cursor()
+        cursor.execute("delete from TestTempTable")
+        self.connection.commit()
+        rows = [(1,), (2,), (3,), (2,), (5,)]
+        statement = "insert into TestTempTable (IntCol) values (?)"
+        self.assertRaises(ceODBC.DatabaseError, self.cursor.executemany,
+                          statement, rows)
+
+    def test_1212_prepare(self):
+        "1212 - test preparing a statement and executing it multiple times"
+        self.assertEqual(self.cursor.statement, None)
+        statement = "select ? + 5"
+        self.cursor.prepare(statement)
+        self.assertEqual(self.cursor.statement, statement)
+        self.cursor.execute(None, 2)
+        result, = self.cursor.fetchone()
+        self.assertEqual(result, 7)
+        self.cursor.execute(None, 7)
+        result, = self.cursor.fetchone()
+        self.assertEqual(result, 12)
+        self.cursor.execute("select ? + 3;", 12)
+        result, = self.cursor.fetchone()
+        self.assertEqual(result, 15)
+
+    def test_1213_bad_prepare(self):
+        "1213 - test that subsequent executes succeed after bad prepare"
+        self.assertRaises(ceODBC.DatabaseError,
+                self.cursor.execute, "select nullx")
+        self.cursor.execute("select null")
+
 if __name__ == "__main__":
     base.run_test_cases()
