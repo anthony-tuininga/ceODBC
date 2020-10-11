@@ -5,6 +5,7 @@
 
 from .version import __version__
 from .constants import *
+from .constructors import *
 from .exceptions import *
 
 from .driver import Connection
