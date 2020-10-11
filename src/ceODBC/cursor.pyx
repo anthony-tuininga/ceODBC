@@ -129,8 +129,8 @@ cdef class Cursor:
             cpython.PyTuple_SET_ITEM(row, i, column)
         self._buffer_index += 1
         self.rowcount += 1
-        if self.rowfactory:
-            return self.rowfactory(row)
+        if self.rowfactory is not None:
+            return self.rowfactory(*row)
         return row
 
     cdef Var _create_var(self, DbType dbtype, unsigned num_elements,
@@ -343,6 +343,7 @@ cdef class Cursor:
 
         # clear previous result set parameters
         self._fetch_vars = None
+        self.rowfactory = None
 
         # prepare statement
         statement_bytes = self.statement.encode()
