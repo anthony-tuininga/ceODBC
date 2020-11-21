@@ -108,6 +108,7 @@ cdef class Var:
 
     cdef int _set_value_helper(self, unsigned pos, object value) except -1:
         cdef:
+            TIMESTAMP_STRUCT *as_timestamp
             SQLSMALLINT c_data_type
             SQLLEN temp_bytes_size
             SQLUINTEGER temp_size
@@ -145,10 +146,32 @@ cdef class Var:
             self._data.as_bigint[pos] = cpython.PyLong_AsLongLong(value)
         elif c_data_type == SQL_C_TYPE_DATE:
             as_date = &self._data.as_date[pos]
-            if isinstance(value, (datetime.datetime, datetime.date)):
+            if isinstance(value, datetime.datetime):
                 as_date.year = cydatetime.datetime_year(value)
                 as_date.month = cydatetime.datetime_month(value)
                 as_date.day = cydatetime.datetime_day(value)
+            elif isinstance(value, datetime.date):
+                as_date.year = cydatetime.date_year(value)
+                as_date.month = cydatetime.date_month(value)
+                as_date.day = cydatetime.date_day(value)
+            else:
+                raise TypeError("expecting datetime.datetime or datetime.date")
+        elif c_data_type == SQL_C_TYPE_TIMESTAMP:
+            as_timestamp = &self._data.as_timestamp[pos]
+            if isinstance(value, datetime.datetime):
+                as_timestamp.year = cydatetime.datetime_year(value)
+                as_timestamp.month = cydatetime.datetime_month(value)
+                as_timestamp.day = cydatetime.datetime_day(value)
+                as_timestamp.hour = cydatetime.datetime_hour(value)
+                as_timestamp.minute = cydatetime.datetime_minute(value)
+                as_timestamp.second = cydatetime.datetime_second(value)
+            elif isinstance(value, datetime.date):
+                as_timestamp.year = cydatetime.date_year(value)
+                as_timestamp.month = cydatetime.date_month(value)
+                as_timestamp.day = cydatetime.date_day(value)
+                as_timestamp.hour = 0
+                as_timestamp.minute = 0
+                as_timestamp.second = 0
             else:
                 raise TypeError("expecting datetime.datetime or datetime.date")
         else:
