@@ -111,6 +111,7 @@ cdef class Var:
             SQLSMALLINT c_data_type
             SQLLEN temp_bytes_size
             SQLUINTEGER temp_size
+            DATE_STRUCT *as_date
             bytes temp_bytes
         c_data_type = self.type._c_data_type
         if c_data_type == SQL_C_CHAR:
@@ -142,6 +143,14 @@ cdef class Var:
             if not isinstance(value, int):
                 raise TypeError("expecting integer")
             self._data.as_bigint[pos] = cpython.PyLong_AsLongLong(value)
+        elif c_data_type == SQL_C_TYPE_DATE:
+            as_date = &self._data.as_date[pos]
+            if isinstance(value, (datetime.datetime, datetime.date)):
+                as_date.year = cydatetime.datetime_year(value)
+                as_date.month = cydatetime.datetime_month(value)
+                as_date.day = cydatetime.datetime_day(value)
+            else:
+                raise TypeError("expecting datetime.datetime or datetime.date")
         else:
             message = f"missing set support for DB type {self.type}"
             _raise_from_string(exceptions.NotSupportedError, message)
