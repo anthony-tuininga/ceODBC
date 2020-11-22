@@ -11,7 +11,7 @@ import decimal
 class TestCase(base.BaseTestCase):
 
     def setUp(self):
-        base.BaseTestCase.setUp(self)
+        super().setUp()
         self.raw_data = [
                 (1, 25, decimal.Decimal("125.25")),
                 (2, 1234567890123456, decimal.Decimal("245.37")),

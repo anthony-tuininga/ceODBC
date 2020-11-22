@@ -11,7 +11,7 @@ import decimal
 class TestCase(base.BaseTestCase):
 
     def setUp(self):
-        base.BaseTestCase.setUp(self)
+        super().setUp()
         self.raw_data = [
                 (1, 'String 1', None),
                 (2, 'String 2B', 'Nullable One'),
