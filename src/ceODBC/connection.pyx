@@ -15,7 +15,11 @@ cdef class Connection:
 
     def __dealloc__(self):
         if self._handle:
-            SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
+            with nogil:
+                SQLEndTran(SQL_HANDLE_DBC, self._handle, SQL_ROLLBACK)
+                SQLDisconnect(self._handle)
+                SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
+            self._handle = NULL
         if self._env_handle:
             SQLFreeHandle(SQL_HANDLE_ENV, self._env_handle)
 
