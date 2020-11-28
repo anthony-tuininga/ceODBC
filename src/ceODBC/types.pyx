@@ -68,6 +68,8 @@ cdef class DbType:
             return DB_TYPE_DATE
         elif data_type == SQL_NUMERIC or data_type == SQL_DECIMAL:
             return DB_TYPE_DECIMAL
+        elif data_type == SQL_TYPE_TIMESTAMP:
+            return DB_TYPE_TIMESTAMP
         _raise_from_string(exceptions.NotSupportedError,
                            f"SQL data type {data_type} not supported")
 

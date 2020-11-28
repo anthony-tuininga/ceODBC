@@ -54,8 +54,9 @@ cdef class Var:
 
     cdef object _get_value_helper(self, unsigned pos):
         cdef:
+            TIMESTAMP_STRUCT *as_timestamp
+            DATE_STRUCT *as_date
             SQLSMALLINT c_data_type
-            DATE_STRUCT *date_value
             char *ptr
         c_data_type = self.type._c_data_type
         if c_data_type == SQL_C_CHAR:
@@ -71,9 +72,17 @@ cdef class Var:
         elif c_data_type == SQL_C_DOUBLE:
             return self._data.as_double[pos]
         elif c_data_type == SQL_C_TYPE_DATE:
-            date_value = &self._data.as_date[pos]
-            return cydatetime.date_new(date_value.year, date_value.month,
-                                       date_value.day)
+            as_date = &self._data.as_date[pos]
+            return cydatetime.date_new(as_date.year, as_date.month,
+                                       as_date.day)
+        elif c_data_type == SQL_C_TYPE_TIMESTAMP:
+            as_timestamp = &self._data.as_timestamp[pos]
+            return cydatetime.datetime_new(as_timestamp.year,
+                                           as_timestamp.month,
+                                           as_timestamp.day,
+                                           as_timestamp.hour,
+                                           as_timestamp.minute,
+                                           as_timestamp.second, 0, None)
         message = f"missing get support for DB type {self.type}"
         _raise_from_string(exceptions.NotSupportedError, message)
 
@@ -158,6 +167,7 @@ cdef class Var:
                 raise TypeError("expecting datetime.datetime or datetime.date")
         elif c_data_type == SQL_C_TYPE_TIMESTAMP:
             as_timestamp = &self._data.as_timestamp[pos]
+            as_timestamp.fraction = 0
             if isinstance(value, datetime.datetime):
                 as_timestamp.year = cydatetime.datetime_year(value)
                 as_timestamp.month = cydatetime.datetime_month(value)
