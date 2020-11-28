@@ -7,10 +7,8 @@ create table TestDates (
     IntCol                              integer not null,
     DateCol                             date not null,
     TimestampCol                        timestamp not null,
-    TimestampTZCol                      timestamptz not null,
     NullableDateCol                     date,
-    NullableTimestampCol                timestamp,
-    NullableTimestampTZCol              timestamptz
+    NullableTimestampCol                timestamp
 );
 
 create table TestNumbers (
@@ -80,17 +78,15 @@ insert into TestStrings
 values (4, 'String 4YYY', 'Nullable Two');
 
 insert into TestDates
-values (1, '2020-02-08', '2019-12-20 18:35:25', '2018-11-18 23:59:59',
-           '1969-07-29', '1988-01-25 08:24:13', '1999-12-31 17:00:05');
+values (1, '2020-02-08', '2019-12-20 18:35:25',
+           '1969-07-29', '1988-01-25 08:24:13');
 
 insert into TestDates
-values (2, '1978-02-12', '2009-02-20 08:23:12', '2016-09-15 11:47:46',
-           null, null, null);
+values (2, '1978-02-12', '2009-02-20 08:23:12', null, null);
 
 insert into TestDates
-values (3, '2000-06-18', '2007-01-28 06:22:11', '2008-05-27 01:25:11',
-           '1988-06-30', '1998-04-29 11:35:24', '2005-08-15 22:00:00');
+values (3, '2000-06-18', '2007-01-28 06:22:11',
+           '1988-06-30', '1998-04-29 11:35:24');
 
 insert into TestDates
-values (4, '1999-10-05', '2009-02-19 00:01:02', '2020-11-28 10:51:23',
-           null, null, null);
+values (4, '1999-10-05', '2009-02-19 00:01:02', null, null);

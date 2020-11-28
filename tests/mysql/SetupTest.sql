@@ -3,6 +3,14 @@
  *   Creates the objects used for testing ceODBC with a MySQL database.
  /---------------------------------------------------------------------------*/
 
+create table TestDates (
+    IntCol                              integer not null,
+    DateCol                             date not null,
+    TimestampCol                        timestamp not null,
+    NullableDateCol                     date,
+    NullableTimestampCol                timestamp
+) engine=InnoDB;
+
 create table TestNumbers (
     IntCol              integer not null,
     BigIntCol           bigint,
@@ -70,5 +78,19 @@ values (3, 'String 3XX', null);
 
 insert into TestStrings
 values (4, 'String 4YYY', 'Nullable Two');
+
+insert into TestDates
+values (1, '2020-02-08', '2019-12-20 18:35:25',
+           '1969-07-29', '1988-01-25 08:24:13');
+
+insert into TestDates
+values (2, '1978-02-12', '2009-02-20 08:23:12', null, null);
+
+insert into TestDates
+values (3, '2000-06-18', '2007-01-28 06:22:11',
+           '1988-06-30', '1998-04-29 11:35:24');
+
+insert into TestDates
+values (4, '1999-10-05', '2009-02-19 00:01:02', null, null);
 
 commit;
