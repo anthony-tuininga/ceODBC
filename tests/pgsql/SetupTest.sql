@@ -14,6 +14,8 @@ create table TestDates (
 create table TestNumbers (
     IntCol              integer not null,
     BigIntCol           bigint,
+    FloatCol            float,
+    DoubleCol           double precision,
     DecimalCol          decimal(6, 2)
 );
 
@@ -52,16 +54,16 @@ $$ LANGUAGE plpgsql;
 delete from TestNumbers;
 
 insert into TestNumbers
-values (1, 25, 125.25);
+values (1, 25, 5.2, 7.3, 125.25);
 
 insert into TestNumbers
-values (2, 1234567890123456, 245.37);
+values (2, 1234567890123456, 25.1, 17.8, 245.37);
 
 insert into TestNumbers
-values (3, 9876543210, 25.99);
+values (3, 9876543210, 37.8, 235.19, 25.99);
 
 insert into TestNumbers
-values (4, 98765432101234, 445.79);
+values (4, 98765432101234, 77.27, 922.78, 445.79);
 
 delete from TestStrings;
 
@@ -80,6 +82,8 @@ values (4, 'String 4YYY', 'Nullable Two');
 insert into TestDates
 values (1, '2020-02-08', '2019-12-20 18:35:25',
            '1969-07-29', '1988-01-25 08:24:13');
+
+delete from TestDates;
 
 insert into TestDates
 values (2, '1978-02-12', '2009-02-20 08:23:12', null, null);

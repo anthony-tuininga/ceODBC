@@ -13,10 +13,10 @@ class TestCase(base.BaseTestCase):
     def setUp(self):
         super().setUp()
         self.raw_data = [
-                (1, 25, decimal.Decimal("125.25")),
-                (2, 1234567890123456, decimal.Decimal("245.37")),
-                (3, 9876543210, decimal.Decimal("25.99")),
-                (4, 98765432101234, decimal.Decimal("445.79"))
+                (1, 25, 5.2, 7.3, decimal.Decimal("125.25")),
+                (2, 1234567890123456, 25.1, 17.8, decimal.Decimal("245.37")),
+                (3, 9876543210, 37.8, 235.19, decimal.Decimal("25.99")),
+                (4, 98765432101234, 77.27, 922.78, decimal.Decimal("445.79"))
         ]
         self.data_by_key = {}
         for data_tuple in self.raw_data:
@@ -76,10 +76,24 @@ class TestCase(base.BaseTestCase):
     def test_1306_cursor_description(self):
         "1306 - test cursor description is accurate"
         self.cursor.execute("select * from TestNumbers")
-        self.assertEqual(self.cursor.description,
-                [ ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
-                  ('bigintcol', ceODBC.NUMBER, 20, 19, 19, 0, True),
-                  ('decimalcol', ceODBC.NUMBER, 8, 6, 6, 2, True) ])
+        dsn_type = base.get_dsn_type()
+        if dsn_type == "pgsql":
+            expected_data = [
+                ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
+                ('bigintcol', ceODBC.NUMBER, 20, 19, 19, 0, True),
+                ('floatcol', ceODBC.NUMBER, 18, 17, 17, 0, True),
+                ('doublecol', ceODBC.NUMBER, 18, 17, 17, 0, True),
+                ('decimalcol', ceODBC.NUMBER, 8, 6, 6, 2, True)
+            ]
+        else:
+            expected_data = [
+                ('IntCol', ceODBC.NUMBER, 11, 10, 10, 0, False),
+                ('BigIntCol', ceODBC.NUMBER, 20, 19, 19, 0, True),
+                ('FloatCol', ceODBC.NUMBER, 8, 7, 7, 0, True),
+                ('DoubleCol', ceODBC.NUMBER, 16, 15, 15, 0, True),
+                ('DecimalCol', ceODBC.NUMBER, 8, 6, 6, 2, True)
+            ]
+        self.assertEqual(self.cursor.description, expected_data)
 
     def test_1307_fetchall(self):
         "1307 - test that fetching all of the data returns the correct results"

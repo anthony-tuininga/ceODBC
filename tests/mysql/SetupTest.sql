@@ -25,12 +25,12 @@ create table TestStrings (
     NullableCol         varchar(50)
 ) engine=InnoDB;
 
-create table TestExecuteMany (
+create table TestTempTable (
     IntCol              integer not null,
     StringCol           varchar(50)
 ) engine=InnoDB;
 
-alter table TestExecuteMany add constraint TestExecuteMany_pk
+alter table TestTempTable add constraint TestTempTable_pk
 primary key (IntCol);
 
 DELIMITER //
