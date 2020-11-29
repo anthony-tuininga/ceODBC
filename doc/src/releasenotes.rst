@@ -16,6 +16,7 @@ Version 3.0 (In Development)
     for more details.
 #)  Added better support for 64-bit Python.
 #)  Eliminated compiler warnings; other minor tweaks to improve error handling.
+#)  Dropped attribute `ceODBC.buildtime`.
 
 
 Older versions

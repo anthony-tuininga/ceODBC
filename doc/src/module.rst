@@ -14,18 +14,17 @@ Module Interface
 .. function:: Connection(dsn, autocommit=False)
               connect(dsn, autocommit=False)
 
-   Constructor for creating a connection to the database. Return a Connection
-   object (\ref{connobj}). The only required argument is the DSN in the format
-   that ODBC expects. The autocommit flag can be set in the constructor or it
-   can be manipulated after the connection has been established. If you are
-   using a driver that does not handle transactions, ensure that this value is
-   set to true or you may get a "driver not capable" exception.
+   Constructor for creating a :ref:`connection <connobj>`. The only required
+   argument is the DSN in the format that ODBC expects. The autocommit flag can
+   be set in the constructor or it can be manipulated after the connection has
+   been established. If you are using a driver that does not handle
+   transactions, ensure that this value is set to True or you may get a "driver
+   not capable" exception.
 
 
 .. function:: Cursor(connection)
 
-   Constructor for creating a cursor.  Return a new Cursor object
-   (:ref:`cursorobj`) using the connection.
+   Constructor for creating a :ref:`cursor <cursorobj>` using the connection.
 
    .. note::
 
@@ -77,15 +76,6 @@ Constants
 .. data:: apilevel
 
    String constant stating the supported DB API level. Currently '2.0'.
-
-
-.. data:: buildtime
-
-   String constant stating the time when the binary was built.
-
-   .. note::
-
-      This attribute is an extension to the DB API definition.
 
 
 .. data:: BINARY
