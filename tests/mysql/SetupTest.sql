@@ -27,7 +27,7 @@ create table TestStrings (
 
 create table TestTempTable (
     IntCol              integer not null,
-    StringCol           varchar(50)
+    StringCol           varchar(255)
 ) engine=InnoDB;
 
 alter table TestTempTable add constraint TestTempTable_pk

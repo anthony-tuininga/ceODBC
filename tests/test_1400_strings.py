@@ -62,10 +62,20 @@ class TestCase(base.BaseTestCase):
     def test_1404_CursorDescription(self):
         "1404 - test cursor description is accurate"
         self.cursor.execute("select * from TestStrings")
-        self.assertEqual(self.cursor.description,
-                [ ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
-                  ('stringcol', ceODBC.STRING, 20, 20, 0, 0, False),
-                  ('nullablecol', ceODBC.STRING, 50, 50, 0, 0, True) ])
+        dsn_type = base.get_dsn_type()
+        if dsn_type == "pgsql":
+            expected_data = [
+                ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
+                ('stringcol', ceODBC.STRING, 20, 20, 0, 0, False),
+                ('nullablecol', ceODBC.STRING, 50, 50, 0, 0, True)
+            ]
+        else:
+            expected_data = [
+                ('IntCol', ceODBC.NUMBER, 11, 10, 10, 0, False),
+                ('StringCol', ceODBC.STRING, 20, 20, 0, 0, False),
+                ('NullableCol', ceODBC.STRING, 50, 50, 0, 0, True)
+            ]
+        self.assertEqual(self.cursor.description, expected_data)
 
     def test_1405_fetchall(self):
         "1405 - test that fetching all of the data returns the correct results"
