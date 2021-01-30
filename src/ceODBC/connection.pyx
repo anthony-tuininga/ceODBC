@@ -121,6 +121,29 @@ cdef class Connection:
         SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
         self._handle = NULL
 
+    def columns(self, catalog=None, schema=None, table=None, column=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer table_buf = StringBuffer()
+            StringBuffer column_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        table_buf.set_value(table)
+        column_buf.set_value(column)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLColumns(cursor._handle, catalog_buf.ptr,
+                            catalog_buf.length, schema_buf.ptr,
+                            schema_buf.length, table_buf.ptr, table_buf.length,
+                            column_buf.ptr, column_buf.length)
+        _check_conn_error(self._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
     def commit(self):
         cdef SQLRETURN rc
         self._check_connected()

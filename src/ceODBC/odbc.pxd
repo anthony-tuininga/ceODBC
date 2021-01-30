@@ -109,6 +109,12 @@ cdef extern from "<sql.h>":
 
     SQLRETURN SQLCloseCursor(SQLHSTMT StatementHandle) nogil
 
+    SQLRETURN SQLColumns(SQLHSTMT StatementHandle, SQLCHAR *CatalogName,
+                         SQLSMALLINT NameLength1, SQLCHAR *SchemaName,
+                         SQLSMALLINT NameLength2, SQLCHAR *TableName,
+                         SQLSMALLINT NameLength3, SQLCHAR *ColumnName,
+                         SQLSMALLINT NameLength4) nogil
+
     SQLRETURN SQLDescribeColA(SQLHSTMT hstmt, SQLUSMALLINT icol,
                               SQLCHAR *szColName, SQLSMALLINT cbColNameMax,
                               SQLSMALLINT *pcbColName, SQLSMALLINT *pfSqlType,

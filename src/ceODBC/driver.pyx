@@ -5,6 +5,7 @@
 
 # cython: language_level=3
 
+cimport cython
 cimport cpython
 cimport cpython.datetime as cydatetime
 
@@ -23,6 +24,7 @@ from . import exceptions
 include "odbc.pxd"
 
 include "errors.pyx"
+include "string_buffer.pyx"
 include "types.pyx"
 include "connection.pyx"
 include "cursor.pyx"
