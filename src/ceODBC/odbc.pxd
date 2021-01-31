@@ -157,6 +157,12 @@ cdef extern from "<sql.h>":
     SQLRETURN SQLSetStmtAttr(SQLHSTMT StatementHandle, SQLINTEGER Attribute,
                              SQLPOINTER Value, SQLINTEGER StringLength) nogil
 
+    SQLRETURN SQLTables(SQLHSTMT StatementHandle, SQLCHAR *CatalogName,
+                        SQLSMALLINT NameLength1, SQLCHAR *SchemaName,
+                        SQLSMALLINT NameLength2, SQLCHAR *TableName,
+                        SQLSMALLINT NameLength3, SQLCHAR *TableType,
+                        SQLSMALLINT NameLength4) nogil
+
 
 cdef extern from "<sqlext.h>":
 
@@ -185,9 +191,55 @@ cdef extern from "<sqlext.h>":
                                SQLSMALLINT ibScale, SQLPOINTER rgbValue,
                                SQLLEN cbValueMax, SQLLEN *pcbValue) nogil
 
+    SQLRETURN SQLColumnPrivileges(SQLHSTMT hstmt, SQLCHAR *szCatalogName,
+                                  SQLSMALLINT cbCatalogName,
+                                  SQLCHAR *szSchemaName,
+                                  SQLSMALLINT cbSchemaName,
+                                  SQLCHAR *szTableName,
+                                  SQLSMALLINT cbTableName,
+                                  SQLCHAR *szColumnName,
+                                  SQLSMALLINT cbColumnName) nogil
+
     SQLRETURN SQLDriverConnectA(SQLHDBC hdbc, SQLHWND hwnd,
                                 SQLCHAR *szConnStrIn, SQLSMALLINT cbConnStrIn,
                                 SQLCHAR *szConnStrOut,
                                 SQLSMALLINT cbConnStrOutMax,
                                 SQLSMALLINT *pcbConnStrOut,
                                 SQLUSMALLINT fDriverCompletion) nogil
+
+    SQLRETURN SQLForeignKeys(SQLHSTMT hstmt, SQLCHAR *szPkCatalogName,
+                             SQLSMALLINT cbPkCatalogName,
+                             SQLCHAR *szPkSchemaName,
+                             SQLSMALLINT cbPkSchemaName,
+                             SQLCHAR *szPkTableName, SQLSMALLINT cbPkTableName,
+                             SQLCHAR *szFkCatalogName,
+                             SQLSMALLINT cbFkCatalogName,
+                             SQLCHAR *szFkSchemaName,
+                             SQLSMALLINT cbFkSchemaName,
+                             SQLCHAR *szFkTableName,
+                             SQLSMALLINT cbFkTableName) nogil
+
+    SQLRETURN SQLPrimaryKeys(SQLHSTMT hstmt, SQLCHAR *szCatalogName,
+                             SQLSMALLINT cbCatalogName, SQLCHAR *szSchemaName,
+                             SQLSMALLINT cbSchemaName, SQLCHAR *szTableName,
+                             SQLSMALLINT cbTableName) nogil
+
+    SQLRETURN SQLProcedures(SQLHSTMT hstmt, SQLCHAR *szCatalogName,
+                            SQLSMALLINT cbCatalogName, SQLCHAR *szSchemaName,
+                            SQLSMALLINT cbSchemaName, SQLCHAR *szProcName,
+                            SQLSMALLINT cbProcName) nogil
+
+    SQLRETURN SQLProcedureColumns(SQLHSTMT hstmt, SQLCHAR *szCatalogName,
+                                  SQLSMALLINT cbCatalogName,
+                                  SQLCHAR *szSchemaName,
+                                  SQLSMALLINT cbSchemaName,
+                                  SQLCHAR *szProcName, SQLSMALLINT cbProcName,
+                                  SQLCHAR *szColumnName,
+                                  SQLSMALLINT cbColumnName) nogil
+
+    SQLRETURN SQLTablePrivileges(SQLHSTMT hstmt, SQLCHAR *szCatalogName,
+                                 SQLSMALLINT cbCatalogName,
+                                 SQLCHAR *szSchemaName,
+                                 SQLSMALLINT cbSchemaName,
+                                 SQLCHAR *szTableName,
+                                 SQLSMALLINT cbTableName) nogil

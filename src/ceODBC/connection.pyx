@@ -140,7 +140,32 @@ cdef class Connection:
                             catalog_buf.length, schema_buf.ptr,
                             schema_buf.length, table_buf.ptr, table_buf.length,
                             column_buf.ptr, column_buf.length)
-        _check_conn_error(self._handle, rc)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
+    def columnprivileges(self, catalog=None, schema=None, table=None,
+                         column=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer table_buf = StringBuffer()
+            StringBuffer column_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        table_buf.set_value(table)
+        column_buf.set_value(column)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLColumnPrivileges(cursor._handle, catalog_buf.ptr,
+                                     catalog_buf.length, schema_buf.ptr,
+                                     schema_buf.length, table_buf.ptr,
+                                     table_buf.length, column_buf.ptr,
+                                     column_buf.length)
+        _check_stmt_error(cursor._handle, rc)
         cursor._prepare_result_set()
         return cursor
 
@@ -162,9 +187,150 @@ cdef class Connection:
         _check_conn_error(self._handle, rc)
         return cursor
 
+    def foreignkeys(self, pkcatalog=None, pkschema=None, pktable=None,
+                    fkcatalog=None, fkschema=None, fktable=None):
+        cdef:
+            StringBuffer pkcatalog_buf = StringBuffer()
+            StringBuffer pkschema_buf = StringBuffer()
+            StringBuffer pktable_buf = StringBuffer()
+            StringBuffer fkcatalog_buf = StringBuffer()
+            StringBuffer fkschema_buf = StringBuffer()
+            StringBuffer fktable_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        pkcatalog_buf.set_value(pkcatalog)
+        pkschema_buf.set_value(pkschema)
+        pktable_buf.set_value(pktable)
+        fkcatalog_buf.set_value(fkcatalog)
+        fkschema_buf.set_value(fkschema)
+        fktable_buf.set_value(fktable)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLForeignKeys(cursor._handle, pkcatalog_buf.ptr,
+                                pkcatalog_buf.length, pkschema_buf.ptr,
+                                pkschema_buf.length, pktable_buf.ptr,
+                                pktable_buf.length, fkcatalog_buf.ptr,
+                                fkcatalog_buf.length, fkschema_buf.ptr,
+                                fkschema_buf.length, fktable_buf.ptr,
+                                fktable_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
+    def primarykeys(self, catalog=None, schema=None, table=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer table_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        table_buf.set_value(table)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLPrimaryKeys(cursor._handle, catalog_buf.ptr,
+                                catalog_buf.length, schema_buf.ptr,
+                                schema_buf.length, table_buf.ptr,
+                                table_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
+    def procedures(self, catalog=None, schema=None, proc=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer proc_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        proc_buf.set_value(proc)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLProcedures(cursor._handle, catalog_buf.ptr,
+                               catalog_buf.length, schema_buf.ptr,
+                               schema_buf.length, proc_buf.ptr,
+                               proc_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
+    def procedurecolumns(self, catalog=None, schema=None, proc=None,
+                         column=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer proc_buf = StringBuffer()
+            StringBuffer column_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        proc_buf.set_value(proc)
+        column_buf.set_value(column)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLProcedureColumns(cursor._handle, catalog_buf.ptr,
+                                     catalog_buf.length, schema_buf.ptr,
+                                     schema_buf.length, proc_buf.ptr,
+                                     proc_buf.length, column_buf.ptr,
+                                     column_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
     def rollback(self):
         cdef SQLRETURN rc
         self._check_connected()
         with nogil:
             rc = SQLEndTran(SQL_HANDLE_DBC, self._handle, SQL_ROLLBACK)
         _check_conn_error(self._handle, rc)
+
+    def tables(self, catalog=None, schema=None, table=None, type=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer table_buf = StringBuffer()
+            StringBuffer type_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        table_buf.set_value(table)
+        type_buf.set_value(type)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLTables(cursor._handle, catalog_buf.ptr, catalog_buf.length,
+                           schema_buf.ptr, schema_buf.length, table_buf.ptr,
+                           table_buf.length, type_buf.ptr, type_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
+
+    def tableprivileges(self, catalog=None, schema=None, table=None):
+        cdef:
+            StringBuffer catalog_buf = StringBuffer()
+            StringBuffer schema_buf = StringBuffer()
+            StringBuffer table_buf = StringBuffer()
+            Cursor cursor
+            SQLRETURN rc
+        catalog_buf.set_value(catalog)
+        schema_buf.set_value(schema)
+        table_buf.set_value(table)
+        self._check_connected()
+        cursor = self.cursor()
+        with nogil:
+            rc = SQLTablePrivileges(cursor._handle, catalog_buf.ptr,
+                                    catalog_buf.length, schema_buf.ptr,
+                                    schema_buf.length, table_buf.ptr,
+                                    table_buf.length)
+        _check_stmt_error(cursor._handle, rc)
+        cursor._prepare_result_set()
+        return cursor
