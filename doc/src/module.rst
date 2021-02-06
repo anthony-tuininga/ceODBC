@@ -118,7 +118,7 @@ Constants
    locking.
 
 
-.. data:: version
+.. data:: __version__
 
    String constant stating the version of the module. Currently '|release|'.
 
@@ -194,94 +194,88 @@ Exceptions
    supported by the database. It is a subclass of DatabaseError.
 
 
+.. _dbtypes:
 
-.. _vartypes:
-
-Variable Types
+Database Types
 ==============
 
 .. note::
 
    The DB API definition does not define these objects.
 
-   These classes all create variable objects (:ref:`varobj`). They are created
-   implicitly by cursor.execute() as needed and normally need not be created
-   directly. These classes can also be passed in to cursor.setinputsizes() in
-   favor of the types defined by the DB API in order to have finer control over
-   the types of variables created.
+   These types are more granular than the types mandated by the DB API and can
+   be used when creating variables via :meth:`Cursor.var()` or 
+   :meth:`Cursor.setinputsizes()`.
 
-
-.. data:: BigIntegerVar
+.. data:: DB_TYPE_BIGINT
 
    Variable used to bind and/or fetch big integers. Values are returned as
-   Python longs and accept Python integers or longs.
+   Python integers and accept the same.
 
 
-.. data:: BinaryVar
+.. data:: DB_TYPE_BINARY
 
    Variable used to bind and/or fetch binary data. Values are returned as
-   Python buffer objects and accept Python objects that implement the buffer
-   protocol.
+   Python bytes objects and accept the same.
 
 
-.. data:: BitVar
+.. data:: DB_TYPE_BIT
 
    Variable used to bind and/or fetch bits. Values are returned as Python
    booleans and accept the same.
 
 
-.. data:: DateVar
+.. data:: DB_TYPE_DATE
 
    Variable used to bind and/or fetch dates. Values are returned as Python
    datetime.date objects and accept Python datetime.date or datetime.datetime
    objects.
 
 
-.. data:: DecimalVar
+.. data:: DB_TYPE_DECIMAL
 
    Variable used to bind and/or fetch decimal numbers. Values are returned as
    Python decimal.Decimal objects and accept the same.
 
 
-.. data:: DoubleVar
+.. data:: DB_TYPE_DOUBLE
 
    Variable used to bind and/or fetch floating point numbers. Values are
    returned as Python floats and accept Python integers or floats.
 
 
-.. data:: IntegerVar
+.. data:: DB_TYPE_INT
 
    Variable used to bind and/or fetch integers. Values are returned as Python
    integers and accept the same.
 
 
-.. data:: LongBinaryVar
+.. data:: DB_TYPE_LONG_BINARY
 
    Variable used to bind and/or fetch long binary data. Values are returned as
-   Python buffer objects and accept Python objects that implement the buffer
-   protocol.
+   Python bytes objects and accept the same.
 
 
-.. data:: LongStringVar
+.. data:: DB_TYPE_LONG_STRING
 
    Variable used to bind and/or fetch long string data. Values are returned as
    Python strings and accept the same.
 
 
-.. data:: StringVar
+.. data:: DB_TYPE_STRING
 
    Variable used to bind and/or fetch string data. Values are returned as
    Python strings and accept the same.
 
 
-.. data:: TimeVar
+.. data:: DB_TYPE_TIME
 
    Variable used to bind and/or fetch time data. Values are returned as Python
    datetime.time objects and accept Python datetime.time or datetime.datetime
    objects.
 
 
-.. data:: TimestampVar
+.. data:: DB_TYPE_TIMESTAMP
 
    Variable used to bind and/or fetch timestamps. Values are returned as Python
    datetime.datetime objects and accept Python datetime.date or

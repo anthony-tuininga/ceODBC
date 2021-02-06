@@ -12,8 +12,8 @@ Version 3.0 (In Development)
 #)  Migrated test suite to using tox in order to automate testing of different
     environments.
 #)  Added input and output type handlers on cursors and connections. This
-    enables the default types to be overridden if desired. See the documentation
-    for more details.
+    enables the default types to be overridden if desired. See the
+    documentation for more details.
 #)  Added better support for 64-bit Python.
 #)  Eliminated compiler warnings; other minor tweaks to improve error handling.
 #)  Dropped attribute `ceODBC.buildtime`.

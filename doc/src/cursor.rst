@@ -71,7 +71,7 @@ Cursor Object
   be None for operations that do not return rows or if the cursor has not had
   an operation invoked via the execute() method yet.
 
-  The type will be one of the variable type objects (:ref:`vartypes`) and is
+  The type will be one of the database type objects (:ref:`dbtypes`) and is
   comparable to the type objects defined by the DB API.
 
 
@@ -171,7 +171,7 @@ Cursor Object
    created.  If this attribute is None, the value of the attribute with the
    same name on the connection is used.
 
-   note::
+   .. note::
 
       This attribute is an extension to the DB API definition.
 
@@ -293,7 +293,7 @@ Cursor Object
       The DB API definition does not define this attribute.
 
 
-.. method:: Cursor.var(type, [size, scale, arraysize, inconverter, outconverter, input = True, output = False])
+.. method:: Cursor.var(type, size=0, scale=0, arraysize=1, inconverter=None, outconverter=None, input=True, output=False)
 
    Create a variable associated with the cursor of the given type and
    characteristics and return a variable object (:ref:`varobj`). If the
@@ -309,4 +309,3 @@ Cursor Object
    .. note:: 
 
       The DB API definition does not define this method.
-

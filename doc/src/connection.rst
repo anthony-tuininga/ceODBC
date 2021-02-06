@@ -12,8 +12,7 @@ Connection Object
 
 .. method:: Connection.__enter__()
 
-   The entry point for the connection as a context manager, a feature available
-   in Python 2.5 and higher. It returns itself.
+   The entry point for the connection as a context manager.
 
    .. note::
 
@@ -22,13 +21,14 @@ Connection Object
 
 .. method:: Connection.__exit__()
 
-   The exit point for the connection as a context manager, a feature available
-   in Python 2.5 and higher. In the event of an exception, the transaction is
-   rolled back; otherwise, the transaction is committed.
+   The exit point for the connection as a context manager. In the event of an
+   exception, the transaction is rolled back; otherwise, the transaction is
+   committed.
 
    .. note::
 
       This method is an extension to the DB API definition.
+
 
 .. attribute:: Connection.autocommit
 
@@ -102,7 +102,7 @@ Connection Object
    object will be created. If this attribute is None, the default behavior will
    take place for all values bound to statements.
 
-   note::
+   .. note::
 
         This attribute is an extension to the DB API definition.
 
@@ -192,4 +192,3 @@ Connection Object
    .. note::
 
       This method is an extension to the DB API definition.
-
