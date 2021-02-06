@@ -382,6 +382,11 @@ cdef class Cursor:
         self._buffer_index = 0
         self._more_rows_to_fetch = True
 
+    def callfunc(self, name, return_type, *args):
+        var = self.var(return_type, input=False, output=True)
+        self._call(name, args, var)
+        return var.getvalue()
+
     def callproc(self, name, *args):
         self._call(name, args)
         if not args:
