@@ -11,7 +11,8 @@ class TestCase(base.BaseTestCase):
 
     def test_1200_callproc_no_args(self):
         "1200 - test executing a stored procedure without any arguments"
-        results = self.cursor.callproc("sp_TestNoArgs")
+        with self.connection.cursor() as cursor:
+            results = cursor.callproc("sp_TestNoArgs")
         self.assertEqual(results, [])
 
     def test_1201_execute_no_args(self):

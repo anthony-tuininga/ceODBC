@@ -27,6 +27,13 @@ cdef class Cursor:
         if self._handle:
             SQLFreeHandle(SQL_HANDLE_STMT, self._handle)
 
+    def __enter__(self):
+        self._check_open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.close()
+
     def __iter__(self):
         return self
 
