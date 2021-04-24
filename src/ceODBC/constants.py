@@ -1,3 +1,7 @@
+"""
+Constants for ceODBC.
+"""
+
 from .version import __version__
 
 # define constants required by the DB API

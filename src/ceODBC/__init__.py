@@ -1,7 +1,6 @@
-#------------------------------------------------------------------------------
-# __init__.py
-#   ceODBC package initialization.
-#------------------------------------------------------------------------------
+"""
+Initialization of package ceODBC.
+"""
 
 from .version import __version__
 from .constants import *
