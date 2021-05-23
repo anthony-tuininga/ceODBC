@@ -3,13 +3,13 @@
 #   Module for testing the module constants and constructors.
 #------------------------------------------------------------------------------
 
-import base
-
-import ceODBC
 import datetime
 import time
 
-class TestCase(base.BaseTestCase):
+import ceODBC
+import test_env
+
+class TestCase(test_env.BaseTestCase):
     establish_connection = False
 
     def test_1500_binary(self):
@@ -74,4 +74,4 @@ class TestCase(base.BaseTestCase):
         self.assertEqual(ceODBC.__version__, ceODBC.version)
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()

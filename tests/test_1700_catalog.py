@@ -6,13 +6,13 @@
 import threading
 import unittest
 
-import base
 import ceODBC
+import test_env
 
-class TestCase(base.BaseTestCase):
+class TestCase(test_env.BaseTestCase):
 
     def __get_catalog_name(self, name):
-        if base.get_dsn_type() == "pgsql":
+        if test_env.get_dsn_type() == "pgsql":
             return name.lower()
         return name
 
@@ -48,7 +48,7 @@ class TestCase(base.BaseTestCase):
         num = len(list(self.connection.tables(table=table_name)))
         self.assertEqual(num, 1)
 
-    @unittest.skipIf(base.get_dsn_type() == "mysql",
+    @unittest.skipIf(test_env.get_dsn_type() == "mysql",
                      "MySQL doesn't have table privileges by default")
     def test_1705_table_privileges(self):
         "1705 - test connection.tableprivileges()"
@@ -57,4 +57,4 @@ class TestCase(base.BaseTestCase):
         self.assertTrue(num > 0)
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()

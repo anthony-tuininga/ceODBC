@@ -3,12 +3,12 @@
 #   Module for testing binding and fetching strings.
 #------------------------------------------------------------------------------
 
-import base
-
-import ceODBC
 import decimal
 
-class TestCase(base.BaseTestCase):
+import ceODBC
+import test_env
+
+class TestCase(test_env.BaseTestCase):
 
     def setUp(self):
         super().setUp()
@@ -62,7 +62,7 @@ class TestCase(base.BaseTestCase):
     def test_1404_CursorDescription(self):
         "1404 - test cursor description is accurate"
         self.cursor.execute("select * from TestStrings")
-        dsn_type = base.get_dsn_type()
+        dsn_type = test_env.get_dsn_type()
         if dsn_type == "pgsql":
             expected_data = [
                 ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
@@ -119,4 +119,4 @@ class TestCase(base.BaseTestCase):
         self.assertEqual(value, supplemental_chars)
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()

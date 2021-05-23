@@ -3,12 +3,12 @@
 #   Module for testing the database and API types.
 #------------------------------------------------------------------------------
 
-import base
+import test_env
 
 import ceODBC
 import pickle
 
-class TestCase(base.BaseTestCase):
+class TestCase(test_env.BaseTestCase):
     establish_connection = False
 
     def __test_compare(self, db_type, api_type):
@@ -79,4 +79,4 @@ class TestCase(base.BaseTestCase):
         self.__test_pickle(ceODBC.DB_TYPE_TIMESTAMP)
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()

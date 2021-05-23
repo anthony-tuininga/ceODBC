@@ -3,17 +3,17 @@
 #   Module for testing the connection object.
 #------------------------------------------------------------------------------
 
-import base
+import test_env
 
 import ceODBC
 import threading
 
-class TestCase(base.BaseTestCase):
+class TestCase(test_env.BaseTestCase):
     establish_connection = False
 
     def __connect_and_drop(self):
         "connect to the database, perform a query and drop the connection"
-        connection = base.get_connection()
+        connection = test_env.get_connection()
         cursor = connection.cursor()
         cursor.execute("select count(*) from TestNumbers")
         count, = cursor.fetchone()
@@ -21,18 +21,18 @@ class TestCase(base.BaseTestCase):
 
     def test_1100_exception_on_close(self):
         "1100 - confirm an exception is raised after closing a connection"
-        connection = base.get_connection()
+        connection = test_env.get_connection()
         connection.close()
         self.assertRaises(ceODBC.InterfaceError, connection.rollback)
 
     def test_1101_rollback_on_close(self):
         "1101 - connection rolls back before close"
-        connection = base.get_connection()
+        connection = test_env.get_connection()
         cursor = connection.cursor()
         cursor.execute("delete from TestTempTable")
         connection.commit()
         cursor.execute("select count(*) from TestTempTable")
-        other_connection = base.get_connection()
+        other_connection = test_env.get_connection()
         other_cursor = other_connection.cursor()
         other_cursor.execute("insert into TestTempTable (IntCol) values (1)")
         other_cursor.execute("insert into TestTempTable (IntCol) values (2)")
@@ -43,11 +43,11 @@ class TestCase(base.BaseTestCase):
 
     def test_1102_rollback_on_del(self):
         "1102 - connection rolls back before destruction"
-        connection = base.get_connection()
+        connection = test_env.get_connection()
         cursor = connection.cursor()
         cursor.execute("delete from TestTempTable")
         connection.commit()
-        other_connection = base.get_connection()
+        other_connection = test_env.get_connection()
         other_cursor = other_connection.cursor()
         other_cursor.execute("insert into TestTempTable (IntCol) values (1)")
         other_cursor.execute("insert into TestTempTable (IntCol) values (2)")
@@ -69,4 +69,4 @@ class TestCase(base.BaseTestCase):
             thread.join()
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()

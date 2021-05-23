@@ -5,10 +5,10 @@
 
 import unittest
 
-import base
 import ceODBC
+import test_env
 
-class TestCase(base.BaseTestCase):
+class TestCase(test_env.BaseTestCase):
 
     def test_1200_callproc_no_args(self):
         "1200 - test executing a stored procedure without any arguments"
@@ -117,7 +117,7 @@ class TestCase(base.BaseTestCase):
         count, = self.cursor.fetchone()
         self.assertEqual(count, len(rows))
 
-    @unittest.skipIf(base.get_dsn_type() == "mysql",
+    @unittest.skipIf(test_env.get_dsn_type() == "mysql",
                      "MySQL doesn't generate an exception")
     def test_1211_executemany_with_execption(self):
         "1211 - test executing a statement multiple times (with exception)"
@@ -152,4 +152,4 @@ class TestCase(base.BaseTestCase):
         self.cursor.execute("select null")
 
 if __name__ == "__main__":
-    base.run_test_cases()
+    test_env.run_test_cases()
