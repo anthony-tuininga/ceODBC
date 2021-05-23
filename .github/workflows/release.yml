@@ -1,0 +1,25 @@
+name: release
+
+jobs:
+
+  build-linux-cp39:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux2014_x86_64
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Build binary wheel
+      run: /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
+
+    - name: Apply auditwheel for manylinux wheel
+      run: auditwheel repair -w dist dist/*
+
+    - name: Remove Linux wheel
+      run: rm dist/*-linux_x86_64.whl
+
+    - name: Archive artifacts
+      run: actions/upload-artifact@v1
+      with:
+        name: dist-linux-3.9
+        path: dist
