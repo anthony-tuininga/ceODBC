@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@master
 
     - name: Install unixODBC development package
-      run: apt-get install -y unixodbc-dev
+      run: yum install -y unixodbc-devel
 
     - name: Build binary wheel
       run: /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
