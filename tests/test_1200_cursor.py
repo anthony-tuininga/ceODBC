@@ -3,8 +3,9 @@
 #   Module for testing the cursor object.
 #------------------------------------------------------------------------------
 
-import base
+import unittest
 
+import base
 import ceODBC
 
 class TestCase(base.BaseTestCase):
@@ -116,10 +117,12 @@ class TestCase(base.BaseTestCase):
         count, = self.cursor.fetchone()
         self.assertEqual(count, len(rows))
 
+    @unittest.skipIf(base.get_dsn_type() == "mysql",
+                     "MySQL doesn't generate an exception")
     def test_1211_executemany_with_execption(self):
         "1211 - test executing a statement multiple times (with exception)"
-        cursor = self.connection.cursor()
-        cursor.execute("delete from TestTempTable")
+        with self.connection.cursor() as cursor:
+            cursor.execute("delete from TestTempTable")
         self.connection.commit()
         rows = [(1,), (2,), (3,), (2,), (5,)]
         statement = "insert into TestTempTable (IntCol) values (?)"

@@ -82,7 +82,7 @@ class TestCase(base.BaseTestCase):
             expected_data = [
                 ('IntCol', ceODBC.NUMBER, 11, 10, 10, 0, False),
                 ('DateCol', ceODBC.DATETIME, 10, 10, 0, 0, False),
-                ('TimestampCol', ceODBC.DATETIME, 19, 19, 0, 0, False),
+                ('TimestampCol', ceODBC.DATETIME, 19, 19, 0, 0, True),
                 ('NullableDateCol', ceODBC.DATETIME, 10, 10, 0, 0, True),
                 ('NullableTimestampCol', ceODBC.DATETIME, 19, 19, 0, 0, True)
             ]

@@ -3,25 +3,33 @@
 #   Module for testing the various catalog routines.
 #------------------------------------------------------------------------------
 
-import base
-
-import ceODBC
 import threading
+import unittest
+
+import base
+import ceODBC
 
 class TestCase(base.BaseTestCase):
+
+    def __get_catalog_name(self, name):
+        if base.get_dsn_type() == "pgsql":
+            return name.lower()
+        return name
 
     def test_1700_columns(self):
         "1700 - test connection.columns()"
         num_all_columns = len(list(self.connection.columns()))
         self.assertTrue(num_all_columns > 0)
-        num_columns = len(list(self.connection.columns(table="testtemptable")))
+        table_name = self.__get_catalog_name("TestTempTable")
+        num_columns = len(list(self.connection.columns(table=table_name)))
         self.assertEqual(num_columns, 2)
         num_columns = len(list(self.connection.columns(column="bigintcol")))
         self.assertEqual(num_columns, 1)
 
     def test_1701_primary_keys(self):
         "1701 - test connection.primarykeys()"
-        num = len(list(self.connection.primarykeys(table="testtemptable")))
+        table_name = self.__get_catalog_name("TestTempTable")
+        num = len(list(self.connection.primarykeys(table=table_name)))
         self.assertEqual(num, 1)
 
     def test_1702_procedures(self):
@@ -36,12 +44,16 @@ class TestCase(base.BaseTestCase):
 
     def test_1704_tables(self):
         "1704 - test connection.tables()"
-        num = len(list(self.connection.tables(table="testtemptable")))
+        table_name = self.__get_catalog_name("TestTempTable")
+        num = len(list(self.connection.tables(table=table_name)))
         self.assertEqual(num, 1)
 
+    @unittest.skipIf(base.get_dsn_type() == "mysql",
+                     "MySQL doesn't have table privileges by default")
     def test_1705_table_privileges(self):
         "1705 - test connection.tableprivileges()"
-        num = len(list(self.connection.tableprivileges(table="testtemptable")))
+        table_name = self.__get_catalog_name("TestTempTable")
+        num = len(list(self.connection.tableprivileges(table=table_name)))
         self.assertTrue(num > 0)
 
 if __name__ == "__main__":
