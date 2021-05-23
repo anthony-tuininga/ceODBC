@@ -25,7 +25,7 @@ Cursor Object
       The DB API definition does not define this attribute.
 
 
-.. method:: Cursor.callfunc(name, returnType, \*args)
+.. method:: Cursor.callfunc(name, return_type, * args)
 
    Call a function with the given name. Parameters may also be passed as a
    single list or tuple to conform to the DB API. The return type is specified
@@ -37,7 +37,7 @@ Cursor Object
       The DB API definition does not define this method.
 
 
-.. method:: Cursor.callproc(name, \*args)
+.. method:: Cursor.callproc(name, * args)
 
    Call a procedure with the given name. Parameters may also be passed as a
    single list or tuple to conform to the DB API. The result of the call is a
@@ -91,7 +91,7 @@ Cursor Object
       The DB API definition does not define this method.
 
 
-.. method:: Cursor.execute(statement, \*args)
+.. method:: Cursor.execute(statement, * args)
 
    Execute a statement against the database. Paramters may also be passed as a
    single list or tuple to conform to the DB API.
@@ -137,7 +137,7 @@ Cursor Object
    result set or no call was issued yet.
 
 
-.. method:: Cursor.fetchmany([numRows=cursor.arraysize])
+.. method:: Cursor.fetchmany([num_rows=cursor.arraysize])
 
    Fetch the next set of rows of a query result, returning a list of tuples. An
    empty list is returned if no more rows are available. Note that the cursor's
@@ -212,7 +212,7 @@ Cursor Object
 
    Make the cursor skip to the next available set, discarding any remaining
    row from the current set. If there are no more sets, None is returned;
-   otherwise, the cursor ifself is returned as a convenience for fetching data
+   otherwise, the cursor itself is returned as a convenience for fetching data
    from it. Note that not all databases support the concept of multiple result
    sets.
 
@@ -263,7 +263,7 @@ Cursor Object
       The DB API definition does not define this attribute.
 
 
-.. method:: Cursor.setinputsizes(\*args)
+.. method:: Cursor.setinputsizes(* args)
 
    This can be used before a call to execute() to predefine memory areas for
    the operation's parameters. Each parameter should be a type object

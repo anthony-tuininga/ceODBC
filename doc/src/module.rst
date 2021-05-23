@@ -8,7 +8,8 @@ Module Interface
 
 .. function:: Binary(string)
 
-   Construct an object holding a binary (long) string value.
+   Construct an object holding a binary (long) string value. This is merely a
+   wrapper over the bytes class and that should be used instead.
 
 
 .. function:: Connection(dsn, autocommit=False)
@@ -33,39 +34,44 @@ Module Interface
 
 .. function:: Date(year, month, day)
 
-   Construct an object holding a date value.
+   Construct an object holding a date value. This is merely a wrapper over the
+   datetime.date class and that should be used instead.
 
 
 .. function:: DateFromTicks(ticks)
 
    Construct an object holding a date value from the given ticks value (number
    of seconds since the epoch; see the documentation of the standard Python
-   time module for details).
+   time module for details). This is equivalent to using
+   datetime.date.fromtimestamp() and that should be used instead.
 
 
 .. function:: Time(hour, minute, second)
 
-   Construct an object holding a time value.
+   Construct an object holding a time value. This is merely a wrapper over the
+   datetime.time class and that should be used instead.
 
 
 .. function:: TimeFromTicks(ticks)
 
    Construct an object holding a time value from the given ticks value (number
    of seconds since the epoch; see the documentation of the standard Python
-   time module for details).
+   time module for details). This is equivalent to using
+   datetime.datetime.fromtimestamp().time() and that should be used instead.
 
 
 .. function:: Timestamp(year, month, day, hour, minute, second)
 
-   Construct an object holding a time stamp value.
+   Construct an object holding a time stamp value. This is merely a wrapper
+   over the datetime.datetime class and that should be used instead.
 
 
 .. function:: TimestampFromTicks(ticks)
 
    Construct an object holding a time stamp value from the given ticks value
    (number of seconds since the epoch; see the documentation of the standard
-   Python time module for details).
-
+   Python time module for details). This is equivalent to using
+   datetime.datetime.fromtimestamp() and that should be used instead.
 
 
 .. _constants:

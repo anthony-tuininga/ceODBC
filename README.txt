@@ -2,7 +2,7 @@ Open Source Python/ODBC Utility - ceODBC
 ----------------------------------------
 ceODBC is a Python extension module that enables access to databases using the
 ODBC API and conforms to the Python database API 2.0 specifications with a
-number of additions. Python 3.5 and higher is required as of version 3.0.
+number of additions. Python 3.6 and higher is required as of version 3.0.
 
 See https://www.python.org/dev/peps/pep-0249 for more information on the Python
 database API specification.
@@ -25,11 +25,6 @@ For simplified installation use pip
 Otherwise, you can use the provided setup.py to build and install the module
 
     python setup.py build
-    python setup.py install
-
-If you wish to use cx_Logging for logging, run these commands instead:
-
-    python setup.py build_ext --with-cx-logging --cx-logging <SourceDir>
     python setup.py install
 
 The following packages are required on Linux before compilation is possible:

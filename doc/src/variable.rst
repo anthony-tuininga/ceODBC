@@ -9,7 +9,7 @@ Variable Objects
    The DB API definition does not define this object.
 
 
-.. attribute:: Variable.bufferSize
+.. attribute:: Variable.buffer_size
 
    This read-only attribute returns the size of the buffer allocated for each
    element.
@@ -34,7 +34,7 @@ Variable Objects
    variable and should normally be left as True.
 
 
-.. attribute:: Variable.numElements
+.. attribute:: Variable.num_elements
 
    This read-only attribute returns the number of elements allocated.
 

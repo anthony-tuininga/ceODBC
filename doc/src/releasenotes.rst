@@ -4,8 +4,8 @@ Release notes
 3.x releases
 ############
 
-Version 3.0 (In Development)
-----------------------------
+Version 3.0
+-----------
 
 #)  Dropped support for Python 2. Support is now for Python 3.6 and higher.
 #)  Migrated module to a Python package with the use of Cython for speedups.
@@ -17,6 +17,7 @@ Version 3.0 (In Development)
 #)  Added better support for 64-bit Python.
 #)  Eliminated compiler warnings; other minor tweaks to improve error handling.
 #)  Dropped attribute `ceODBC.buildtime`.
+#)  Dropped use of cx_Logging for logging.
 
 
 Older versions
