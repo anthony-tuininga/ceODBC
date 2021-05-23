@@ -22,7 +22,7 @@ jobs:
       run: rm dist/*-linux_x86_64.whl
 
     - name: Archive artifacts
-      run: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v1
       with:
         name: dist-linux-3.9
         path: dist
