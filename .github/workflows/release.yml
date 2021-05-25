@@ -5,7 +5,7 @@ on:
 
 jobs:
 
-  build-linux-cp39:
+  build-linux-wheels:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux2014_x86_64
 
@@ -15,17 +15,23 @@ jobs:
     - name: Install unixODBC development package
       run: yum install -y unixODBC-devel
 
-    - name: Build binary wheel
-      run: /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
+    - name: Build wheel for Python 3.6
+      run: /opt/python/cp36-cp36m/bin/python3.6 setup.py bdist_wheel
 
-    - name: Apply auditwheel for manylinux wheel
-      run: auditwheel repair -w dist dist/*
+    - name: Build wheel for Python 3.7
+      run: /opt/python/cp37-cp37m/bin/python3.7 setup.py bdist_wheel
 
-    - name: Remove Linux wheel
-      run: rm dist/*-linux_x86_64.whl
+    - name: Build wheel for Python 3.8
+      run: /opt/python/cp38-cp38/bin/python3.8 setup.py bdist_wheel
+
+    - name: Build wheel for Python 3.9
+      run: /opt/python/cp39-cp39/bin/python3.9 setup.py bdist_wheel
+
+    - name: Apply auditwheel for built wheels
+      run: find . -name '*.whl' -exec auditwheel repair {} \; -print
 
     - name: Archive artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: dist-linux-3.9
+        name: wheelhouse
         path: dist
