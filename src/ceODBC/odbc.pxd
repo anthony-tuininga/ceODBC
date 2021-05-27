@@ -3,6 +3,10 @@
 #   Cython file defining the ODBC interface (embedded in driver.pyx).
 #------------------------------------------------------------------------------
 
+IF UNAME_SYSNAME == "Windows":
+    cdef extern from "<windows.h>":
+        pass
+
 cdef extern from "<sql.h>":
 
     # basic types
