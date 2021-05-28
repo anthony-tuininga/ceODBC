@@ -54,7 +54,9 @@ If your driver is not capable of transactions (often indicated by the exception
 "driver not capable" when connecting) then use the following statement to
 connect instead:
 
-connection = ceODBC.connect("<DSN>", autocommit=True)
+```python
+connection = ceODBC.connect(DSN, autocommit=True)
+```
 
 For further information see
 
