@@ -28,12 +28,12 @@ templates_path = ['.templates']
 # The suffix of source filenames.
 source_suffix = '.rst'
 
-# The master toctree document.
-master_doc = 'index'
+# The root toctree document.
+root_doc = master_doc = 'index'
 
 # General substitutions.
 project = 'ceODBC'
-copyright = '2007-2020, Anthony Tuininga'
+copyright = '2007-2021, Anthony Tuininga'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
