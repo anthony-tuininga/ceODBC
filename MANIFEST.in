@@ -4,5 +4,6 @@ include tox.ini
 include *.txt
 recursive-include src/ceODBC *.py
 recursive-include src/ceODBC *.pyx
+recursive-include src/ceODBC *.pxd
 recursive-include tests *.sql *.py
 recursive-include doc *.rst
