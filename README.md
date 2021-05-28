@@ -24,15 +24,16 @@ for Linux and Windows as a convenience.
 Usage Example
 -------------
 
-Note that the "<DSN>" in the example below should be replaced with an
+Note that the `DSN` in the example below should be replaced with an
 appropriate string that ODBC understands. For example, if a system DSN called
 "MYDATA" has been created in the ODBC manager, use "DSN=MYDATA" to connect.
 For what is termed DSN-less connections, search the Internet for appropriate
 strings.
 
+```python
 import ceODBC
 
-connection = ceODBC.connect("<DSN>")
+connection = ceODBC.connect(DSN)
 
 cursor = connection.cursor()
 cursor.execute("""
@@ -43,6 +44,7 @@ cursor.execute("""
         ["VALUE", 5, 10])
 for column_1, column_2, column_3 in cursor:
     print("Values:", column_1, column_2, column_3)
+```
 
 
 Notes
