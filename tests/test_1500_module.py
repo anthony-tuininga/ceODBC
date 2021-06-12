@@ -73,5 +73,32 @@ class TestCase(test_env.BaseTestCase):
         "1510 - test ceODBC.__version__"
         self.assertEqual(ceODBC.__version__, ceODBC.version)
 
+    def test_1511_data_sources_user(self):
+        "1511 - test ceODBC.data_sources() for user data sources"
+        data_sources = ceODBC.data_sources(exclude_system_dsn=True)
+        self.assertEqual(type(data_sources), list)
+
+    def test_1512_data_sources_system(self):
+        "1512 - test ceODBC.data_sources() for system data sources"
+        data_sources = ceODBC.data_sources(exclude_user_dsn=True)
+        self.assertEqual(type(data_sources), list)
+
+    def test_1513_data_sources_all(self):
+        "1513 - test ceODBC.data_sources() for all data sources"
+        data_sources = ceODBC.data_sources()
+        self.assertEqual(type(data_sources), list)
+
+    def test_1514_data_sources_none(self):
+        "1514 - test ceODBC.data_sources() for no data sources"
+        data_sources = ceODBC.data_sources(exclude_user_dsn=True,
+                                           exclude_system_dsn=True)
+        self.assertEqual(data_sources, [])
+
+    def test_1515_drivers(self):
+        "1515 - test ceODBC.drivers()"
+        connection = test_env.get_connection()
+        drivers = ceODBC.drivers()
+        self.assertEqual(type(drivers), list)
+
 if __name__ == "__main__":
     test_env.run_test_cases()

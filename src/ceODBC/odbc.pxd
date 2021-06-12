@@ -97,6 +97,12 @@ cdef extern from "<sql.h>":
     SQLSMALLINT SQL_C_TYPE_TIME
     SQLSMALLINT SQL_C_TYPE_TIMESTAMP
 
+    # fetch directions
+    SQLUSMALLINT SQL_FETCH_FIRST
+    SQLUSMALLINT SQL_FETCH_FIRST_SYSTEM
+    SQLUSMALLINT SQL_FETCH_FIRST_USER
+    SQLUSMALLINT SQL_FETCH_NEXT
+
     # other constants
     SQLSMALLINT SQL_COMMIT
     SQLSMALLINT SQL_ROLLBACK
@@ -118,6 +124,13 @@ cdef extern from "<sql.h>":
                          SQLSMALLINT NameLength2, SQLCHAR *TableName,
                          SQLSMALLINT NameLength3, SQLCHAR *ColumnName,
                          SQLSMALLINT NameLength4) nogil
+
+    SQLRETURN  SQLDataSources(SQLHENV EnvironmentHandle,
+                              SQLUSMALLINT Direction, SQLCHAR *ServerName,
+                              SQLSMALLINT BufferLength1,
+                              SQLSMALLINT *NameLength1,
+                              SQLCHAR *Description, SQLSMALLINT BufferLength2,
+                              SQLSMALLINT *NameLength2) nogil
 
     SQLRETURN SQLDescribeColA(SQLHSTMT hstmt, SQLUSMALLINT icol,
                               SQLCHAR *szColName, SQLSMALLINT cbColNameMax,
@@ -203,6 +216,13 @@ cdef extern from "<sqlext.h>":
                                   SQLSMALLINT cbTableName,
                                   SQLCHAR *szColumnName,
                                   SQLSMALLINT cbColumnName) nogil
+
+    SQLRETURN SQLDrivers(SQLHENV henv, SQLUSMALLINT fDirection,
+                         SQLCHAR *szDriverDesc, SQLSMALLINT cbDriverDescMax,
+                         SQLSMALLINT *pcbDriverDesc,
+                         SQLCHAR *szDriverAttributes,
+                         SQLSMALLINT cbDrvrAttrMax,
+                         SQLSMALLINT *pcbDrvrAttr) nogil
 
     SQLRETURN SQLDriverConnectA(SQLHDBC hdbc, SQLHWND hwnd,
                                 SQLCHAR *szConnStrIn, SQLSMALLINT cbConnStrIn,

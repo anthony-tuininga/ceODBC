@@ -28,4 +28,8 @@ include "string_buffer.pyx"
 include "types.pyx"
 include "connection.pyx"
 include "cursor.pyx"
+include "utils.pyx"
 include "var.pyx"
+
+# define module level environment handle used by all ODBC functions
+cdef SQLHANDLE global_env_handle = init_env_handle()

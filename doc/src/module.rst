@@ -32,6 +32,17 @@ Module Interface
       This method is an extension to the DB API definition.
 
 
+.. function:: data_sources(exclude_user_dsn=False, exclude_system_dsn=False)
+
+   Return a list of 2-tuples identifying the configured data sources. By
+   default all data sources are returned but system or user data sources can be
+   excluded, if desired.
+
+   .. note::
+
+      This method is an extension to the DB API definition.
+
+
 .. function:: Date(year, month, day)
 
    Construct an object holding a date value. This is merely a wrapper over the
@@ -44,6 +55,15 @@ Module Interface
    of seconds since the epoch; see the documentation of the standard Python
    time module for details). This is equivalent to using
    datetime.date.fromtimestamp() and that should be used instead.
+
+
+.. function:: drivers()
+
+   Return a list of the names of the configured drivers.
+
+   .. note::
+
+      This method is an extension to the DB API definition.
 
 
 .. function:: Time(hour, minute, second)

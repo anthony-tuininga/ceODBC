@@ -5,7 +5,7 @@
 
 cdef class Connection:
     cdef:
-        SQLHANDLE _handle, _env_handle
+        SQLHANDLE _handle
         readonly str dsn
         public object inputtypehandler
         public object outputtypehandler
@@ -20,8 +20,6 @@ cdef class Connection:
                 SQLDisconnect(self._handle)
                 SQLFreeHandle(SQL_HANDLE_DBC, self._handle)
             self._handle = NULL
-        if self._env_handle:
-            SQLFreeHandle(SQL_HANDLE_ENV, self._env_handle)
 
     @property
     def autocommit(self):
@@ -44,20 +42,9 @@ cdef class Connection:
             str actual_dsn
             SQLRETURN rc
 
-        # create the environment handle
-        rc = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &self._env_handle)
-        if rc != SQL_SUCCESS:
-            _raise_from_string(exceptions.InternalError,
-                               "unable to allocate ODBC environment handle")
-
-        # set the attribute specifying which ODBC version to use
-        rc = SQLSetEnvAttr(self._env_handle, SQL_ATTR_ODBC_VERSION,
-                <SQLPOINTER> SQL_OV_ODBC3, 0)
-        _check_error(SQL_HANDLE_ENV, self._env_handle, rc)
-
         # allocate a handle for the connection
-        rc = SQLAllocHandle(SQL_HANDLE_DBC, self._env_handle, &self._handle)
-        _check_error(SQL_HANDLE_ENV, self._env_handle, rc)
+        rc = SQLAllocHandle(SQL_HANDLE_DBC, global_env_handle, &self._handle)
+        _check_error(SQL_HANDLE_ENV, global_env_handle, rc)
 
         # connect to driver
         dsn_bytes = dsn.encode()

@@ -7,7 +7,7 @@ from .constants import *
 from .constructors import *
 from .exceptions import *
 
-from .driver import Connection
+from .driver import Connection, data_sources, drivers
 
 def connect(dsn, autocommit=False):
     """
