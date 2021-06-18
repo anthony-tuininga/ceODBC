@@ -22,6 +22,7 @@ create table TestNumbers (
 create table TestStrings (
     IntCol              integer not null,
     StringCol           varchar(20) not null,
+    CharCol             char(5) not null,
     NullableCol         varchar(50)
 ) engine=InnoDB;
 
@@ -68,16 +69,16 @@ values (4, 98765432101234, 77.27, 922.78, 445.79);
 delete from TestStrings;
 
 insert into TestStrings
-values (1, 'String 1', null);
+values (1, 'String 1', 'Fix01', null);
 
 insert into TestStrings
-values (2, 'String 2B', 'Nullable One');
+values (2, 'String 2B', 'Fix02', 'Nullable One');
 
 insert into TestStrings
-values (3, 'String 3XX', null);
+values (3, 'String 3XX', 'Fix03', null);
 
 insert into TestStrings
-values (4, 'String 4YYY', 'Nullable Two');
+values (4, 'String 4YYY', 'Fix04', 'Nullable Two');
 
 insert into TestDates
 values (1, '2020-02-08', '2019-12-20 18:35:25',

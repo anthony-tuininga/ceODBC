@@ -13,10 +13,10 @@ class TestCase(test_env.BaseTestCase):
     def setUp(self):
         super().setUp()
         self.raw_data = [
-                (1, 'String 1', None),
-                (2, 'String 2B', 'Nullable One'),
-                (3, 'String 3XX', None),
-                (4, 'String 4YYY', 'Nullable Two')
+                (1, 'String 1', 'Fix01', None),
+                (2, 'String 2B', 'Fix02', 'Nullable One'),
+                (3, 'String 3XX', 'Fix03', None),
+                (4, 'String 4YYY', 'Fix04', 'Nullable Two')
         ]
         self.data_by_key = {}
         for data_tuple in self.raw_data:
@@ -67,12 +67,14 @@ class TestCase(test_env.BaseTestCase):
             expected_data = [
                 ('intcol', ceODBC.NUMBER, 11, 10, 10, 0, False),
                 ('stringcol', ceODBC.STRING, 20, 20, 0, 0, False),
+                ('charcol', ceODBC.STRING, 5, 5, 0, 0, False),
                 ('nullablecol', ceODBC.STRING, 50, 50, 0, 0, True)
             ]
         else:
             expected_data = [
                 ('IntCol', ceODBC.NUMBER, 11, 10, 10, 0, False),
                 ('StringCol', ceODBC.STRING, 20, 20, 0, 0, False),
+                ('CharCol', ceODBC.STRING, 5, 5, 0, 0, False),
                 ('NullableCol', ceODBC.STRING, 50, 50, 0, 0, True)
             ]
         self.assertEqual(self.cursor.description, expected_data)
