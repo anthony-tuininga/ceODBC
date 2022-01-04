@@ -83,6 +83,8 @@ cdef class Var:
                                            as_timestamp.hour,
                                            as_timestamp.minute,
                                            as_timestamp.second, 0, None)
+        elif c_data_type == SQL_C_BIT:
+            return bool(self._data.as_bit[pos])
         message = f"missing get support for DB type {self.type}"
         _raise_from_string(exceptions.NotSupportedError, message)
 
@@ -184,6 +186,10 @@ cdef class Var:
                 as_timestamp.second = 0
             else:
                 raise TypeError("expecting datetime.datetime or datetime.date")
+        elif c_data_type == SQL_C_BIT:
+            if not isinstance(value, bool):
+                raise TypeError("expecting boolean")
+            self._data.as_bit[pos] = value
         else:
             message = f"missing set support for DB type {self.type}"
             _raise_from_string(exceptions.NotSupportedError, message)

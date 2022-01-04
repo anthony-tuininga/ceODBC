@@ -74,6 +74,8 @@ cdef class DbType:
             return DB_TYPE_DECIMAL
         elif data_type == SQL_TYPE_TIMESTAMP:
             return DB_TYPE_TIMESTAMP
+        elif data_type == SQL_BIT:
+            return DB_TYPE_BIT
         _raise_from_string(exceptions.NotSupportedError,
                            f"SQL data type {data_type} not supported")
 
