@@ -1,3 +1,48 @@
 [build-system]
-requires = ["setuptools >= 40.6.0", "wheel", "cython"]
+requires = ["setuptools >= 61", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "ceODBC"
+description = "Python interface to ODBC"
+license = {text = "BSD License"}
+authors = [{name = "Anthony Tuininga", email = "anthony.tuininga@gmail.com"}]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Cython",
+    "Programming Language :: Python",
+    "Topic :: Database"
+]
+requires-python = ">=3.7"
+dynamic = ["version", "readme"]
+
+[project.urls]
+Homepage = "https://anthony-tuininga.github.io/ceODBC"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.cmdclass]
+build_py = "_build_exts.build_py"
+
+[tool.setuptools.dynamic]
+version = {attr = "ceODBC.version.__version__"}
+readme = {file = ["README.md"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["src/_build_exts.py"]
+
+[tool.cibuildwheel]
+build-verbosity = "1"
+
+[tool.cibuildwheel.linux]
+build = "cp3*-manylinux_*"
+archs = "x86_64 aarch64"
+
+[tool.cibuildwheel.windows]
+build = "cp3*"

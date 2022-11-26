@@ -13,6 +13,8 @@ Version 3.1
 #)  Added support for the CHAR data type
     (`issue 9 <https://github.com/anthony-tuininga/ceODBC/issues/9>`__).
 #)  Restored support for boolean columns.
+#)  Adjust builds to use pyproject.toml exclusively. Binary packages are built
+    using cibuildwheel.
 
 
 Version 3.0

@@ -7,3 +7,4 @@ MANIFEST
 build/
 dist/
 src/ceODBC/driver.c
+src/ceODBC/driver*.so

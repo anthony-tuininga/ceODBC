@@ -1,7 +1,7 @@
 include MANIFEST.in
 include README.md
+include src/_build_exts.py
 include pyproject.toml
 include tox.ini
 recursive-include src/ceODBC *.py *.pyx *.pxd
 recursive-include tests *.sql *.py
-recursive-include doc *.rst
