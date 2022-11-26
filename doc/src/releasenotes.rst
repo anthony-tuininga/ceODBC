@@ -4,6 +4,17 @@ Release notes
 3.x releases
 ############
 
+Version 3.1
+-----------
+
+#)  Dropped support for Python 3.6. Support is now for Python 3.7 and higher.
+#)  Added support for listing the available data sources and drivers
+    (`issue 8 <https://github.com/anthony-tuininga/ceODBC/issues/8>`__).
+#)  Added support for the CHAR data type
+    (`issue 9 <https://github.com/anthony-tuininga/ceODBC/issues/9>`__).
+#)  Restored support for boolean columns.
+
+
 Version 3.0
 -----------
 
