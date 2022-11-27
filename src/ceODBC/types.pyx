@@ -53,6 +53,7 @@ cdef class DbType:
     @staticmethod
     cdef DbType _from_sql_data_type(SQLSMALLINT data_type):
         if data_type == SQL_CHAR \
+                or data_type == SQL_WCHAR \
                 or data_type == SQL_VARCHAR \
                 or data_type == SQL_WVARCHAR \
                 or data_type == SQL_LONGVARCHAR \
