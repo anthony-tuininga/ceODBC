@@ -28,7 +28,7 @@ create table TestStrings (
 
 create table TestTempTable (
     IntCol              integer not null,
-    StringCol           varchar(255)
+    StringCol           varchar(500)
 );
 
 alter table TestTempTable add constraint TestTempTable_pk
@@ -80,11 +80,11 @@ values (3, 'String 3XX', 'Fix03', null);
 insert into TestStrings
 values (4, 'String 4YYY', 'Fix04', 'Nullable Two');
 
+delete from TestDates;
+
 insert into TestDates
 values (1, '2020-02-08', '2019-12-20 18:35:25',
            '1969-07-29', '1988-01-25 08:24:13');
-
-delete from TestDates;
 
 insert into TestDates
 values (2, '1978-02-12', '2009-02-20 08:23:12', null, null);

@@ -8,7 +8,7 @@ create table TestDates (
     DateCol                             date not null,
     TimestampCol                        timestamp not null,
     NullableDateCol                     date,
-    NullableTimestampCol                timestamp
+    NullableTimestampCol                timestamp null default null
 ) engine=InnoDB;
 
 create table TestNumbers (
@@ -28,7 +28,7 @@ create table TestStrings (
 
 create table TestTempTable (
     IntCol              integer not null,
-    StringCol           varchar(255)
+    StringCol           varchar(500)
 ) engine=InnoDB;
 
 alter table TestTempTable add constraint TestTempTable_pk
@@ -79,6 +79,8 @@ values (3, 'String 3XX', 'Fix03', null);
 
 insert into TestStrings
 values (4, 'String 4YYY', 'Fix04', 'Nullable Two');
+
+delete from TestDates;
 
 insert into TestDates
 values (1, '2020-02-08', '2019-12-20 18:35:25',
