@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ceODBC"
 description = "Python interface to ODBC"
+readme = "README.md"
 license = {text = "BSD License"}
 authors = [{name = "Anthony Tuininga", email = "anthony.tuininga@gmail.com"}]
 classifiers = [
@@ -18,7 +19,7 @@ classifiers = [
     "Topic :: Database"
 ]
 requires-python = ">=3.7"
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://anthony-tuininga.github.io/ceODBC"
@@ -32,7 +33,6 @@ build = "_build_exts.build"
 
 [tool.setuptools.dynamic]
 version = {attr = "ceODBC.version.__version__"}
-readme = {file = ["README.md"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
