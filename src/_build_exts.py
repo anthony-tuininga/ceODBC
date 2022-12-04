@@ -6,16 +6,12 @@ import os
 import sys
 
 from setuptools import Extension
-from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.build import build as _build
 
-class build_py(_build_py):
+class build(_build):
 
-    def run(self):
-        self.run_command("build_ext")
-        return super().run()
-
-    def initialize_options(self):
-        super().initialize_options()
+    def finalize_options(self):
+        super().finalize_options()
         if sys.platform == "win32":
             libs = ["odbc32"]
         else:

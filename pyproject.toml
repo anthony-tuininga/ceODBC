@@ -25,9 +25,10 @@ Homepage = "https://anthony-tuininga.github.io/ceODBC"
 
 [tool.setuptools]
 zip-safe = false
+include-package-data = false
 
 [tool.setuptools.cmdclass]
-build_py = "_build_exts.build_py"
+build = "_build_exts.build"
 
 [tool.setuptools.dynamic]
 version = {attr = "ceODBC.version.__version__"}
@@ -43,6 +44,7 @@ build-verbosity = "1"
 [tool.cibuildwheel.linux]
 build = "cp3*-manylinux_*"
 archs = "x86_64 aarch64"
+before-all = "yum -y install unixODBC-devel"
 
 [tool.cibuildwheel.windows]
 build = "cp3*"
