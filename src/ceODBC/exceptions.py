@@ -2,6 +2,7 @@
 Exception classes mandated by the database API.
 """
 
+
 class Error(Exception):
     """
     Base class of all other error exceptions.

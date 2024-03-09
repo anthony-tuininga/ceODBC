@@ -1,12 +1,13 @@
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test_1000_types.py
 #   Module for testing the database and API types.
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import test_env
 
 import ceODBC
 import pickle
+
 
 class TestCase(test_env.BaseTestCase):
     establish_connection = False
@@ -77,6 +78,7 @@ class TestCase(test_env.BaseTestCase):
         "1011 - test DB_TYPE_TIMESTAMP comparisons"
         self.__test_compare(ceODBC.DB_TYPE_TIMESTAMP, ceODBC.DATETIME)
         self.__test_pickle(ceODBC.DB_TYPE_TIMESTAMP)
+
 
 if __name__ == "__main__":
     test_env.run_test_cases()

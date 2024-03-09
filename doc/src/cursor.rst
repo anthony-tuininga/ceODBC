@@ -301,11 +301,11 @@ Cursor Object
    inconverter and outconverter specify methods used for converting values
    to/from the database. More information can be found in the section on
    variable objects.
- 
+
    This method was designed for use with in/out variables where the length or
    type cannot be determined automatically from the Python object passed in or
    for use in input and output type handlers defined on cursors or connections.
 
-   .. note:: 
+   .. note::
 
       The DB API definition does not define this method.

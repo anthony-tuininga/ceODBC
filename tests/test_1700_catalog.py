@@ -1,13 +1,12 @@
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test_1700_catalog.py
 #   Module for testing the various catalog routines.
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-import threading
 import unittest
 
-import ceODBC
 import test_env
+
 
 class TestCase(test_env.BaseTestCase):
 
@@ -48,13 +47,16 @@ class TestCase(test_env.BaseTestCase):
         num = len(list(self.connection.tables(table=table_name)))
         self.assertEqual(num, 1)
 
-    @unittest.skipIf(test_env.get_dsn_type() == "mysql",
-                     "MySQL doesn't have table privileges by default")
+    @unittest.skipIf(
+        test_env.get_dsn_type() == "mysql",
+        "MySQL doesn't have table privileges by default",
+    )
     def test_1705_table_privileges(self):
         "1705 - test connection.tableprivileges()"
         table_name = self.__get_catalog_name("TestTempTable")
         num = len(list(self.connection.tableprivileges(table=table_name)))
         self.assertTrue(num > 0)
+
 
 if __name__ == "__main__":
     test_env.run_test_cases()

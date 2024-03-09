@@ -1,7 +1,7 @@
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test_env.py
 #   Base file for all unit tests.
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import ceODBC
 import os
@@ -11,6 +11,7 @@ import unittest
 # methods below (which should be used instead of consulting this dictionary
 # directly) and then stored in the dictionary for subsequent use
 PARAMETERS = {}
+
 
 def get_value(name, label):
     value = PARAMETERS.get(name)
@@ -23,18 +24,23 @@ def get_value(name, label):
     PARAMETERS[name] = value
     return value
 
+
 def get_connection():
     return ceODBC.connect(get_dsn())
+
 
 def get_dsn():
     dsn_type = get_dsn_type()
     return get_value(dsn_type.upper() + "_DSN", "DSN")
 
+
 def get_dsn_type():
     return get_value("DSN_TYPE", "DSN Type")
 
+
 def run_test_cases():
     unittest.main(testRunner=unittest.TextTestRunner(verbosity=2))
+
 
 class BaseTestCase(unittest.TestCase):
     establish_connection = True

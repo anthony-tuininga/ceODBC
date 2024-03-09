@@ -230,7 +230,7 @@ Database Types
    The DB API definition does not define these objects.
 
    These types are more granular than the types mandated by the DB API and can
-   be used when creating variables via :meth:`Cursor.var()` or 
+   be used when creating variables via :meth:`Cursor.var()` or
    :meth:`Cursor.setinputsizes()`.
 
 .. data:: DB_TYPE_BIGINT

@@ -1,12 +1,13 @@
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test_1100_connection.py
 #   Module for testing the connection object.
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import test_env
 
 import ceODBC
 import threading
+
 
 class TestCase(test_env.BaseTestCase):
     establish_connection = False
@@ -16,7 +17,7 @@ class TestCase(test_env.BaseTestCase):
         connection = test_env.get_connection()
         cursor = connection.cursor()
         cursor.execute("select count(*) from TestNumbers")
-        count, = cursor.fetchone()
+        (count,) = cursor.fetchone()
         self.assertEqual(count, 4)
 
     def test_1100_exception_on_close(self):
@@ -38,7 +39,7 @@ class TestCase(test_env.BaseTestCase):
         other_cursor.execute("insert into TestTempTable (IntCol) values (2)")
         other_connection.close()
         cursor.execute("select count(*) from TestTempTable")
-        count, = cursor.fetchone()
+        (count,) = cursor.fetchone()
         self.assertEqual(count, 0)
 
     def test_1102_rollback_on_del(self):
@@ -55,7 +56,7 @@ class TestCase(test_env.BaseTestCase):
         del other_cursor
         del other_connection
         cursor.execute("select count(*) from TestTempTable")
-        count, = cursor.fetchone()
+        (count,) = cursor.fetchone()
         self.assertEqual(count, 0)
 
     def test_1103_threading(self):
@@ -67,6 +68,7 @@ class TestCase(test_env.BaseTestCase):
             thread.start()
         for thread in threads:
             thread.join()
+
 
 if __name__ == "__main__":
     test_env.run_test_cases()

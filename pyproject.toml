@@ -2,6 +2,15 @@
 requires = ["setuptools >= 61", "wheel", "Cython"]
 build-backend = "setuptools.build_meta"
 
+[tool.black]
+line-length = 79
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+required-version = 24
+
+[tool.ruff]
+line-length = 79
+target-version = "py38"
+
 [project]
 name = "ceODBC"
 description = "Python interface to ODBC"

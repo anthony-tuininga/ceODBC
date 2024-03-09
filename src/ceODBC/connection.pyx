@@ -321,3 +321,12 @@ cdef class Connection:
         _check_stmt_error(cursor._handle, rc)
         cursor._prepare_result_set()
         return cursor
+
+
+def connect(dsn, autocommit=False):
+    """
+    Creates a connection to the database and returns a Connection object.
+    """
+    conn = Connection.__new__(Connection)
+    conn._connect(dsn, autocommit)
+    return conn

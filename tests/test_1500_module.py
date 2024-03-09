@@ -1,13 +1,14 @@
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # test_1500_module.py
 #   Module for testing the module constants and constructors.
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import datetime
 import time
 
 import ceODBC
 import test_env
+
 
 class TestCase(test_env.BaseTestCase):
     establish_connection = False
@@ -59,11 +60,11 @@ class TestCase(test_env.BaseTestCase):
 
     def test_1507_api_level(self):
         "1507 - test ceODBC.apilevel"
-        self.assertEqual(ceODBC.apilevel, '2.0')
+        self.assertEqual(ceODBC.apilevel, "2.0")
 
     def test_1508_param_style(self):
         "1507 - test ceODBC.paramstyle"
-        self.assertEqual(ceODBC.paramstyle, 'qmark')
+        self.assertEqual(ceODBC.paramstyle, "qmark")
 
     def test_1509_thread_safety(self):
         "1509 - test ceODBC.threadsafety"
@@ -90,15 +91,16 @@ class TestCase(test_env.BaseTestCase):
 
     def test_1514_data_sources_none(self):
         "1514 - test ceODBC.data_sources() for no data sources"
-        data_sources = ceODBC.data_sources(exclude_user_dsn=True,
-                                           exclude_system_dsn=True)
+        data_sources = ceODBC.data_sources(
+            exclude_user_dsn=True, exclude_system_dsn=True
+        )
         self.assertEqual(data_sources, [])
 
     def test_1515_drivers(self):
         "1515 - test ceODBC.drivers()"
-        connection = test_env.get_connection()
         drivers = ceODBC.drivers()
         self.assertEqual(type(drivers), list)
+
 
 if __name__ == "__main__":
     test_env.run_test_cases()

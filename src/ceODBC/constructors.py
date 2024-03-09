@@ -4,7 +4,7 @@ Constructors mandated by the database API.
 
 import datetime
 
-# pylint: disable=invalid-name
+
 def Binary(value):
     """
     Constructor mandated by the database API for creating a binary value. This
@@ -50,7 +50,6 @@ def TimeFromTicks(ticks):
     return datetime.datetime.fromtimestamp(ticks).time()
 
 
-# pylint: disable=too-many-arguments
 def Timestamp(year, month, day, hour=0, minute=0, second=0, fsecond=0):
     """
     Constructor mandated by the database API for creating a timestamp value.
