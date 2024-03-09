@@ -20,13 +20,13 @@ class TestCase(test_env.BaseTestCase):
         (count,) = cursor.fetchone()
         self.assertEqual(count, 4)
 
-    def test_1100_exception_on_close(self):
+    def test_1100(self):
         "1100 - confirm an exception is raised after closing a connection"
         connection = test_env.get_connection()
         connection.close()
         self.assertRaises(ceODBC.InterfaceError, connection.rollback)
 
-    def test_1101_rollback_on_close(self):
+    def test_1101(self):
         "1101 - connection rolls back before close"
         connection = test_env.get_connection()
         cursor = connection.cursor()
@@ -42,7 +42,7 @@ class TestCase(test_env.BaseTestCase):
         (count,) = cursor.fetchone()
         self.assertEqual(count, 0)
 
-    def test_1102_rollback_on_del(self):
+    def test_1102(self):
         "1102 - connection rolls back before destruction"
         connection = test_env.get_connection()
         cursor = connection.cursor()
@@ -59,7 +59,7 @@ class TestCase(test_env.BaseTestCase):
         (count,) = cursor.fetchone()
         self.assertEqual(count, 0)
 
-    def test_1103_threading(self):
+    def test_1103(self):
         "1103 - connection to database with multiple threads"
         threads = []
         for i in range(20):

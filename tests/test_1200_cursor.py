@@ -12,32 +12,32 @@ import test_env
 class TestCase(test_env.BaseTestCase):
 
     @unittest.skipIf(test_env.get_dsn_type() == "mysql", "MySQL bug")
-    def test_1200_callproc_no_args(self):
+    def test_1200(self):
         "1200 - test executing a stored procedure without any arguments"
         with self.connection.cursor() as cursor:
             results = cursor.callproc("sp_TestNoArgs")
         self.assertEqual(results, [])
 
-    def test_1201_execute_no_args(self):
+    def test_1201(self):
         "1201 - test executing a statement without any arguments"
         self.cursor.execute("select null")
         (result,) = self.cursor.fetchone()
         self.assertEqual(result, None)
 
-    def test_1202_execute_no_statement_with_args(self):
+    def test_1202(self):
         "1202 - test executing a None statement with args"
         self.assertRaises(
             ceODBC.ProgrammingError, self.cursor.execute, None, 5
         )
 
-    def test_1203_exception_on_close(self):
+    def test_1203(self):
         "1203 - confirm an exception is raised after closing a cursor"
         self.cursor.close()
         self.assertRaises(
             ceODBC.InterfaceError, self.cursor.execute, "select 1"
         )
 
-    def test_1204_iterators(self):
+    def test_1204(self):
         "1204 - test iterators"
         self.cursor.execute(
             """
@@ -49,7 +49,7 @@ class TestCase(test_env.BaseTestCase):
         rows = [v for v, in self.cursor]
         self.assertEqual(rows, [1, 2, 3])
 
-    def test_1205_iterators_interrupted(self):
+    def test_1205(self):
         "1205 - test iterators (with intermediate execute)"
         self.cursor.execute("delete from TestTempTable")
         self.cursor.execute(
@@ -64,14 +64,14 @@ class TestCase(test_env.BaseTestCase):
         self.cursor.execute("insert into TestTempTable (IntCol) values (1)")
         self.assertRaises(ceODBC.InterfaceError, next, testIter)
 
-    def test_1206_bad_execute(self):
+    def test_1206(self):
         "1206 - test that subsequent fetches fail after bad execute"
         self.assertRaises(
             ceODBC.DatabaseError, self.cursor.execute, "select y"
         )
         self.assertRaises(ceODBC.InterfaceError, self.cursor.fetchall)
 
-    def test_1207_executemany(self):
+    def test_1207(self):
         "1207 - test executing a statement multiple times"
         self.cursor.execute("delete from TestTempTable")
         rows = [[n] for n in range(230)]
@@ -83,7 +83,7 @@ class TestCase(test_env.BaseTestCase):
         (count,) = self.cursor.fetchone()
         self.assertEqual(count, len(rows))
 
-    def test_1208_executemany_with_prepare(self):
+    def test_1208(self):
         "1208 - test executing a statement multiple times (with prepare)"
         self.cursor.execute("delete from TestTempTable")
         rows = [[n] for n in range(225)]
@@ -96,7 +96,7 @@ class TestCase(test_env.BaseTestCase):
         (count,) = self.cursor.fetchone()
         self.assertEqual(count, len(rows))
 
-    def test_1209_executemany_with_rebind(self):
+    def test_1209(self):
         "1209 - test executing a statement multiple times (with rebind)"
         self.cursor.execute("delete from TestTempTable")
         rows = [[n] for n in range(235)]
@@ -109,7 +109,7 @@ class TestCase(test_env.BaseTestCase):
         (count,) = self.cursor.fetchone()
         self.assertEqual(count, len(rows))
 
-    def test_1210_executemany_with_resize(self):
+    def test_1210(self):
         "1210 - test executing a statement multiple times (with resize)"
         self.cursor.execute("delete from TestTempTable")
         rows = [
@@ -132,7 +132,7 @@ class TestCase(test_env.BaseTestCase):
         test_env.get_dsn_type() == "mysql",
         "MySQL doesn't generate an exception",
     )
-    def test_1211_executemany_with_execption(self):
+    def test_1211(self):
         "1211 - test executing a statement multiple times (with exception)"
         with self.connection.cursor() as cursor:
             cursor.execute("delete from TestTempTable")
@@ -143,7 +143,7 @@ class TestCase(test_env.BaseTestCase):
             ceODBC.DatabaseError, self.cursor.executemany, statement, rows
         )
 
-    def test_1212_prepare(self):
+    def test_1212(self):
         "1212 - test preparing a statement and executing it multiple times"
         self.assertEqual(self.cursor.statement, None)
         statement = "select ? + 5"
@@ -159,7 +159,7 @@ class TestCase(test_env.BaseTestCase):
         (result,) = self.cursor.fetchone()
         self.assertEqual(result, 15)
 
-    def test_1213_bad_prepare(self):
+    def test_1213(self):
         "1213 - test that subsequent executes succeed after bad prepare"
         self.assertRaises(
             ceODBC.DatabaseError, self.cursor.execute, "select nullx"

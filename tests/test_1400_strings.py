@@ -22,7 +22,7 @@ class TestCase(test_env.BaseTestCase):
             key = data_tuple[0]
             self.data_by_key[key] = data_tuple
 
-    def test_1400_bind_string(self):
+    def test_1400(self):
         "1400 - test binding in a string"
         self.cursor.execute(
             """
@@ -32,7 +32,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [self.data_by_key[3]])
 
-    def test_1401_bind_string_after_number(self):
+    def test_1401(self):
         "1401 - test binding in a string after setting input sizes to a number"
         self.cursor.setinputsizes(ceODBC.NUMBER)
         self.cursor.execute(
@@ -43,7 +43,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [self.data_by_key[2]])
 
-    def test_1402_bind_null(self):
+    def test_1402(self):
         "1402 - test binding in a null"
         self.cursor.execute(
             """
@@ -53,7 +53,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [])
 
-    def test_1403_bind_long_string_after_setting_size(self):
+    def test_1403(self):
         "1403 - test that setinputsizes() returns a long variable"
         var = self.cursor.setinputsizes(90000)[0]
         self.assertEqual(var.type, ceODBC.STRING)
@@ -67,7 +67,7 @@ class TestCase(test_env.BaseTestCase):
             % (len(in_string), len(out_string)),
         )
 
-    def test_1404_CursorDescription(self):
+    def test_1404(self):
         "1404 - test cursor description is accurate"
         self.cursor.execute("select * from TestStrings")
         dsn_type = test_env.get_dsn_type()
@@ -87,13 +87,13 @@ class TestCase(test_env.BaseTestCase):
             ]
         self.assertEqual(self.cursor.description, expected_data)
 
-    def test_1405_fetchall(self):
+    def test_1405(self):
         "1405 - test that fetching all of the data returns the correct results"
         self.cursor.execute("select * From TestStrings order by IntCol")
         self.assertEqual(self.cursor.fetchall(), self.raw_data)
         self.assertEqual(self.cursor.fetchall(), [])
 
-    def test_1406_fetchmany(self):
+    def test_1406(self):
         "1406 - test that fetching data in chunks returns the correct results"
         self.cursor.execute("select * From TestStrings order by IntCol")
         self.assertEqual(self.cursor.fetchmany(2), self.raw_data[0:2])
@@ -101,7 +101,7 @@ class TestCase(test_env.BaseTestCase):
         self.assertEqual(self.cursor.fetchmany(4), self.raw_data[3:])
         self.assertEqual(self.cursor.fetchmany(3), [])
 
-    def test_1407_fetchone(self):
+    def test_1407(self):
         "1407 - test that fetching a single row returns the correct results"
         self.cursor.execute(
             """
@@ -114,7 +114,7 @@ class TestCase(test_env.BaseTestCase):
         self.assertEqual(self.cursor.fetchone(), self.data_by_key[4])
         self.assertEqual(self.cursor.fetchone(), None)
 
-    def test_1408_supplemental_characters(self):
+    def test_1408(self):
         "1408 - test binding and fetching supplemental characters"
         supplemental_chars = (
             "𠜎 𠜱 𠝹 𠱓 𠱸 𠲖 𠳏 𠳕 𠴕 𠵼 𠵿 𠸎 𠸏 𠹷 𠺝 "

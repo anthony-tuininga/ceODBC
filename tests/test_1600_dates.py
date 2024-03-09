@@ -48,7 +48,7 @@ class TestCase(test_env.BaseTestCase):
             key = data_tuple[0]
             self.data_by_key[key] = data_tuple
 
-    def test_1600_bind_date(self):
+    def test_1600(self):
         "1600 - test binding in a datetime.date"
         self.cursor.execute(
             """
@@ -58,7 +58,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [self.data_by_key[3]])
 
-    def test_1601_bind_datetime(self):
+    def test_1601(self):
         "1600 - test binding in a datetime.datetime"
         self.cursor.execute(
             """
@@ -68,7 +68,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [self.data_by_key[2]])
 
-    def test_1602_bind_date_after_string(self):
+    def test_1602(self):
         "1602 - test binding in a date after setting input sizes to a string"
         self.cursor.setinputsizes(str)
         self.cursor.execute(
@@ -79,7 +79,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [self.data_by_key[4]])
 
-    def test_1603_bind_null(self):
+    def test_1603(self):
         "1603 - test binding in a null"
         self.cursor.execute(
             """
@@ -89,7 +89,7 @@ class TestCase(test_env.BaseTestCase):
         )
         self.assertEqual(self.cursor.fetchall(), [])
 
-    def test_1604_CursorDescription(self):
+    def test_1604(self):
         "1604 - test cursor description is accurate"
         self.cursor.execute("select * from TestDates")
         dsn_type = test_env.get_dsn_type()
@@ -111,7 +111,7 @@ class TestCase(test_env.BaseTestCase):
             ]
         self.assertEqual(self.cursor.description, expected_data)
 
-    def test_1605_fetchall(self):
+    def test_1605(self):
         "1605 - test that fetching all of the data returns the correct results"
         self.cursor.execute(
             """
