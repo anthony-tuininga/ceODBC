@@ -10,6 +10,7 @@ import test_env
 
 class TestCase(test_env.BaseTestCase):
 
+    @unittest.skipIf(test_env.get_dsn_type() == "mysql", "MySQL bug")
     def test_1200_callproc_no_args(self):
         "1200 - test executing a stored procedure without any arguments"
         with self.connection.cursor() as cursor:
