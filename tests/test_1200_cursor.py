@@ -3,6 +3,7 @@
 #   Module for testing the cursor object.
 # -----------------------------------------------------------------------------
 
+import datetime
 import unittest
 
 import ceODBC
@@ -165,6 +166,26 @@ class TestCase(test_env.BaseTestCase):
             ceODBC.DatabaseError, self.cursor.execute, "select nullx"
         )
         self.cursor.execute("select null")
+
+    def test_1214(self):
+        "1214 - test executemany() with leading null values"
+        self.cursor.execute("delete from TestExecuteMany")
+        data = [
+            (1, None, None, None),
+            (2, 2.5, None, None),
+            (3, None, "String 3", None),
+            (4, None, None, datetime.date.today()),
+        ]
+        self.cursor.executemany(
+            """
+            insert into TestExecuteMany (IntCol, FloatCol, StringCol, DateCol)
+            values (?, ?, ?, ?)
+            """,
+            data,
+        )
+        self.connection.commit()
+        self.cursor.execute("select * from TestExecuteMany order by IntCol")
+        self.assertEqual(self.cursor.fetchall(), data)
 
 
 if __name__ == "__main__":

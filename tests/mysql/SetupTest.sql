@@ -12,27 +12,34 @@ create table TestDates (
 ) engine=InnoDB;
 
 create table TestNumbers (
-    IntCol              integer not null,
-    BigIntCol           bigint,
-    FloatCol            float(5, 2),
-    DoubleCol           double(7, 2),
-    DecimalCol          decimal(6, 2)
+    IntCol                              integer not null,
+    BigIntCol                           bigint,
+    FloatCol                            float(5, 2),
+    DoubleCol                           double(7, 2),
+    DecimalCol                          decimal(6, 2)
 ) engine=InnoDB;
 
 create table TestStrings (
-    IntCol              integer not null,
-    StringCol           varchar(20) not null,
-    CharCol             char(5) not null,
-    NullableCol         varchar(50)
+    IntCol                              integer not null,
+    StringCol                           varchar(20) not null,
+    CharCol                             char(5) not null,
+    NullableCol                         varchar(50)
 ) engine=InnoDB;
 
 create table TestTempTable (
-    IntCol              integer not null,
-    StringCol           varchar(500)
+    IntCol                              integer not null,
+    StringCol                           varchar(500)
 ) engine=InnoDB;
 
 alter table TestTempTable add constraint TestTempTable_pk
 primary key (IntCol);
+
+create table TestExecuteMany (
+    IntCol                              integer not null,
+    FloatCol                            float(5, 2),
+    StringCol                           varchar(50),
+    DateCol                             date
+) engine=InnoDB;
 
 DELIMITER //
 create procedure sp_Test (

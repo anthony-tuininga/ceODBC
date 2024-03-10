@@ -4,6 +4,14 @@ Release notes
 3.x releases
 ############
 
+Version 3.2
+-----------
+
+#)  Defer type assignment until a value other than ``None`` is detected or the
+    last row of data is being processed
+    (`issue 12 <https://github.com/anthony-tuininga/ceODBC/issues/12>`__).
+
+
 Version 3.1
 -----------
 

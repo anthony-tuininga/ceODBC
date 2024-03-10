@@ -44,7 +44,8 @@ cdef class Cursor:
         raise StopIteration
 
     cdef int _bind_parameters(self, tuple parameters, unsigned num_elements=1,
-                              unsigned pos=0) except -1:
+                              unsigned pos=0,
+                              bint defer_type_assignment=False) except -1:
         cdef:
             SQLUSMALLINT i, num_params, orig_num_vars
             SQLSMALLINT var_direction
@@ -64,8 +65,9 @@ cdef class Cursor:
                 orig_var = <Var> cpython.PyList_GET_ITEM(self._bind_vars, i)
             else:
                 orig_var = None
-            var = self._get_bind_var(num_elements, pos, value, orig_var)
-            if var is orig_var:
+            var = self._get_bind_var(num_elements, pos, value, orig_var,
+                                     defer_type_assignment)
+            if var is orig_var or var is None:
                 continue
             if i < len(self._bind_vars):
                 self._bind_vars[i] = var
@@ -286,7 +288,8 @@ cdef class Cursor:
         self._buffer_index = 0
 
     cdef Var _get_bind_var(self, unsigned num_elements, unsigned pos,
-                           object value, Var orig_var):
+                           object value, Var orig_var,
+                           bint defer_type_assignment):
         cdef:
             object temp_value
             unsigned i
@@ -309,6 +312,8 @@ cdef class Cursor:
             except:
                 if pos > 0:
                     raise
+        elif defer_type_assignment and value is None:
+            return None
         var = self._create_var_by_value(value, num_elements)
         var._set_value(pos, value)
         return var
@@ -440,7 +445,9 @@ cdef class Cursor:
             if not isinstance(row_args, (list, tuple)):
                 message = "expecting a list of lists or tuples"
                 _raise_from_string(exceptions.InterfaceError, message)
-            self._bind_parameters(tuple(row_args), num_rows, i)
+            defer_type_assignment = (i < num_rows - 1)
+            self._bind_parameters(tuple(row_args), num_rows, i,
+                                  defer_type_assignment)
         temp = <SQLULEN> num_rows
         rc = SQLSetStmtAttr(self._handle, SQL_ATTR_PARAMSET_SIZE,
                 <SQLPOINTER> temp, SQL_IS_UINTEGER)

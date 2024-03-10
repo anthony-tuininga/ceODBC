@@ -36,6 +36,9 @@ cdef class Var:
         cpython.PyMem_Free(self._length_or_indicator)
         cpython.PyMem_Free(self._data.as_raw)
 
+    def __repr__(self):
+        return f"<ceODBC.Var of type {self.type.name}>"
+
     cdef object _get_value(self, unsigned pos):
         cdef object value
         if pos >= self.num_elements:

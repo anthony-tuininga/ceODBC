@@ -12,27 +12,34 @@ create table TestDates (
 );
 
 create table TestNumbers (
-    IntCol              integer not null,
-    BigIntCol           bigint,
-    FloatCol            float,
-    DoubleCol           double precision,
-    DecimalCol          decimal(6, 2)
+    IntCol                              integer not null,
+    BigIntCol                           bigint,
+    FloatCol                            float,
+    DoubleCol                           double precision,
+    DecimalCol                          decimal(6, 2)
 );
 
 create table TestStrings (
-    IntCol              integer not null,
-    StringCol           varchar(20) not null,
-    CharCol             char(5) not null,
-    NullableCol         varchar(50)
+    IntCol                              integer not null,
+    StringCol                           varchar(20) not null,
+    CharCol                             char(5) not null,
+    NullableCol                         varchar(50)
 );
 
 create table TestTempTable (
-    IntCol              integer not null,
-    StringCol           varchar(500)
+    IntCol                              integer not null,
+    StringCol                           varchar(500)
 );
 
 alter table TestTempTable add constraint TestTempTable_pk
 primary key (IntCol);
+
+create table TestExecuteMany (
+    IntCol                              integer not null,
+    FloatCol                            float,
+    StringCol                           varchar(50),
+    DateCol                             date
+);
 
 create function sp_Test (
     a_InValue varchar(50),
