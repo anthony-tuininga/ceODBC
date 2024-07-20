@@ -91,12 +91,13 @@ cdef class Var:
         message = f"missing get support for DB type {self.type}"
         _raise_from_string(exceptions.NotSupportedError, message)
 
-    cdef int _resize(self, SQLUINTEGER new_size,
-                     SQLLEN new_buffer_size) except -1:
+    cdef int _resize(self, SQLUINTEGER new_size) except -1:
         cdef:
+            SQLLEN new_buffer_size
             SQLCHAR *new_data
             SQLCHAR *old_data
             unsigned i
+        new_buffer_size = new_size * self.type._bytes_multiplier
         new_data = <SQLCHAR*> \
                 cpython.PyMem_Malloc(self.num_elements * new_buffer_size)
         old_data = self._data.as_bytes
@@ -107,7 +108,6 @@ cdef class Var:
         self._data.as_raw = new_data
         self.size = new_size
         self.buffer_size = new_buffer_size
-        self.position = -1
 
     cdef int _set_value(self, unsigned pos, object value) except -1:
         if pos >= self.num_elements:
@@ -134,14 +134,14 @@ cdef class Var:
                 if not isinstance(value, decimal.Decimal):
                     raise TypeError("expecting decimal.Decimal value")
                 value = str(value)
-            elif self.type is DB_TYPE_STRING \
-                    and not isinstance(value, str):
+            elif not isinstance(value, str):
                 raise TypeError("expecting string")
+            else:
+                temp_size = <SQLUINTEGER> len(value)
+                if temp_size > self.size:
+                    self._resize(temp_size)
             temp_bytes = value.encode()
             temp_bytes_size = <SQLLEN> len(temp_bytes)
-            if temp_bytes_size > self.buffer_size:
-                temp_size = <SQLUINTEGER> len(value)
-                self._resize(temp_size, temp_bytes_size)
             self._length_or_indicator[pos] = <SQLINTEGER> temp_bytes_size
             if temp_bytes_size > 0:
                 memcpy(self._data.as_bytes + self.buffer_size * pos,

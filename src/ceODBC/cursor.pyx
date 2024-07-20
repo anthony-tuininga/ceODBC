@@ -48,8 +48,6 @@ cdef class Cursor:
                               bint defer_type_assignment=False) except -1:
         cdef:
             SQLUSMALLINT i, num_params, orig_num_vars
-            SQLSMALLINT var_direction
-            SQLRETURN rc
             Var orig_var
         num_params = <SQLUSMALLINT> cpython.PyTuple_GET_SIZE(parameters)
         if self._bind_vars:
@@ -59,8 +57,6 @@ cdef class Cursor:
             orig_num_vars = 0
             self._bind_vars = [None] * num_params
         for i, value in enumerate(parameters):
-
-            # determine which variable should be bound
             if i < orig_num_vars:
                 orig_var = <Var> cpython.PyList_GET_ITEM(self._bind_vars, i)
             else:
@@ -73,24 +69,7 @@ cdef class Cursor:
                 self._bind_vars[i] = var
             else:
                 self._bind_vars.append(var)
-
-            # if this variable has not been bound before, ensure that it is
-            # bound
-            if var._position < 0:
-                var._position = i + 1
-                if var.input and var.output:
-                    var_direction = SQL_PARAM_INPUT_OUTPUT
-                elif var.output:
-                    var_direction = SQL_PARAM_OUTPUT
-                else:
-                    var_direction = SQL_PARAM_INPUT
-                rc = SQLBindParameter(self._handle, var._position,
-                                      var_direction, var.type._c_data_type,
-                                      var.type._sql_data_type, var.size,
-                                      var.scale, var._data.as_raw,
-                                      var.buffer_size,
-                                      var._length_or_indicator)
-                _check_stmt_error(self._handle, rc)
+            var._position = i + 1
 
     def _call(self, name, parameters, return_value=None):
 
@@ -333,6 +312,30 @@ cdef class Cursor:
                 self._fetch_rows()
         return self._more_rows_to_fetch
 
+    cdef int _perform_binds(self) except -1:
+        """
+        Perform the binds given the variables that have been populated by the
+        supplied parameters.
+        """
+        cdef:
+            SQLSMALLINT var_direction
+            SQLRETURN rc
+            Var var
+        for var in self._bind_vars:
+            if var.input and var.output:
+                var_direction = SQL_PARAM_INPUT_OUTPUT
+            elif var.output:
+                var_direction = SQL_PARAM_OUTPUT
+            else:
+                var_direction = SQL_PARAM_INPUT
+            rc = SQLBindParameter(self._handle, var._position,
+                                  var_direction, var.type._c_data_type,
+                                  var.type._sql_data_type, var.size,
+                                  var.scale, var._data.as_raw,
+                                  var.buffer_size,
+                                  var._length_or_indicator)
+            _check_stmt_error(self._handle, rc)
+
     cdef int _prepare(self, str statement) except -1:
         cdef:
             SQLINTEGER statement_length
@@ -425,6 +428,7 @@ cdef class Cursor:
         self._prepare(statement)
         args = self._massage_args(args)
         self._bind_parameters(args)
+        self._perform_binds()
         return self._execute()
 
     def executemany(self, statement, args):
@@ -448,6 +452,7 @@ cdef class Cursor:
             defer_type_assignment = (i < num_rows - 1)
             self._bind_parameters(tuple(row_args), num_rows, i,
                                   defer_type_assignment)
+        self._perform_binds()
         temp = <SQLULEN> num_rows
         rc = SQLSetStmtAttr(self._handle, SQL_ATTR_PARAMSET_SIZE,
                 <SQLPOINTER> temp, SQL_IS_UINTEGER)

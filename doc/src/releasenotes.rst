@@ -10,6 +10,8 @@ Version 3.2
 #)  Defer type assignment until a value other than ``None`` is detected or the
     last row of data is being processed
     (`issue 12 <https://github.com/anthony-tuininga/ceODBC/issues/12>`__).
+#)  Defer binding parameters until all parameters have been processed and pay
+    attention to the size of the variable, not just the buffer size.
 
 
 Version 3.1
