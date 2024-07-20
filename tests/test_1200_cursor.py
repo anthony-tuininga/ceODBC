@@ -187,6 +187,26 @@ class TestCase(test_env.BaseTestCase):
         self.cursor.execute("select * from TestExecuteMany order by IntCol")
         self.assertEqual(self.cursor.fetchall(), data)
 
+    def test_1215(self):
+        "1215 - test executemany() with increasing string lengths"
+        self.cursor.execute("delete from TestExecuteMany")
+        data = [
+            (1, 1.25, "Short string", None),
+            (2, 2.5, "Longer string", None),
+            (3, 3.75, "An even longer string", None),
+            (4, 5.0, "The longest string of them all", None),
+        ]
+        self.cursor.executemany(
+            """
+            insert into TestExecuteMany (IntCol, FloatCol, StringCol, DateCol)
+            values (?, ?, ?, ?)
+            """,
+            data,
+        )
+        self.connection.commit()
+        self.cursor.execute("select * from TestExecuteMany order by IntCol")
+        self.assertEqual(self.cursor.fetchall(), data)
+
 
 if __name__ == "__main__":
     test_env.run_test_cases()
