@@ -12,9 +12,7 @@
 # All configuration values have a default value; values that are commented out
 # serve to show the default value.
 
-# If your extensions are in another directory, add it here.
-# import sys
-# sys.path.append('some/directory')
+import os
 
 # General configuration
 # ---------------------
@@ -34,15 +32,20 @@ root_doc = master_doc = "index"
 
 # General substitutions.
 project = "ceODBC"
-copyright = "2007-2021, Anthony Tuininga"
+copyright = "2007-2024, Anthony Tuininga"
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = "3.1"
+global_vars = {}
+local_vars = {}
+version_file_name = os.path.join("..", "..", "src", "ceODBC", "version.py")
+with open(version_file_name) as f:
+    exec(f.read(), global_vars, local_vars)
+version = ".".join(local_vars["__version__"].split(".")[:2])
 # The full version, including alpha/beta/rc tags.
-release = "3.1.0"
+release = local_vars["__version__"]
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
